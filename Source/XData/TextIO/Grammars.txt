@@ -1,0 +1,121 @@
+﻿==============================
+Lexical
+==============================
+
+whitespace:
+Unicode-class-Zs | '\u0009' | '\u000B' | '\u000C'
+;
+new-line:
+'\u000D' | '\u000A' | '\u0085' | '\u2028' | '\u2029'
+;
+
+single-line-comment:
+'//' (!new-line)*
+;
+multi-line-comment:
+'/*' (!'*/')* '*/'
+; 
+name:
+normal-name | verbatim-name
+;
+verbatim-name:
+'@' normal-name
+;
+normal-name:
+name-start-char name-part-char*
+;
+name-start-char:
+letter-char | '_'
+;
+name-part-char:
+letter-char | decimal-digit-char | connecting-char | combining-char | formatting-char
+;
+letter-char:
+A Unicode character of classes Lu, Ll, Lt, Lm, Lo, or Nl
+;
+decimal-digit-char:
+A Unicode character of the class Nd
+;
+connecting-char:
+A Unicode character of the class Pc
+;
+combining-char:
+A Unicode character of classes Mn or Mc
+;
+formatting-char:
+A Unicode character of the class Cf
+;
+string-value:
+normal-string-value | verbatim-string-value
+;
+normal-string-value:
+'"'  '"'
+;
+verbatim-string-value:
+'@"' '"'
+;
+char-value:
+'\'' '\''
+;
+integer-value:
+
+;
+decimal-value:
+
+;
+real-value:
+
+;
+
+==============================
+==============================
+
+
+compilation-unit:
+element
+;
+element:
+qualifiable-name uri-aliasing-list? ('=' element-value)?
+;
+element-value:
+complex-value | simple-value
+;
+qualifiable-name:
+(name ':')? name
+;
+uri-aliasing-list:
+'<' uri-aliasing* '>'
+;
+uri-aliasing:
+name '=' string-value
+| name? '==' string-value
+;
+complex-value:
+type-indicator? (attributes children? | children)
+;
+type-indicator:
+'(' qualifiable-name ')'
+;
+attributes:
+'[' attribute* ']'
+;
+attribute:
+qualifiable-name ('=' simple-value)?
+;
+children:
+'{' element* | simple-value '}'
+;
+
+simple-value:
+type-indicator? (atomic-value | list-value)
+;
+atomic-value:
+string-value | char-value | boolean-value | integer-value | decimal-value | real-value
+;
+list-value:
+'#[' simple-value* ']'
+;
+boolean-value:
+'true' | 'false'
+;
+
