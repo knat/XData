@@ -215,16 +215,16 @@ namespace XData.TextIO {
             return value;
         }
         protected bool List<T>(int startRawKind, int endRawKind, TryGetter<T> itemGetter, string errorMsg, out ListNode<T> listNode) {
-            TextSpan textSpan;
-            if (Token(startRawKind, out textSpan)) {
+            TextSpan openTokenTextSpan, closeTokenTextSpan;
+            if (Token(startRawKind, out openTokenTextSpan)) {
                 var list = new List<T>();
                 while (true) {
                     T item;
                     if (itemGetter(out item)) {
                         list.Add(item);
                     }
-                    else if (Token(endRawKind)) {
-                        listNode = new ListNode<T>(list, textSpan);
+                    else if (Token(endRawKind, out closeTokenTextSpan)) {
+                        listNode = new ListNode<T>(list, openTokenTextSpan, closeTokenTextSpan);
                         return true;
                     }
                     else {
@@ -236,8 +236,8 @@ namespace XData.TextIO {
             return false;
         }
         protected bool ListOrSingle<T>(int startRawKind, int endRawKind, TryGetter<T> itemGetter, string errorMsg, out ListOrSingleNode<T> listOrSingle) {
-            TextSpan textSpan;
-            if (Token(startRawKind, out textSpan)) {
+            TextSpan openTokenTextSpan, closeTokenTextSpan;
+            if (Token(startRawKind, out openTokenTextSpan)) {
                 var hasSingle = false;
                 var single = default(T);
                 List<T> list = null;
@@ -256,8 +256,8 @@ namespace XData.TextIO {
                             hasSingle = true;
                         }
                     }
-                    else if (Token(endRawKind)) {
-                        listOrSingle = new ListOrSingleNode<T>(list, single, hasSingle, textSpan);
+                    else if (Token(endRawKind, out closeTokenTextSpan)) {
+                        listOrSingle = new ListOrSingleNode<T>(list, single, hasSingle, openTokenTextSpan, closeTokenTextSpan);
                         return true;
                     }
                     else {
@@ -354,7 +354,7 @@ namespace XData.TextIO {
                     }
                     else if (Token('>')) {
                         if (list != null || hasSingle) {
-                            _uriAliasingListStack.Push(new ListOrSingleNode<UriAliasingNode>(list, single, hasSingle, default(TextSpan)));
+                            _uriAliasingListStack.Push(new ListOrSingleNode<UriAliasingNode>(list, single, hasSingle, default(TextSpan), default(TextSpan)));
                             return true;
                         }
                         return false;
@@ -420,16 +420,9 @@ namespace XData.TextIO {
             }
             var isNull = !alias.IsValid;
             foreach (var uaList in _uriAliasingListStack) {
-                if (uaList.HasList) {
-                    foreach (var item in uaList.List) {
-                        if (item.Alias == alias || (isNull && item.IsDefault)) {
-                            return item.Uri.Value;
-                        }
-                    }
-                }
-                else {
-                    if (uaList.Single.Alias == alias || (isNull && uaList.Single.IsDefault)) {
-                        return uaList.Single.Uri.Value;
+                foreach (var ua in uaList) {
+                    if (ua.Alias == alias || (isNull && ua.IsDefault)) {
+                        return ua.Uri.Value;
                     }
                 }
             }

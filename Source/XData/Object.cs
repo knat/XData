@@ -1908,7 +1908,7 @@ namespace XData {
             else {
                 if (attributeListNode.HasItem) {
                     context.AddErrorDiagnostic(DiagnosticCode.TypeDoesNotAllowAttributes, "Type '{0}' does not allow attributes.".InvFormat(effComplexTypeInfo.FullName.ToString()),
-                        attributeListNode.TextSpan);
+                        attributeListNode.OpenTokenTextSpan);
                     return false;
                 }
             }

@@ -7,17 +7,20 @@ using System.Text;
 namespace XData.TextIO {
     public delegate bool TryGetter<T>(out T node);
     public struct ListOrSingleNode<T> {
-        public ListOrSingleNode(List<T> list, T single, bool hasSingle, TextSpan textSpan) {
+        public ListOrSingleNode(List<T> list, T single, bool hasSingle,
+            TextSpan openTokenTextSpan, TextSpan closeTokenTextSpan) {
             List = list;
             Single = single;
             HasSingle = hasSingle;
-            TextSpan= textSpan;
+            OpenTokenTextSpan = openTokenTextSpan;
+            CloseTokenTextSpan = closeTokenTextSpan;
             IsValid = true;
         }
         public readonly List<T> List;//list take precedence
         public readonly T Single;
         public readonly bool HasSingle;
-        public readonly TextSpan TextSpan;
+        public readonly TextSpan OpenTokenTextSpan;
+        public readonly TextSpan CloseTokenTextSpan;
         public readonly bool IsValid;
         public bool HasList {
             get {
@@ -29,14 +32,59 @@ namespace XData.TextIO {
                 return List != null || HasSingle;
             }
         }
+        public Enumerator GetEnumerator() {
+            return new Enumerator(List, Single, HasSingle);
+        }
+        public struct Enumerator {
+            internal Enumerator(List<T> list, T single, bool hasSingle) {
+                _list = list;
+                _single = single;
+                _index = 0;
+                if (list != null) {
+                    _count = list.Count;
+                }
+                else if (hasSingle) {
+                    _count = 1;
+                }
+                else {
+                    _count = 0;
+                }
+                _current = default(T);
+            }
+            private readonly List<T> _list;
+            private readonly T _single;
+            private readonly int _count;
+            private int _index;
+            private T _current;
+            public bool MoveNext() {
+                if (_index < _count) {
+                    if (_list != null) {
+                        _current = _list[_index];
+                    }
+                    else {
+                        _current = _single;
+                    }
+                    ++_index;
+                    return true;
+                }
+                return false;
+            }
+            public T Current {
+                get {
+                    return _current;
+                }
+            }
+        }
     }
     public struct ListNode<T> {
-        public ListNode(List<T> list, TextSpan textSpan) {
+        public ListNode(List<T> list, TextSpan openTokenTextSpan, TextSpan closeTokenTextSpan) {
             List = list;
-            TextSpan = textSpan;
+            OpenTokenTextSpan = openTokenTextSpan;
+            CloseTokenTextSpan = closeTokenTextSpan;
         }
         public readonly List<T> List;
-        public readonly TextSpan TextSpan;
+        public readonly TextSpan OpenTokenTextSpan;
+        public readonly TextSpan CloseTokenTextSpan;
         public bool IsValid {
             get {
                 return List != null;
@@ -149,7 +197,7 @@ namespace XData.TextIO {
                 if (Atom.IsValid) {
                     return Atom.TextSpan;
                 }
-                return List.TextSpan;
+                return List.OpenTokenTextSpan;
             }
         }
     }
@@ -237,7 +285,7 @@ namespace XData.TextIO {
         public TextSpan TextSpan {
             get {
                 if (AttributeList.IsValid) {
-                    return AttributeList.TextSpan;
+                    return AttributeList.OpenTokenTextSpan;
                 }
                 return ChildrenTextSpan;
             }
