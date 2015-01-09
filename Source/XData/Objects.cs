@@ -237,7 +237,7 @@ namespace XData {
         }
         new public static readonly SimpleTypeInfo ThisInfo = new SimpleTypeInfo(typeof(XSimpleType), TypeKind.SimpleType.ToFullName(), TypeKind.SimpleType, XType.ThisInfo, typeof(object), null);
         //
-        internal static bool TryCreate(Context context, SimpleTypeInfo simpleTypeInfo, ProgramInfo programInfo,
+        internal static bool TryCreate(Context context, ProgramInfo programInfo, SimpleTypeInfo simpleTypeInfo,
             SimpleValueNode simpleValueNode, out XSimpleType result) {
             result = null;
             var effSimpleTypeInfo = (SimpleTypeInfo)GetTypeInfo(context, programInfo, simpleValueNode.TypeQName, simpleTypeInfo, simpleValueNode.TextSpan);
@@ -1891,7 +1891,7 @@ namespace XData {
             }
         }
         //
-        internal static bool TryCreate(Context context, ComplexTypeInfo complexTypeInfo, ProgramInfo programInfo, bool isNullable,
+        internal static bool TryCreate(Context context, ProgramInfo programInfo, ComplexTypeInfo complexTypeInfo, bool isNullable,
             ComplexValueNode complexValueNode, out XComplexType result) {
             result = null;
             var equalsTokenTextSpan = complexValueNode.EqualsTokenTextSpan;
@@ -1904,7 +1904,7 @@ namespace XData {
             var attributeListNode = complexValueNode.AttributeList;
             var attributeSetInfo = effComplexTypeInfo.Attributes;
             if (attributeSetInfo != null) {
-                if (!XAttributeSet.TryCreate(context, attributeSetInfo, programInfo,
+                if (!XAttributeSet.TryCreate(context, programInfo, attributeSetInfo,
                     equalsTokenTextSpan, attributeListNode, out attributeSet)) {
                     return false;
                 }
@@ -1929,7 +1929,7 @@ namespace XData {
                     return false;
                 }
                 XSimpleType simpleType;
-                if (!XSimpleType.TryCreate(context, simpleTypeInfo, programInfo,
+                if (!XSimpleType.TryCreate(context, programInfo, simpleTypeInfo,
                     simpleValueNode, out simpleType)) {
                     return false;
                 }
@@ -1944,7 +1944,7 @@ namespace XData {
                     return false;
                 }
                 XChildSet childSet;
-                if (!XChildSet.TryCreate(context, childSetInfo, programInfo,
+                if (!XChildSet.TryCreate(context, programInfo, childSetInfo,
                     complexValueNode.CloseElementTextSpan, complexValueNode.ElementList, out childSet)) {
                     return false;
                 }
@@ -2215,7 +2215,7 @@ namespace XData {
             return (T)attributeInfo.CreateInstance(@try);
         }
         //
-        internal static bool TryCreate(Context context, AttributeSetInfo attributeSetInfo, ProgramInfo programInfo,
+        internal static bool TryCreate(Context context, ProgramInfo programInfo, AttributeSetInfo attributeSetInfo,
             TextSpan equalsTokenTextSpan, ListOrSingleNode<AttributeNode> attributeListNode, out XAttributeSet result) {
             result = null;
 
@@ -2347,7 +2347,7 @@ namespace XData {
         }
 
         //
-        internal static ChildCreationResult TrySkippableCreate(Context context, ElementInfo elementInfo, ElementNode elementNode, out XElement result) {
+        internal static ChildCreationResult TrySkippableCreate(Context context, ElementInfo elementInfo, ElementNode elementNode, out XChild result) {
             result = null;
             var fullName = elementNode.FullName;
             ElementInfo globalElementInfo;
@@ -2376,7 +2376,7 @@ namespace XData {
                         return ChildCreationResult.Fault;
                     }
                     XComplexType complexType;
-                    if (!XComplexType.TryCreate(context, complexTypeInfo, elementInfo.Program, isNullable,
+                    if (!XComplexType.TryCreate(context, elementInfo.Program, complexTypeInfo, isNullable,
                         complexValueNode, out complexType)) {
                         return ChildCreationResult.Fault;
                     }
@@ -2392,7 +2392,7 @@ namespace XData {
                         return ChildCreationResult.Fault;
                     }
                     XSimpleType simpleType;
-                    if (!XSimpleType.TryCreate(context, simpleTypeInfo, elementInfo.Program,
+                    if (!XSimpleType.TryCreate(context, elementInfo.Program, simpleTypeInfo,
                         simpleValueNode, out simpleType)) {
                         return ChildCreationResult.Fault;
                     }
@@ -2411,8 +2411,9 @@ namespace XData {
             var effElement = (XElement)effectiveElementInfo.CreateInstance();
             effElement.SetType(type);
             if (elementInfo.IsReference) {
-                result = (XElement)elementInfo.CreateInstance();
-                result.ReferentialElement = effElement;
+                var refElement = (XElement)elementInfo.CreateInstance();
+                refElement.ReferentialElement = effElement;
+                result = refElement;
             }
             else {
                 result = effElement;
@@ -2433,13 +2434,19 @@ namespace XData {
         Skipped,
         Success
     }
-
     [Serializable]
-    public abstract class XChildSet : XChild, ICollection<XChild>, IReadOnlyCollection<XChild> {
-        public XChildSet() {
+    public abstract class XChildContainer : XChild {
+        internal abstract void DirectAdd(XChild child);
+    }
+    [Serializable]
+    public abstract class XChildSet : XChildContainer, ICollection<XChild>, IReadOnlyCollection<XChild> {
+        protected XChildSet() {
             _childList = new List<XChild>();
         }
         private List<XChild> _childList;
+        internal override sealed void DirectAdd(XChild child) {
+            _childList.Add(SetParentTo(child));
+        }
         public override XObject DeepClone() {
             var obj = (XChildSet)base.DeepClone();
             obj._childList = new List<XChild>();
@@ -2451,9 +2458,10 @@ namespace XData {
         private bool TryGetIndexOf(int order, out int index) {
             int i;
             var found = false;
-            var count = _childList.Count;
+            var childList = _childList;
+            var count = childList.Count;
             for (i = 0; i < count; i++) {
-                var childOrder = _childList[i].Order;
+                var childOrder = childList[i].Order;
                 if (childOrder == order) {
                     found = true;
                     break;
@@ -2472,13 +2480,6 @@ namespace XData {
             }
             return -1;
         }
-        public void AddRange(IEnumerable<XChild> children) {
-            if (children != null) {
-                foreach (var child in children) {
-                    Add(child);
-                }
-            }
-        }
         public void Add(XChild child) {
             if (child == null) {
                 throw new ArgumentNullException("child");
@@ -2489,6 +2490,13 @@ namespace XData {
                 throw new ArgumentException("Child '{0}' already exists.".InvFormat(order.ToInvString()));
             }
             _childList.Insert(index, SetParentTo(child));
+        }
+        public void AddRange(IEnumerable<XChild> children) {
+            if (children != null) {
+                foreach (var child in children) {
+                    Add(child);
+                }
+            }
         }
         public void AddOrSet(XChild child) {
             if (child == null) {
@@ -2569,62 +2577,192 @@ namespace XData {
             }
         }
         //
-        internal static bool TryCreate(Context context, ChildSetInfo childSetInfo, ProgramInfo programInfo,
+        internal static bool TryCreate(Context context, ProgramInfo programInfo, ChildSetInfo childSetInfo,
             TextSpan closeElementTextSpan, ListNode<ElementNode> elementListNode, out XChildSet result) {
             result = null;
-
+            new CreationContext(context, programInfo, closeElementTextSpan, elementListNode.EffectiveList);
 
 
             return true;
         }
         private struct CreationContext {
-            internal CreationContext(TextSpan closeElementTextSpan, List<ElementNode> list) {
-                CloseElementTextSpan = closeElementTextSpan;
-                List = list;
-                Count = list.Count;
-                Index = 0;
+            internal CreationContext(Context context, ProgramInfo programInfo, TextSpan closeElementTextSpan, List<ElementNode> list) {
+                _context = context;
+                _programInfo = programInfo;
+                _closeElementTextSpan = closeElementTextSpan;
+                _list = list;
+                _count = list.Count;
+                _index = 0;
             }
-            internal readonly TextSpan CloseElementTextSpan;
-            internal readonly List<ElementNode> List;
-            internal readonly int Count;
-            internal int Index;
+            private readonly Context _context;
+            private readonly ProgramInfo _programInfo;
+            private readonly TextSpan _closeElementTextSpan;
+            private readonly List<ElementNode> _list;
+            private readonly int _count;
+            private int _index;
+            private bool IsEOF {
+                get {
+                    return _index >= _count;
+                }
+            }
+            private ElementNode GetElementNode() {
+                if (_index < _count) {
+                    return _list[_index];
+                }
+                return default(ElementNode);
+            }
+            private void ConsumeElementNode() {
+                ++_index;
+            }
+            private ChildCreationResult Create(IChildInfo childInfo, out XChild result) {
+                result = null;
+                if (IsEOF) {
+                    return ChildCreationResult.Skipped;
+                }
+                var elementInfo = childInfo as ElementInfo;
+                if (elementInfo != null) {
+                    var res = XElement.TrySkippableCreate(_context, elementInfo, GetElementNode(), out result);
+                    if (res == ChildCreationResult.Success) {
+                        ConsumeElementNode();
+                    }
+                    return res;
+                }
+                else {
+                    var childSetInfo = childInfo as ChildSetInfo;
+                    if (childSetInfo != null) {
+                        if (childSetInfo.Kind == ChildSetKind.Sequence) {
+                            var memberList = new List<XChild>();
+                            foreach (var memberInfo in childSetInfo.Members) {
+                                XChild member;
+                                var res = Create(memberInfo, out member);
+                                if (res == ChildCreationResult.Success) {
+                                    memberList.Add(member);
+                                }
+                                else if (res == ChildCreationResult.Skipped) {
+                                    if (!memberInfo.IsEffectiveOptional) {
+                                        if (memberList.Count == 0) {
+                                            return res;
+                                        }
+                                        //_context.AddErrorDiagnostic()
+                                        return ChildCreationResult.Fault;
+                                    }
+                                }
+                                else {//fault
+                                    return res;
+                                }
+                            }
+                            if (memberList.Count == 0) {
+                                return ChildCreationResult.Skipped;
+                            }
+                            var container = (XChildContainer)((ObjectInfo)childInfo).CreateInstance();
+                            foreach (var member in memberList) {
+                                container.DirectAdd(member);
+                            }
+                            result = container;
+                            return ChildCreationResult.Success;
+                        }
+                        else {//choice
+                            XChild choice = null;
+                            foreach (var memberInfo in childSetInfo.Members) {
+                                XChild member;
+                                var res = Create(memberInfo, out member);
+                                if (res == ChildCreationResult.Success) {
+                                    choice = member;
+                                    break;
+                                }
+                                else if (res == ChildCreationResult.Fault) {
+                                    return res;
+                                }
+                            }
+                            if (choice == null) {
+                                return ChildCreationResult.Skipped;
+                            }
+                            var container = (XChildContainer)((ObjectInfo)childInfo).CreateInstance();
+                            container.DirectAdd(choice);
+                            result = container;
+                            return ChildCreationResult.Success;
+                        }
+                    }
+                    else {
+                        var childListInfo = childInfo as ChildListInfo;
+                        var itemInfo = childListInfo.Item;
+                        var itemCount = 0UL;
+                        var maxOccurs = childListInfo.MaxOccurs;
+                        var itemList = new List<XChild>();
+                        while (itemCount <= childListInfo.MaxOccurs) {
+                            XChild item;
+                            var res = Create(itemInfo, out item);
+                            if (res == ChildCreationResult.Success) {
+                                itemList.Add(item);
+                            }
+                            else if (res == ChildCreationResult.Skipped) {
+                                if (itemCount == 0) {
+                                    return res;
+                                }
+                                if (itemCount < childListInfo.MinOccurs) {
+                                    //_context.AddErrorDiagnostic()
+                                    return ChildCreationResult.Fault;
+                                }
+                                else {
+                                    break;
+                                }
+                            }
+                            else {//Fault
+                                return res;
+                            }
+                        }
+                        if (itemList.Count == 0) {
+                            return ChildCreationResult.Skipped;
+                        }
+                        var container = (XChildContainer)((ObjectInfo)childInfo).CreateInstance();
+                        foreach (var item in itemList) {
+                            container.DirectAdd(item);
+                        }
+                        result = container;
+                        return ChildCreationResult.Success;
+                    }
+                }
+            }
 
         }
 
     }
     [Serializable]
-    public abstract class XChildList<T> : XChild, IList<T>, IReadOnlyList<T> where T : XChild {
+    public abstract class XChildList<T> : XChildContainer, IList<T>, IReadOnlyList<T> where T : XChild {
         protected XChildList() {
-            _itemList = new List<T>();
+            _childList = new List<T>();
         }
         protected XChildList(IEnumerable<T> items)
             : this() {
             AddRange(items);
         }
-        private List<T> _itemList;
+        private List<T> _childList;
+        internal override sealed void DirectAdd(XChild child) {
+            _childList.Add(SetParentTo((T)child));
+        }
         public override XObject DeepClone() {
             var obj = (XChildList<T>)base.DeepClone();
-            obj._itemList = new List<T>();
-            foreach (var item in _itemList) {
-                obj.Add(item);
+            obj._childList = new List<T>();
+            foreach (var child in _childList) {
+                obj._childList.Add(obj.SetParentTo(child));
             }
             return obj;
         }
         public int Count {
             get {
-                return _itemList.Count;
+                return _childList.Count;
             }
         }
         public T this[int index] {
             get {
-                return _itemList[index];
+                return _childList[index];
             }
             set {
-                _itemList[index] = SetParentTo(value);
+                _childList[index] = SetParentTo(value);
             }
         }
         public void Add(T item) {
-            _itemList.Add(SetParentTo(item));
+            _childList.Add(SetParentTo(item));
         }
         public void AddRange(IEnumerable<T> items) {
             if (items != null) {
@@ -2634,28 +2772,28 @@ namespace XData {
             }
         }
         public void Insert(int index, T item) {
-            _itemList.Insert(index, SetParentTo(item));
+            _childList.Insert(index, SetParentTo(item));
         }
         public bool Remove(T item) {
-            return _itemList.Remove(item);
+            return _childList.Remove(item);
         }
         public void RemoveAt(int index) {
-            _itemList.RemoveAt(index);
+            _childList.RemoveAt(index);
         }
         public void Clear() {
-            _itemList.Clear();
+            _childList.Clear();
         }
         public int IndexOf(T item) {
-            return _itemList.IndexOf(item);
+            return _childList.IndexOf(item);
         }
         public bool Contains(T item) {
-            return _itemList.Contains(item);
+            return _childList.Contains(item);
         }
         public void CopyTo(T[] array, int arrayIndex) {
-            _itemList.CopyTo(array, arrayIndex);
+            _childList.CopyTo(array, arrayIndex);
         }
         public List<T>.Enumerator GetEnumerator() {
-            return _itemList.GetEnumerator();
+            return _childList.GetEnumerator();
         }
         IEnumerator<T> IEnumerable<T>.GetEnumerator() {
             return GetEnumerator();
