@@ -237,7 +237,8 @@ namespace XData {
         }
         new public static readonly SimpleTypeInfo ThisInfo = new SimpleTypeInfo(typeof(XSimpleType), TypeKind.SimpleType.ToFullName(), TypeKind.SimpleType, XType.ThisInfo, typeof(object), null);
         //
-        internal static bool TryCreate(Context context, SimpleTypeInfo simpleTypeInfo, ProgramInfo programInfo, bool isNullable, SimpleValueNode simpleValueNode, out XSimpleType result) {
+        internal static bool TryCreate(Context context, SimpleTypeInfo simpleTypeInfo, ProgramInfo programInfo,
+            SimpleValueNode simpleValueNode, out XSimpleType result) {
             result = null;
             var effSimpleTypeInfo = (SimpleTypeInfo)GetTypeInfo(context, programInfo, simpleValueNode.TypeQName, simpleTypeInfo, simpleValueNode.TextSpan);
             if (effSimpleTypeInfo == null) {
@@ -1836,13 +1837,13 @@ namespace XData {
                 return obj;
             }
             var complexTypeInfo = ComplexTypeInfo;
-            if (complexTypeInfo.AttributeSet == null) {
+            if (complexTypeInfo.Attributes == null) {
                 if (@try) {
                     return null;
                 }
                 throw new InvalidOperationException("Attribute set not allowed.");
             }
-            obj = (T)complexTypeInfo.AttributeSet.CreateInstance();
+            obj = (T)complexTypeInfo.Attributes.CreateInstance();
             Attributes = obj;
             return obj;
         }
@@ -1873,13 +1874,13 @@ namespace XData {
                 return obj;
             }
             var complexTypeInfo = ComplexTypeInfo;
-            if (complexTypeInfo.Child == null) {
+            if (complexTypeInfo.Children == null) {
                 if (@try) {
                     return null;
                 }
                 throw new InvalidOperationException("Child not allowed.");
             }
-            obj = (T)complexTypeInfo.Child.CreateInstance();
+            obj = (T)complexTypeInfo.Children.CreateInstance();
             Children = obj;
             return obj;
         }
@@ -1893,27 +1894,65 @@ namespace XData {
         internal static bool TryCreate(Context context, ComplexTypeInfo complexTypeInfo, ProgramInfo programInfo, bool isNullable,
             ComplexValueNode complexValueNode, out XComplexType result) {
             result = null;
-            var effComplexTypeInfo = (ComplexTypeInfo)GetTypeInfo(context, programInfo, complexValueNode.TypeQName, complexTypeInfo, complexValueNode.TextSpan);
+            var equalsTokenTextSpan = complexValueNode.EqualsTokenTextSpan;
+            var effComplexTypeInfo = (ComplexTypeInfo)GetTypeInfo(context, programInfo, complexValueNode.TypeQName, complexTypeInfo, equalsTokenTextSpan);
             if (effComplexTypeInfo == null) {
                 return false;
             }
+            //
             XAttributeSet attributeSet = null;
             var attributeListNode = complexValueNode.AttributeList;
-            var attributeSetInfo = effComplexTypeInfo.AttributeSet;
+            var attributeSetInfo = effComplexTypeInfo.Attributes;
             if (attributeSetInfo != null) {
-                if (!XAttributeSet.TryCreate(context, attributeSetInfo, programInfo, isNullable, attributeListNode, out attributeSet)) {
+                if (!XAttributeSet.TryCreate(context, attributeSetInfo, programInfo,
+                    equalsTokenTextSpan, attributeListNode, out attributeSet)) {
                     return false;
                 }
             }
             else {
                 if (attributeListNode.HasItem) {
-                    context.AddErrorDiagnostic(DiagnosticCode.TypeDoesNotAllowAttributes, "Type '{0}' does not allow attributes.".InvFormat(effComplexTypeInfo.FullName.ToString()),
+                    context.AddErrorDiagnostic(DiagnosticCode.TypeProhibitsAttributes,
+                        "Type '{0}' prohibits attributes.".InvFormat(effComplexTypeInfo.FullName.ToString()),
                         attributeListNode.OpenTokenTextSpan);
                     return false;
                 }
             }
-
-
+            //
+            XObject children = null;
+            var simpleTypeInfo = effComplexTypeInfo.Children as SimpleTypeInfo;
+            var simpleValueNode = complexValueNode.SimpleValue;
+            if (simpleTypeInfo != null) {
+                if (!simpleValueNode.IsValid) {
+                    context.AddErrorDiagnostic(DiagnosticCode.TypeRequiresSimpleTypeChild,
+                        "Type '{0}' requires simple type child.".InvFormat(effComplexTypeInfo.FullName.ToString()),
+                        complexValueNode.OpenElementTextSpan);
+                    return false;
+                }
+                XSimpleType simpleType;
+                if (!XSimpleType.TryCreate(context, simpleTypeInfo, programInfo,
+                    simpleValueNode, out simpleType)) {
+                    return false;
+                }
+                children = simpleType;
+            }
+            else {
+                var childSetInfo = effComplexTypeInfo.Children as ChildSetInfo;
+                if (simpleValueNode.IsValid) {
+                    context.AddErrorDiagnostic(DiagnosticCode.TypeRequiresElementChildren,
+                        "Type '{0}' requires elemment children.".InvFormat(effComplexTypeInfo.FullName.ToString()),
+                        simpleValueNode.TextSpan);
+                    return false;
+                }
+                XChildSet childSet;
+                if (!XChildSet.TryCreate(context, childSetInfo, programInfo,
+                    complexValueNode.CloseElementTextSpan, complexValueNode.ElementList, out childSet)) {
+                    return false;
+                }
+                children = childSet;
+            }
+            result = (XComplexType)effComplexTypeInfo.CreateInstance();
+            result.Attributes = attributeSet;
+            result.Children = children;
             return true;
         }
     }
@@ -2176,8 +2215,8 @@ namespace XData {
             return (T)attributeInfo.CreateInstance(@try);
         }
         //
-        internal static bool TryCreate(Context context, AttributeSetInfo attributeSetInfo, ProgramInfo programInfo, bool isNullable,
-            ListOrSingleNode<AttributeNode> attributeListNode, out XAttributeSet result) {
+        internal static bool TryCreate(Context context, AttributeSetInfo attributeSetInfo, ProgramInfo programInfo,
+            TextSpan equalsTokenTextSpan, ListOrSingleNode<AttributeNode> attributeListNode, out XAttributeSet result) {
             result = null;
 
             return true;
@@ -2318,7 +2357,8 @@ namespace XData {
             var elementNameTextSpan = elementNode.QName.TextSpan;
             var effectiveElementInfo = globalElementInfo ?? elementInfo;
             if (effectiveElementInfo.IsAbstract) {
-                context.AddErrorDiagnostic(DiagnosticCode.ElementIsAbstract, "Element '{0}' is abstract.".InvFormat(fullName.ToString()),
+                context.AddErrorDiagnostic(DiagnosticCode.ElementIsAbstract,
+                    "Element '{0}' is abstract.".InvFormat(fullName.ToString()),
                     elementNameTextSpan);
                 return ChildCreationResult.Fault;
             }
@@ -2330,12 +2370,14 @@ namespace XData {
                 if (complexTypeInfo != null) {
                     var complexValueNode = elementValueNode.ComplexValue;
                     if (!complexValueNode.IsValid) {
-                        context.AddErrorDiagnostic(DiagnosticCode.ElementRequiresComplexValue, "Element '{0}' requires complex value.".InvFormat(fullName.ToString()),
+                        context.AddErrorDiagnostic(DiagnosticCode.ElementRequiresComplexTypeValue,
+                            "Element '{0}' requires complex type value.".InvFormat(fullName.ToString()),
                             elementNameTextSpan);
                         return ChildCreationResult.Fault;
                     }
                     XComplexType complexType;
-                    if (!XComplexType.TryCreate(context, complexTypeInfo, elementInfo.Program, isNullable, complexValueNode, out complexType)) {
+                    if (!XComplexType.TryCreate(context, complexTypeInfo, elementInfo.Program, isNullable,
+                        complexValueNode, out complexType)) {
                         return ChildCreationResult.Fault;
                     }
                     type = complexType;
@@ -2344,12 +2386,14 @@ namespace XData {
                     var simpleTypeInfo = effectiveElementInfo.Type as SimpleTypeInfo;
                     var simpleValueNode = elementValueNode.SimpleValue;
                     if (!simpleValueNode.IsValid) {
-                        context.AddErrorDiagnostic(DiagnosticCode.ElementRequiresSimpleValue, "Element '{0}' requires simple value.".InvFormat(fullName.ToString()),
+                        context.AddErrorDiagnostic(DiagnosticCode.ElementRequiresSimpleTypeValue,
+                            "Element '{0}' requires simple type value.".InvFormat(fullName.ToString()),
                             elementNameTextSpan);
                         return ChildCreationResult.Fault;
                     }
                     XSimpleType simpleType;
-                    if (!XSimpleType.TryCreate(context, simpleTypeInfo, elementInfo.Program, isNullable, simpleValueNode, out simpleType)) {
+                    if (!XSimpleType.TryCreate(context, simpleTypeInfo, elementInfo.Program,
+                        simpleValueNode, out simpleType)) {
                         return ChildCreationResult.Fault;
                     }
                     type = simpleType;
@@ -2357,7 +2401,8 @@ namespace XData {
             }
             else {
                 if (!isNullable) {
-                    context.AddErrorDiagnostic(DiagnosticCode.ElementIsNotNullable, "Element '{0}' is not nullable.".InvFormat(fullName.ToString()),
+                    context.AddErrorDiagnostic(DiagnosticCode.ElementIsNotNullable,
+                        "Element '{0}' is not nullable.".InvFormat(fullName.ToString()),
                         elementNameTextSpan);
                     return ChildCreationResult.Fault;
                 }
@@ -2522,6 +2567,28 @@ namespace XData {
             get {
                 return (ChildSetInfo)ObjectInfo;
             }
+        }
+        //
+        internal static bool TryCreate(Context context, ChildSetInfo childSetInfo, ProgramInfo programInfo,
+            TextSpan closeElementTextSpan, ListNode<ElementNode> elementListNode, out XChildSet result) {
+            result = null;
+
+
+
+            return true;
+        }
+        private struct CreationContext {
+            internal CreationContext(TextSpan closeElementTextSpan, List<ElementNode> list) {
+                CloseElementTextSpan = closeElementTextSpan;
+                List = list;
+                Count = list.Count;
+                Index = 0;
+            }
+            internal readonly TextSpan CloseElementTextSpan;
+            internal readonly List<ElementNode> List;
+            internal readonly int Count;
+            internal int Index;
+
         }
 
     }

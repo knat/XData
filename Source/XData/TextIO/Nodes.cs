@@ -85,6 +85,12 @@ namespace XData.TextIO {
         public readonly List<T> List;
         public readonly TextSpan OpenTokenTextSpan;
         public readonly TextSpan CloseTokenTextSpan;
+        private static readonly List<T> _emptyList = new List<T>();
+        public List<T> EffectiveList {
+            get {
+                return List ?? _emptyList;
+            }
+        }
         public bool IsValid {
             get {
                 return List != null;
@@ -210,11 +216,11 @@ namespace XData.TextIO {
         public readonly NameNode Alias;
         public readonly AtomicValueNode Uri;
         public readonly bool IsDefault;
-        public bool HasAlias {
-            get {
-                return Alias.IsValid;
-            }
-        }
+        //public bool HasAlias {
+        //    get {
+        //        return Alias.IsValid;
+        //    }
+        //}
         public bool IsValid {
             get {
                 return Uri.IsValid;
@@ -228,11 +234,11 @@ namespace XData.TextIO {
         }
         public readonly QualifiableNameNode QName;
         public readonly SimpleValueNode Value;
-        public bool HasValue {
-            get {
-                return Value.IsValid;
-            }
-        }
+        //public bool HasValue {
+        //    get {
+        //        return Value.IsValid;
+        //    }
+        //}
         public bool IsValid {
             get {
                 return QName.IsValid;
@@ -258,36 +264,48 @@ namespace XData.TextIO {
         }
     }
     public struct ComplexValueNode {
-        public ComplexValueNode(QualifiableNameNode typeQName,
+        public ComplexValueNode(TextSpan equalsTokenTextSpan, QualifiableNameNode typeQName,
             ListOrSingleNode<AttributeNode> attributeList,
-            List<ElementNode> elementList, SimpleValueNode simpleValue, TextSpan childrenTextSpan) {
+            SimpleValueNode simpleValue, ListNode<ElementNode> elementList,
+            TextSpan semicolonTokenTextSpan) {
+            EqualsTokenTextSpan = equalsTokenTextSpan;
             TypeQName = typeQName;
             AttributeList = attributeList;
-            ElementList = elementList;
             SimpleValue = simpleValue;
-            ChildrenTextSpan = childrenTextSpan;
+            ElementList = elementList;
+            SemicolonTokenTextSpan = semicolonTokenTextSpan;
         }
+        public readonly TextSpan EqualsTokenTextSpan;
         public readonly QualifiableNameNode TypeQName;
         public readonly ListOrSingleNode<AttributeNode> AttributeList;
-        public readonly List<ElementNode> ElementList;
         public readonly SimpleValueNode SimpleValue;
-        public readonly TextSpan ChildrenTextSpan;
-        public bool HasTypeQName {
-            get {
-                return TypeQName.IsValid;
-            }
-        }
+        public readonly ListNode<ElementNode> ElementList;
+        public readonly TextSpan SemicolonTokenTextSpan;
         public bool IsValid {
             get {
-                return AttributeList.IsValid || ElementList != null || SimpleValue.IsValid;
+                return AttributeList.IsValid || ElementList.IsValid || SimpleValue.IsValid || SemicolonTokenTextSpan.IsValid;
             }
         }
-        public TextSpan TextSpan {
+        public TextSpan OpenElementTextSpan {
             get {
-                if (AttributeList.IsValid) {
-                    return AttributeList.OpenTokenTextSpan;
+                if (ElementList.IsValid) {
+                    return ElementList.OpenTokenTextSpan;
                 }
-                return ChildrenTextSpan;
+                if (AttributeList.IsValid) {
+                    return AttributeList.CloseTokenTextSpan;
+                }
+                return SemicolonTokenTextSpan;
+            }
+        }
+        public TextSpan CloseElementTextSpan {
+            get {
+                if (ElementList.IsValid) {
+                    return ElementList.CloseTokenTextSpan;
+                }
+                if (AttributeList.IsValid) {
+                    return AttributeList.CloseTokenTextSpan;
+                }
+                return SemicolonTokenTextSpan;
             }
         }
     }
@@ -298,11 +316,11 @@ namespace XData.TextIO {
         }
         public readonly QualifiableNameNode QName;
         public readonly ElementValueNode Value;
-        public bool HasValue {
-            get {
-                return Value.IsValid;
-            }
-        }
+        //public bool HasValue {
+        //    get {
+        //        return Value.IsValid;
+        //    }
+        //}
         public bool IsValid {
             get {
                 return QName.IsValid;

@@ -43,8 +43,8 @@
     <Compile Include="Diagnostics.cs" />
     <Compile Include="Metadata.cs" />
     <Compile Include="Metah.X.cs" />
-    <Compile Include="Object.cs" />
-    <Compile Include="TextIO\Common.cs" />
+    <Compile Include="Objects.cs" />
+    <Compile Include="TextIO\TextSpan.cs" />
     <Compile Include="TextIO\Lexer.cs" />
     <Compile Include="TextIO\Nodes.cs" />
     <Compile Include="TextIO\Parser.cs" />

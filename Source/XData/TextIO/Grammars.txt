@@ -77,9 +77,6 @@ element
 element:
 qualifiable-name uri-aliasing-list? ('=' element-value)?
 ;
-element-value:
-complex-value | simple-value
-;
 qualifiable-name:
 (name ':')? name
 ;
@@ -90,8 +87,11 @@ uri-aliasing:
 name '=' string-value
 | name? '==' string-value
 ;
+element-value:
+complex-value | simple-value
+;
 complex-value:
-type-indicator? (attributes children? | children)
+type-indicator? (attributes children? | children | ';')
 ;
 type-indicator:
 '(' qualifiable-name ')'
@@ -100,7 +100,10 @@ attributes:
 '[' attribute* ']'
 ;
 attribute:
-qualifiable-name ('=' simple-value)?
+qualifiable-name ('=' attribute-value)?
+;
+attribute-value:
+simple-value
 ;
 children:
 '{' element* | simple-value '}'

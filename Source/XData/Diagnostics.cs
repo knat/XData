@@ -19,12 +19,14 @@ namespace XData {
         //InvalidUriAlias,
         ElementIsAbstract,
         ElementIsNotNullable,
-        ElementRequiresComplexValue,
-        ElementRequiresSimpleValue,
+        ElementRequiresComplexTypeValue,
+        ElementRequiresSimpleTypeValue,
         InvalidTypeName,
         TypeDoesNotEqualToOrDeriveFrom,
         TypeIsAbstract,
-        TypeDoesNotAllowAttributes,
+        TypeProhibitsAttributes,
+        TypeRequiresSimpleTypeChild,
+        TypeRequiresElementChildren,
 
         DuplicateAttributeFullName,
 

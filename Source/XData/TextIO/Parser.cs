@@ -301,29 +301,6 @@ namespace XData.TextIO {
             element = default(ElementNode);
             return false;
         }
-        private bool Element(out ElementNode element) {
-            QualifiableNameNode qName;
-            _getFullName = false;
-            var hasQName = QualifiableName(out qName);
-            _getFullName = true;
-            if (hasQName) {
-                var hasUriAliasingList = UriAliasingList();
-                GetFullName(ref qName);
-                var elementValue = default(ElementValueNode);
-                if (Token('=')) {
-                    if (!ElementValue(out elementValue)) {
-                        ErrorDiagnosticAndThrow("Element value expected.");
-                    }
-                }
-                if (hasUriAliasingList) {
-                    _uriAliasingListStack.Pop();
-                }
-                element = new ElementNode(qName, elementValue);
-                return true;
-            }
-            element = default(ElementNode);
-            return false;
-        }
         private bool UriAliasingList() {
             if (Token('<')) {
                 var hasSingle = false;
@@ -431,12 +408,36 @@ namespace XData.TextIO {
             }
             return null;
         }
-        private bool ElementValue(out ElementValueNode elementValue) {
+        private bool Element(out ElementNode element) {
+            QualifiableNameNode qName;
+            _getFullName = false;
+            var hasQName = QualifiableName(out qName);
+            _getFullName = true;
+            if (hasQName) {
+                var hasUriAliasingList = UriAliasingList();
+                GetFullName(ref qName);
+                var elementValue = default(ElementValueNode);
+                TextSpan equalsTokenTextSpan;
+                if (Token('=', out equalsTokenTextSpan)) {
+                    if (!ElementValue(equalsTokenTextSpan, out elementValue)) {
+                        ErrorDiagnosticAndThrow("Element value expected.");
+                    }
+                }
+                if (hasUriAliasingList) {
+                    _uriAliasingListStack.Pop();
+                }
+                element = new ElementNode(qName, elementValue);
+                return true;
+            }
+            element = default(ElementNode);
+            return false;
+        }
+        private bool ElementValue(TextSpan equalsTokenTextSpan, out ElementValueNode elementValue) {
             QualifiableNameNode typeQName;
             var hasTypeQName = TypeIndicator(out typeQName);
             ComplexValueNode complexValue;
             var simpleValue = default(SimpleValueNode);
-            var hasComplexValue = ComplexValue(typeQName, out complexValue);
+            var hasComplexValue = ComplexValue(equalsTokenTextSpan, typeQName, out complexValue);
             var hasSimpleValue = false;
             if (!hasComplexValue) {
                 hasSimpleValue = SimpleValue(typeQName, out simpleValue);
@@ -453,35 +454,45 @@ namespace XData.TextIO {
                 return false;
             }
         }
-        private bool ComplexValue(QualifiableNameNode typeQName, out ComplexValueNode complexValue) {
+        private bool ComplexValue(TextSpan equalsTokenTextSpan, QualifiableNameNode typeQName, out ComplexValueNode complexValue) {
             ListOrSingleNode<AttributeNode> attributeList;
             var hasAttributeList = ListOrSingle('[', ']', _attributeGetter, "Attribute or ] expected.", out attributeList);
-            List<ElementNode> elementList = null;
+            List<ElementNode> list = null;
             var simpleValue = default(SimpleValueNode);
-            TextSpan childrenTextSpan;
-            if (Token('{', out childrenTextSpan)) {
+            TextSpan openTokenTextSpan, closeTokenTextSpan = default(TextSpan);
+            if (Token('{', out openTokenTextSpan)) {
                 if (SimpleValue(out simpleValue)) {
                     TokenExpected('}');
                 }
                 else {
-                    elementList = new List<ElementNode>();
+                    list = new List<ElementNode>();
                     while (true) {
                         ElementNode element;
                         if (Element(out element)) {
-                            elementList.Add(element);
+                            list.Add(element);
                         }
-                        else if (Token('}')) {
+                        else if (Token('}', out closeTokenTextSpan)) {
                             break;
                         }
                         else {
-                            ErrorDiagnosticAndThrow("Element, simple value or } expected.");
+                            ErrorDiagnosticAndThrow(list.Count > 0 ? "Element or } expected." :
+                                "Element, simple value or } expected.");
                         }
                     }
                 }
             }
-            if (hasAttributeList || elementList != null || simpleValue.IsValid) {
-                complexValue = new ComplexValueNode(typeQName, attributeList, elementList, simpleValue, childrenTextSpan);
+            if (hasAttributeList || list != null || simpleValue.IsValid) {
+                complexValue = new ComplexValueNode(equalsTokenTextSpan, typeQName, attributeList, simpleValue,
+                    new ListNode<ElementNode>(list, openTokenTextSpan, closeTokenTextSpan), default(TextSpan));
                 return true;
+            }
+            else {
+                TextSpan semicolonTokenTextSpan;
+                if (Token(';', out semicolonTokenTextSpan)) {
+                    complexValue = new ComplexValueNode(equalsTokenTextSpan, typeQName, default(ListOrSingleNode<AttributeNode>),
+                        default(SimpleValueNode), default(ListNode<ElementNode>), semicolonTokenTextSpan);
+                    return true;
+                }
             }
             complexValue = default(ComplexValueNode);
             return false;

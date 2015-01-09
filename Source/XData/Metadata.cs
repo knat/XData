@@ -81,7 +81,7 @@ namespace XData {
                 if (@try) {
                     return null;
                 }
-                throw new InvalidOperationException("Clr type '{0}' is abstract.".InvFormat(ClrType.FullName));
+                throw new InvalidOperationException("Object '{0}' is abstract.".InvFormat(ClrType.FullName));
             }
             return (XObject)Extensions.CreateInstance(ClrType);
         }
@@ -307,15 +307,15 @@ namespace XData {
     [Serializable]
     public sealed class ComplexTypeInfo : TypeInfo {
         public ComplexTypeInfo(Type clrType, FullName fullName, TypeInfo baseType,
-            AttributeSetInfo attributeSet, ObjectInfo child)
+            AttributeSetInfo attributes, ObjectInfo children)
             : base(clrType, fullName, TypeKind.ComplexType, baseType) {
-            AttributeSet = attributeSet;
-            Child = child;
+            Attributes = attributes;
+            Children = children;
         }
-        public readonly AttributeSetInfo AttributeSet;//opt
-        public readonly ObjectInfo Child;//opt, ChildSetInfo or SimpleTypeInfo
-        public ChildSetInfo AsChildSet { get { return Child as ChildSetInfo; } }
-        public SimpleTypeInfo AsSimpleType { get { return Child as SimpleTypeInfo; } }
+        public readonly AttributeSetInfo Attributes;//opt
+        public readonly ObjectInfo Children;//opt, ChildSetInfo or SimpleTypeInfo
+        //public ChildSetInfo AsChildSet { get { return Children as ChildSetInfo; } }
+        //public SimpleTypeInfo AsSimpleType { get { return Children as SimpleTypeInfo; } }
     }
 
     [Serializable]

@@ -30,7 +30,7 @@ namespace XData {
         }
         public bool Equals(FullName other) {
             if (IsUnqualified) {
-                return Name == other.Name;
+                return other.IsUnqualified && Name == other.Name;
             }
             return Uri == other.Uri && Name == other.Name;
         }
@@ -38,10 +38,11 @@ namespace XData {
             return obj is FullName && Equals((FullName)obj);
         }
         public override int GetHashCode() {
+            var nameHash = Name != null ? Name.GetHashCode() : 0;
             if (IsUnqualified) {
-                return Name != null ? Name.GetHashCode() : 0;
+                return nameHash;
             }
-            return Extensions.CombineHash(Uri.GetHashCode(), Name != null ? Name.GetHashCode() : 0);
+            return Extensions.CombineHash(Uri.GetHashCode(), nameHash);
         }
         public static bool operator ==(FullName left, FullName right) {
             return left.Equals(right);
