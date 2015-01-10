@@ -2298,7 +2298,7 @@ namespace XData {
         }
         //
         internal static bool TryCreate(Context context, ProgramInfo programInfo, AttributeSetInfo attributeSetInfo,
-            TextSpan equalsTokenTextSpan, ListNode<AttributeNode> attributeListNode, out XAttributeSet result) {
+            TextSpan equalsTokenTextSpan, DelimitedListNode<AttributeNode> attributeListNode, out XAttributeSet result) {
             result = null;
 
             return true;
@@ -2658,7 +2658,7 @@ namespace XData {
         }
         //
         internal static bool TryCreate(Context context, ProgramInfo programInfo, ChildSetInfo childSetInfo,
-            TextSpan closeElementTextSpan, ListNode<ElementNode> elementListNode, out XChildSet result) {
+            TextSpan closeElementTextSpan, DelimitedListNode<ElementNode> elementListNode, out XChildSet result) {
             result = null;
             new CreationContext(context, programInfo, closeElementTextSpan, elementListNode);
 

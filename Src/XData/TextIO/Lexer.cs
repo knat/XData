@@ -475,7 +475,8 @@ namespace XData.TextIO {
                 case 'r': _stringBuilder.Append('\r'); break;
                 case 't': _stringBuilder.Append('\t'); break;
                 case 'v': _stringBuilder.Append('\v'); break;
-                case 'u': {
+                case 'u':
+                    {
                         AdvanceChar();
                         int value = 0;
                         for (var i = 0; i < 4; ++i) {

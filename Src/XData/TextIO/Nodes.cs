@@ -4,10 +4,10 @@ using System.Collections.Generic;
 namespace XData.TextIO {
 
     public delegate bool ItemNodeGetter<T>(out T node);
-    public delegate bool ItemNodeGetterEx<T>(ListNode<T> list, out T node);
+    public delegate bool ItemNodeGetterEx<T>(List<T> list, out T node);
 
-    public sealed class ListNode<T> : List<T> {
-        public ListNode(TextSpan openTokenTextSpan) {
+    public sealed class DelimitedListNode<T> : List<T> {
+        public DelimitedListNode(TextSpan openTokenTextSpan) {
             OpenTokenTextSpan = openTokenTextSpan;
         }
         public readonly TextSpan OpenTokenTextSpan;
@@ -194,14 +194,14 @@ namespace XData.TextIO {
         }
     }
     public struct SimpleValueNode {
-        public SimpleValueNode(QualifiableNameNode typeQName, AtomicValueNode atom, ListNode<SimpleValueNode> list) {
+        public SimpleValueNode(QualifiableNameNode typeQName, AtomicValueNode atom, DelimitedListNode<SimpleValueNode> list) {
             TypeQName = typeQName;
             Atom = atom;
             List = list;
         }
         public readonly QualifiableNameNode TypeQName;
         public readonly AtomicValueNode Atom;
-        public readonly ListNode<SimpleValueNode> List;
+        public readonly DelimitedListNode<SimpleValueNode> List;
         public bool IsValid {
             get {
                 return Atom.IsValid || List != null;
@@ -274,7 +274,7 @@ namespace XData.TextIO {
     }
     public struct ComplexValueNode {
         public ComplexValueNode(TextSpan equalsTokenTextSpan, QualifiableNameNode typeQName,
-            ListNode<AttributeNode> attributeList, ListNode<ElementNode> elementList,
+            DelimitedListNode<AttributeNode> attributeList, DelimitedListNode<ElementNode> elementList,
             SimpleValueNode simpleValue, TextSpan semicolonTokenTextSpan) {
             EqualsTokenTextSpan = equalsTokenTextSpan;
             TypeQName = typeQName;
@@ -285,8 +285,8 @@ namespace XData.TextIO {
         }
         public readonly TextSpan EqualsTokenTextSpan;
         public readonly QualifiableNameNode TypeQName;
-        public readonly ListNode<AttributeNode> AttributeList;
-        public readonly ListNode<ElementNode> ElementList;
+        public readonly DelimitedListNode<AttributeNode> AttributeList;
+        public readonly DelimitedListNode<ElementNode> ElementList;
         public readonly SimpleValueNode SimpleValue;
         public readonly TextSpan SemicolonTokenTextSpan;
         public bool IsValid {
