@@ -128,7 +128,6 @@ namespace XData {
         public readonly FullName FullName;
     }
 
-
     public enum TypeKind : byte {
         None = 0,
         Type,//not allowed for use
@@ -342,14 +341,21 @@ namespace XData {
     }
     [Serializable]
     public abstract class EntityInfo : NamedObjectInfo {
-        public EntityInfo(Type clrType, FullName fullName, TypeInfo type,
+        public EntityInfo(Type clrType, FullName fullName, string displayName, TypeInfo type,
             EntityDeclarationKind declarationKind, EntityInfo referentialEntity,
             bool isNullable)
             : base(clrType, fullName) {
+            _displayName = displayName;
             Type = type;
             DeclarationKind = declarationKind;
             IsNullable = isNullable;
             ReferentialEntity = referentialEntity;
+        }
+        private readonly string _displayName;
+        public string DisplayName {
+            get {
+                return _displayName;
+            }
         }
         public readonly TypeInfo Type;
         public readonly EntityDeclarationKind DeclarationKind;
@@ -373,11 +379,10 @@ namespace XData {
     }
     [Serializable]
     public sealed class AttributeInfo : EntityInfo {
-        public AttributeInfo(Type clrType, FullName fullName, SimpleTypeInfo type,
+        public AttributeInfo(Type clrType, FullName fullName, string displayName, SimpleTypeInfo type,
             EntityDeclarationKind declarationKind, AttributeInfo referentialAttribute,
             bool isNullable)
-            : base(clrType, fullName, type, declarationKind, referentialAttribute, isNullable) {
-
+            : base(clrType, fullName, displayName, type, declarationKind, referentialAttribute, isNullable) {
         }
         new public SimpleTypeInfo Type {
             get {
@@ -394,18 +399,19 @@ namespace XData {
 
     }
     public interface IChildInfo {
+        string DisplayName { get; }
         int Order { get; }
         bool IsEffectiveOptional { get; }
     }
 
     [Serializable]
     public sealed class ElementInfo : EntityInfo, IChildInfo {
-        public ElementInfo(Type clrType, FullName fullName, TypeInfo type,
+        public ElementInfo(Type clrType, FullName fullName, string displayName, TypeInfo type,
             EntityDeclarationKind declarationKind, ElementInfo referentialElement, bool isNullable,
             int order, bool isEffectiveOptional,
             ElementInfo substitutedElement, FullName[] directSubstitutingElementFullNames,
             ProgramInfo program)
-            : base(clrType, fullName, type, declarationKind, referentialElement, isNullable) {
+            : base(clrType, fullName, displayName, type, declarationKind, referentialElement, isNullable) {
             _order = order;
             _isEffectiveOptional = isEffectiveOptional;
             SubstitutedElement = substitutedElement;
@@ -480,22 +486,20 @@ namespace XData {
         }
 
     }
-    public enum ChildSetKind : byte {
-        None = 0,
-        Sequence,
-        Choice
-    }
     [Serializable]
-    public sealed class ChildSetInfo : ObjectInfo, IChildInfo {
-        public ChildSetInfo(Type clrType, ChildSetKind kind, int order, bool isEffectiveOptional,
-            IChildInfo[] members)
+    public abstract class ChildContainerInfo : ObjectInfo, IChildInfo {
+        protected ChildContainerInfo(Type clrType, string displayName, int order, bool isEffectiveOptional)
             : base(clrType) {
-            Kind = kind;
+            _displayName = displayName;
             _order = order;
             _isEffectiveOptional = isEffectiveOptional;
-            Members = members;
         }
-        public readonly ChildSetKind Kind;
+        private readonly string _displayName;
+        public string DisplayName {
+            get {
+                return _displayName;
+            }
+        }
         private readonly int _order;
         public int Order {
             get {
@@ -508,6 +512,21 @@ namespace XData {
                 return _isEffectiveOptional;
             }
         }
+    }
+    public enum ChildSetKind : byte {
+        None = 0,
+        Sequence,
+        Choice
+    }
+    [Serializable]
+    public sealed class ChildSetInfo : ChildContainerInfo {
+        public ChildSetInfo(Type clrType, string displayName, int order, bool isEffectiveOptional,
+            ChildSetKind kind, IChildInfo[] members)
+            : base(clrType, displayName, order, isEffectiveOptional) {
+            Kind = kind;
+            Members = members;
+        }
+        public readonly ChildSetKind Kind;
         public readonly IChildInfo[] Members;
         public IChildInfo TryGetMember(int order) {
             foreach (var member in Members) {
@@ -519,27 +538,13 @@ namespace XData {
         }
     }
     [Serializable]
-    public sealed class ChildListInfo : ObjectInfo, IChildInfo {
-        public ChildListInfo(Type clrType, int order, bool isEffectiveOptional,
+    public sealed class ChildListInfo : ChildContainerInfo {
+        public ChildListInfo(Type clrType, string displayName, int order, bool isEffectiveOptional,
             ulong minOccurs, ulong maxOccurs, IChildInfo item)
-            : base(clrType) {
-            _order = order;
-            _isEffectiveOptional = isEffectiveOptional;
+            : base(clrType, displayName, order, isEffectiveOptional) {
             MinOccurs = minOccurs;
             MaxOccurs = maxOccurs;
             Item = item;
-        }
-        private readonly int _order;
-        public int Order {
-            get {
-                return _order;
-            }
-        }
-        private readonly bool _isEffectiveOptional;
-        public bool IsEffectiveOptional {
-            get {
-                return _isEffectiveOptional;
-            }
         }
         public readonly ulong MinOccurs;
         public readonly ulong MaxOccurs;

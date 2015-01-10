@@ -89,6 +89,9 @@ namespace XData {
         public static string ToInvString(this int i) {
             return i.ToString(CultureInfo.InvariantCulture);
         }
+        public static string ToInvString(this ulong i) {
+            return i.ToString(CultureInfo.InvariantCulture);
+        }
 
 
         public static object CreateInstance(Type type) {

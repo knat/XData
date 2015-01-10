@@ -2347,54 +2347,53 @@ namespace XData {
         }
 
         //
-        internal static ChildCreationResult TrySkippableCreate(Context context, ElementInfo elementInfo, ElementNode elementNode, out XChild result) {
+        internal static CreationResult TrySkippableCreate(Context context, ElementInfo elementInfo, ElementNode elementNode, out XChild result) {
             result = null;
-            var fullName = elementNode.FullName;
             ElementInfo globalElementInfo;
-            if (!elementInfo.IsMatch(fullName, out globalElementInfo)) {
-                return ChildCreationResult.Skipped;
+            if (!elementInfo.IsMatch(elementNode.FullName, out globalElementInfo)) {
+                return CreationResult.Skipped;
             }
             var elementNameTextSpan = elementNode.QName.TextSpan;
-            var effectiveElementInfo = globalElementInfo ?? elementInfo;
-            if (effectiveElementInfo.IsAbstract) {
+            var effElementInfo = globalElementInfo ?? elementInfo;
+            if (effElementInfo.IsAbstract) {
                 context.AddErrorDiagnostic(DiagnosticCode.ElementIsAbstract,
-                    "Element '{0}' is abstract.".InvFormat(fullName.ToString()),
+                    "Element '{0}' is abstract.".InvFormat(effElementInfo.DisplayName),
                     elementNameTextSpan);
-                return ChildCreationResult.Fault;
+                return CreationResult.Error;
             }
             XType type = null;
             var elementValueNode = elementNode.Value;
             var isNullable = elementInfo.IsNullable;
             if (elementValueNode.IsValid) {
-                var complexTypeInfo = effectiveElementInfo.Type as ComplexTypeInfo;
+                var complexTypeInfo = effElementInfo.Type as ComplexTypeInfo;
                 if (complexTypeInfo != null) {
                     var complexValueNode = elementValueNode.ComplexValue;
                     if (!complexValueNode.IsValid) {
                         context.AddErrorDiagnostic(DiagnosticCode.ElementRequiresComplexTypeValue,
-                            "Element '{0}' requires complex type value.".InvFormat(fullName.ToString()),
+                            "Element '{0}' requires complex type value.".InvFormat(effElementInfo.DisplayName),
                             elementNameTextSpan);
-                        return ChildCreationResult.Fault;
+                        return CreationResult.Error;
                     }
                     XComplexType complexType;
                     if (!XComplexType.TryCreate(context, elementInfo.Program, complexTypeInfo, isNullable,
                         complexValueNode, out complexType)) {
-                        return ChildCreationResult.Fault;
+                        return CreationResult.Error;
                     }
                     type = complexType;
                 }
                 else {
-                    var simpleTypeInfo = effectiveElementInfo.Type as SimpleTypeInfo;
+                    var simpleTypeInfo = effElementInfo.Type as SimpleTypeInfo;
                     var simpleValueNode = elementValueNode.SimpleValue;
                     if (!simpleValueNode.IsValid) {
                         context.AddErrorDiagnostic(DiagnosticCode.ElementRequiresSimpleTypeValue,
-                            "Element '{0}' requires simple type value.".InvFormat(fullName.ToString()),
+                            "Element '{0}' requires simple type value.".InvFormat(effElementInfo.DisplayName),
                             elementNameTextSpan);
-                        return ChildCreationResult.Fault;
+                        return CreationResult.Error;
                     }
                     XSimpleType simpleType;
                     if (!XSimpleType.TryCreate(context, elementInfo.Program, simpleTypeInfo,
                         simpleValueNode, out simpleType)) {
-                        return ChildCreationResult.Fault;
+                        return CreationResult.Error;
                     }
                     type = simpleType;
                 }
@@ -2402,13 +2401,13 @@ namespace XData {
             else {
                 if (!isNullable) {
                     context.AddErrorDiagnostic(DiagnosticCode.ElementIsNotNullable,
-                        "Element '{0}' is not nullable.".InvFormat(fullName.ToString()),
+                        "Element '{0}' is not nullable.".InvFormat(effElementInfo.DisplayName),
                         elementNameTextSpan);
-                    return ChildCreationResult.Fault;
+                    return CreationResult.Error;
                 }
             }
             //
-            var effElement = (XElement)effectiveElementInfo.CreateInstance();
+            var effElement = (XElement)effElementInfo.CreateInstance();
             effElement.SetType(type);
             if (elementInfo.IsReference) {
                 var refElement = (XElement)elementInfo.CreateInstance();
@@ -2418,7 +2417,7 @@ namespace XData {
             else {
                 result = effElement;
             }
-            return ChildCreationResult.Success;
+            return CreationResult.OK;
         }
 
         private static bool TryLoadAndValidate<T>(Context context, ElementInfo elementInfo, ElementNode elementNode, out T result) where T : XElement {
@@ -2429,10 +2428,10 @@ namespace XData {
             return false;
         }
     }
-    internal enum ChildCreationResult : byte {
-        Fault,
+    internal enum CreationResult : byte {
+        Error,
         Skipped,
-        Success
+        OK
     }
     [Serializable]
     public abstract class XChildContainer : XChild {
@@ -2614,15 +2613,21 @@ namespace XData {
             private void ConsumeElementNode() {
                 ++_index;
             }
-            private ChildCreationResult Create(IChildInfo childInfo, out XChild result) {
+            private TextSpan GetTextSpan() {
+                if (_index < _count) {
+                    return _list[_index].QName.TextSpan;
+                }
+                return _closeElementTextSpan;
+            }
+            private CreationResult Create(IChildInfo childInfo, out XChild result) {
                 result = null;
                 if (IsEOF) {
-                    return ChildCreationResult.Skipped;
+                    return CreationResult.Skipped;
                 }
                 var elementInfo = childInfo as ElementInfo;
                 if (elementInfo != null) {
                     var res = XElement.TrySkippableCreate(_context, elementInfo, GetElementNode(), out result);
-                    if (res == ChildCreationResult.Success) {
+                    if (res == CreationResult.OK) {
                         ConsumeElementNode();
                     }
                     return res;
@@ -2635,52 +2640,53 @@ namespace XData {
                             foreach (var memberInfo in childSetInfo.Members) {
                                 XChild member;
                                 var res = Create(memberInfo, out member);
-                                if (res == ChildCreationResult.Success) {
+                                if (res == CreationResult.OK) {
                                     memberList.Add(member);
                                 }
-                                else if (res == ChildCreationResult.Skipped) {
+                                else if (res == CreationResult.Skipped) {
                                     if (!memberInfo.IsEffectiveOptional) {
                                         if (memberList.Count == 0) {
                                             return res;
                                         }
-                                        //_context.AddErrorDiagnostic()
-                                        return ChildCreationResult.Fault;
+                                        _context.AddErrorDiagnostic(DiagnosticCode.RequiredChildMemberIsNotMatched,
+                                            "Required child member '{0}' is not matched.".InvFormat(memberInfo.DisplayName), GetTextSpan());
+                                        return CreationResult.Error;
                                     }
                                 }
-                                else {//fault
+                                else {//error
                                     return res;
                                 }
                             }
                             if (memberList.Count == 0) {
-                                return ChildCreationResult.Skipped;
+                                return CreationResult.Skipped;
                             }
                             var container = (XChildContainer)((ObjectInfo)childInfo).CreateInstance();
                             foreach (var member in memberList) {
                                 container.DirectAdd(member);
                             }
                             result = container;
-                            return ChildCreationResult.Success;
+                            return CreationResult.OK;
                         }
                         else {//choice
                             XChild choice = null;
                             foreach (var memberInfo in childSetInfo.Members) {
                                 XChild member;
                                 var res = Create(memberInfo, out member);
-                                if (res == ChildCreationResult.Success) {
+                                if (res == CreationResult.OK) {
                                     choice = member;
                                     break;
                                 }
-                                else if (res == ChildCreationResult.Fault) {
+                                else if (res == CreationResult.Error) {
                                     return res;
                                 }
                             }
                             if (choice == null) {
-                                return ChildCreationResult.Skipped;
+                                return CreationResult.Skipped;
                             }
                             var container = (XChildContainer)((ObjectInfo)childInfo).CreateInstance();
                             container.DirectAdd(choice);
                             result = container;
-                            return ChildCreationResult.Success;
+                            return CreationResult.OK;
                         }
                     }
                     else {
@@ -2689,37 +2695,40 @@ namespace XData {
                         var itemCount = 0UL;
                         var maxOccurs = childListInfo.MaxOccurs;
                         var itemList = new List<XChild>();
-                        while (itemCount <= childListInfo.MaxOccurs) {
+                        while (itemCount <= maxOccurs) {
                             XChild item;
                             var res = Create(itemInfo, out item);
-                            if (res == ChildCreationResult.Success) {
+                            if (res == CreationResult.OK) {
                                 itemList.Add(item);
+                                ++itemCount;
                             }
-                            else if (res == ChildCreationResult.Skipped) {
+                            else if (res == CreationResult.Skipped) {
                                 if (itemCount == 0) {
                                     return res;
                                 }
                                 if (itemCount < childListInfo.MinOccurs) {
-                                    //_context.AddErrorDiagnostic()
-                                    return ChildCreationResult.Fault;
+                                    _context.AddErrorDiagnostic(DiagnosticCode.ChildListCountIsNotGreaterThanOrEqualToMinOccurs,
+                                        "Child list '{0}' count '{1}' is not greater than or equal to min occurs '{2}'.".InvFormat(
+                                        childListInfo.DisplayName, itemCount.ToInvString(), childListInfo.MinOccurs.ToInvString()), GetTextSpan());
+                                    return CreationResult.Error;
                                 }
                                 else {
                                     break;
                                 }
                             }
-                            else {//Fault
+                            else {//error
                                 return res;
                             }
                         }
                         if (itemList.Count == 0) {
-                            return ChildCreationResult.Skipped;
+                            return CreationResult.Skipped;
                         }
                         var container = (XChildContainer)((ObjectInfo)childInfo).CreateInstance();
                         foreach (var item in itemList) {
                             container.DirectAdd(item);
                         }
                         result = container;
-                        return ChildCreationResult.Success;
+                        return CreationResult.OK;
                     }
                 }
             }

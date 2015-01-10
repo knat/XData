@@ -27,9 +27,12 @@ namespace XData {
         TypeProhibitsAttributes,
         TypeRequiresSimpleTypeChild,
         TypeRequiresElementChildren,
-        RequiredChildMissing,
+        RequiredChildMemberIsNotMatched,
+        ChildListCountIsNotGreaterThanOrEqualToMinOccurs,
 
-        DuplicateAttributeFullName,
+
+
+        //DuplicateAttributeFullName,
 
         Max
     }
