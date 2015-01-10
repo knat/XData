@@ -7,7 +7,7 @@ namespace XData.TextIO {
         protected ParserBase() {
             _simpleValueGetter = SimpleValue;
         }
-        protected readonly TryGetter<SimpleValueNode> _simpleValueGetter;
+        protected readonly ItemNodeGetter<SimpleValueNode> _simpleValueGetter;
         protected void Set(string filePath, char[] data, Context context) {
             if (filePath == null) throw new ArgumentNullException("filePath");
             if (context == null) throw new ArgumentNullException("context");
@@ -182,7 +182,7 @@ namespace XData.TextIO {
         }
         protected bool SimpleValue(QualifiableNameNode typeQName, out SimpleValueNode simpleValue) {
             AtomicValueNode atom;
-            var list = default(ListNode<SimpleValueNode>);
+            ListNode<SimpleValueNode> list = null;
             var hasAtom = AtomicValue(out atom);
             var hasList = false;
             if (!hasAtom) {
@@ -214,17 +214,18 @@ namespace XData.TextIO {
             ErrorDiagnosticAndThrow("Simple value expected.");
             return value;
         }
-        protected bool List<T>(int startRawKind, int endRawKind, TryGetter<T> itemGetter, string errorMsg, out ListNode<T> listNode) {
+        protected bool List<T>(int startRawKind, int endRawKind, ItemNodeGetter<T> itemGetter, string errorMsg, out ListNode<T> result) {
             TextSpan openTokenTextSpan, closeTokenTextSpan;
             if (Token(startRawKind, out openTokenTextSpan)) {
-                var list = new List<T>();
+                var listNode = new ListNode<T>(openTokenTextSpan);
                 while (true) {
                     T item;
                     if (itemGetter(out item)) {
-                        list.Add(item);
+                        listNode.Add(item);
                     }
                     else if (Token(endRawKind, out closeTokenTextSpan)) {
-                        listNode = new ListNode<T>(list, openTokenTextSpan, closeTokenTextSpan);
+                        listNode.CloseTokenTextSpan = closeTokenTextSpan;
+                        result = listNode;
                         return true;
                     }
                     else {
@@ -232,32 +233,21 @@ namespace XData.TextIO {
                     }
                 }
             }
-            listNode = default(ListNode<T>);
+            result = null;
             return false;
         }
-        protected bool ListOrSingle<T>(int startRawKind, int endRawKind, TryGetter<T> itemGetter, string errorMsg, out ListOrSingleNode<T> listOrSingle) {
+        protected bool List<T>(int startRawKind, int endRawKind, ItemNodeGetterEx<T> itemGetterEx, string errorMsg, out ListNode<T> result) {
             TextSpan openTokenTextSpan, closeTokenTextSpan;
             if (Token(startRawKind, out openTokenTextSpan)) {
-                var hasSingle = false;
-                var single = default(T);
-                List<T> list = null;
+                var listNode = new ListNode<T>(openTokenTextSpan);
                 while (true) {
                     T item;
-                    if (itemGetter(out item)) {
-                        if (hasSingle) {
-                            if (list == null) {
-                                list = new List<T>();
-                                list.Add(single);
-                            }
-                            list.Add(item);
-                        }
-                        else {
-                            single = item;
-                            hasSingle = true;
-                        }
+                    if (itemGetterEx(listNode, out item)) {
+                        listNode.Add(item);
                     }
                     else if (Token(endRawKind, out closeTokenTextSpan)) {
-                        listOrSingle = new ListOrSingleNode<T>(list, single, hasSingle, openTokenTextSpan, closeTokenTextSpan);
+                        listNode.CloseTokenTextSpan = closeTokenTextSpan;
+                        result = listNode;
                         return true;
                     }
                     else {
@@ -265,26 +255,62 @@ namespace XData.TextIO {
                     }
                 }
             }
-            listOrSingle = default(ListOrSingleNode<T>);
+            result = null;
             return false;
         }
+
+        //protected bool ListOrSingle<T>(int startRawKind, int endRawKind, TryGetter<T> itemGetter, string errorMsg, out ListOrSingleNode<T> listOrSingle) {
+        //    TextSpan openTokenTextSpan, closeTokenTextSpan;
+        //    if (Token(startRawKind, out openTokenTextSpan)) {
+        //        var hasSingle = false;
+        //        var single = default(T);
+        //        List<T> list = null;
+        //        while (true) {
+        //            T item;
+        //            if (itemGetter(out item)) {
+        //                if (hasSingle) {
+        //                    if (list == null) {
+        //                        list = new List<T>();
+        //                        list.Add(single);
+        //                    }
+        //                    list.Add(item);
+        //                }
+        //                else {
+        //                    single = item;
+        //                    hasSingle = true;
+        //                }
+        //            }
+        //            else if (Token(endRawKind, out closeTokenTextSpan)) {
+        //                listOrSingle = new ListOrSingleNode<T>(list, single, hasSingle, openTokenTextSpan, closeTokenTextSpan);
+        //                return true;
+        //            }
+        //            else {
+        //                ErrorDiagnosticAndThrow(errorMsg);
+        //            }
+        //        }
+        //    }
+        //    listOrSingle = default(ListOrSingleNode<T>);
+        //    return false;
+        //}
 
     }
     public sealed class Parser : ParserBase {
         [ThreadStatic]
         private static Parser _instance;
         public static bool Parse(string filePath, char[] data, Context context, out ElementNode element) {
-            return (_instance ?? (_instance = new Parser())).CompilationUnit(filePath, data, context, out element);
+            return (_instance ?? (_instance = new Parser())).ParsingUnit(filePath, data, context, out element);
         }
         private Parser() {
+            _uriAliasingGetter = UriAliasing;
             _attributeGetter = Attribute;
-            _uriAliasingListStack = new Stack<ListOrSingleNode<UriAliasingNode>>();
+            _uriAliasingListStack = new Stack<ListNode<UriAliasingNode>>();
         }
-        private readonly TryGetter<AttributeNode> _attributeGetter;
-        private readonly Stack<ListOrSingleNode<UriAliasingNode>> _uriAliasingListStack;
+        private readonly ItemNodeGetterEx<UriAliasingNode> _uriAliasingGetter;
+        private readonly ItemNodeGetter<AttributeNode> _attributeGetter;
+        private readonly Stack<ListNode<UriAliasingNode>> _uriAliasingListStack;
         private bool _getFullName;
         private bool _resolveNullAlias;
-        private bool CompilationUnit(string filePath, char[] data, Context context, out ElementNode element) {
+        private bool ParsingUnit(string filePath, char[] data, Context context, out ElementNode element) {
             Set(filePath, data, context);
             _uriAliasingListStack.Clear();
             _resolveNullAlias = true;
@@ -301,49 +327,56 @@ namespace XData.TextIO {
             element = default(ElementNode);
             return false;
         }
+        //private bool UriAliasingList() {
+        //    if (Token('<')) {
+        //        var hasSingle = false;
+        //        var single = default(UriAliasingNode);
+        //        List<UriAliasingNode> list = null;
+        //        while (true) {
+        //            UriAliasingNode ua;
+        //            if (UriAliasing(out ua)) {
+        //                if (hasSingle) {
+        //                    if (list == null) {
+        //                        list = new List<UriAliasingNode>();
+        //                        list.Add(single);
+        //                    }
+        //                    foreach (var item in list) {
+        //                        if (item.IsDefault && ua.IsDefault) {
+        //                            ErrorDiagnosticAndThrow("Duplicate default uri.", ua.Uri.TextSpan);
+        //                        }
+        //                        else if (item.Alias == ua.Alias) {
+        //                            ErrorDiagnosticAndThrow("Duplicate uri alias '{0}'.".InvFormat(ua.Alias.ToString()), ua.Alias.TextSpan);
+        //                        }
+        //                    }
+        //                    list.Add(ua);
+        //                }
+        //                else {
+        //                    single = ua;
+        //                    hasSingle = true;
+        //                }
+        //            }
+        //            else if (Token('>')) {
+        //                if (list != null || hasSingle) {
+        //                    _uriAliasingListStack.Push(new ListOrSingleNode<UriAliasingNode>(list, single, hasSingle, default(TextSpan), default(TextSpan)));
+        //                    return true;
+        //                }
+        //                return false;
+        //            }
+        //            else {
+        //                ErrorDiagnosticAndThrow("Uri aliasing or > expected.");
+        //            }
+        //        }
+        //    }
+        //    return false;
+        //}
         private bool UriAliasingList() {
-            if (Token('<')) {
-                var hasSingle = false;
-                var single = default(UriAliasingNode);
-                List<UriAliasingNode> list = null;
-                while (true) {
-                    UriAliasingNode ua;
-                    if (UriAliasing(out ua)) {
-                        if (hasSingle) {
-                            if (list == null) {
-                                list = new List<UriAliasingNode>();
-                                list.Add(single);
-                            }
-                            foreach (var item in list) {
-                                if (item.IsDefault && ua.IsDefault) {
-                                    ErrorDiagnosticAndThrow("Duplicate default uri.", ua.Uri.TextSpan);
-                                }
-                                else if (item.Alias == ua.Alias) {
-                                    ErrorDiagnosticAndThrow("Duplicate uri alias '{0}'.".InvFormat(ua.Alias.ToString()), ua.Alias.TextSpan);
-                                }
-                            }
-                            list.Add(ua);
-                        }
-                        else {
-                            single = ua;
-                            hasSingle = true;
-                        }
-                    }
-                    else if (Token('>')) {
-                        if (list != null || hasSingle) {
-                            _uriAliasingListStack.Push(new ListOrSingleNode<UriAliasingNode>(list, single, hasSingle, default(TextSpan), default(TextSpan)));
-                            return true;
-                        }
-                        return false;
-                    }
-                    else {
-                        ErrorDiagnosticAndThrow("Uri aliasing or > expected.");
-                    }
-                }
+            ListNode<UriAliasingNode> list;
+            if (List('<', '>', _uriAliasingGetter, "Uri aliasing or > expected.", out list)) {
+                _uriAliasingListStack.Push(list);
             }
             return false;
         }
-        private bool UriAliasing(out UriAliasingNode uriAliasing) {
+        private bool UriAliasing(ListNode<UriAliasingNode> list, out UriAliasingNode uriAliasing) {
             bool? isDefault = null;
             NameNode alias;
             if (Name(out alias)) {
@@ -361,7 +394,17 @@ namespace XData.TextIO {
                 }
             }
             if (isDefault != null) {
-                uriAliasing = new UriAliasingNode(alias, StringValueExpected(), isDefault.Value);
+                var uri = StringValueExpected();
+                var isDefaultValue = isDefault.Value;
+                foreach (var item in list) {
+                    if (item.IsDefault && isDefaultValue) {
+                        ErrorDiagnosticAndThrow("Duplicate default uri.", uri.TextSpan);
+                    }
+                    else if (item.Alias == alias) {
+                        ErrorDiagnosticAndThrow("Duplicate uri alias '{0}'.".InvFormat(alias.ToString()), alias.TextSpan);
+                    }
+                }
+                uriAliasing = new UriAliasingNode(alias, uri, isDefaultValue);
                 return true;
             }
             uriAliasing = default(UriAliasingNode);
@@ -455,42 +498,42 @@ namespace XData.TextIO {
             }
         }
         private bool ComplexValue(TextSpan equalsTokenTextSpan, QualifiableNameNode typeQName, out ComplexValueNode complexValue) {
-            ListOrSingleNode<AttributeNode> attributeList;
-            var hasAttributeList = ListOrSingle('[', ']', _attributeGetter, "Attribute or ] expected.", out attributeList);
-            List<ElementNode> list = null;
+            ListNode<AttributeNode> attributeList;
+            var hasAttributeList = List('[', ']', _attributeGetter, "Attribute or ] expected.", out attributeList);
+            ListNode<ElementNode> elementList = null;
             var simpleValue = default(SimpleValueNode);
-            TextSpan openTokenTextSpan, closeTokenTextSpan = default(TextSpan);
+            TextSpan openTokenTextSpan, closeTokenTextSpan;
             if (Token('{', out openTokenTextSpan)) {
                 if (SimpleValue(out simpleValue)) {
                     TokenExpected('}');
                 }
                 else {
-                    list = new List<ElementNode>();
+                    elementList = new ListNode<ElementNode>(openTokenTextSpan);
                     while (true) {
                         ElementNode element;
                         if (Element(out element)) {
-                            list.Add(element);
+                            elementList.Add(element);
                         }
                         else if (Token('}', out closeTokenTextSpan)) {
+                            elementList.CloseTokenTextSpan = closeTokenTextSpan;
                             break;
                         }
                         else {
-                            ErrorDiagnosticAndThrow(list.Count > 0 ? "Element or } expected." :
+                            ErrorDiagnosticAndThrow(elementList.Count > 0 ? "Element or } expected." :
                                 "Element, simple value or } expected.");
                         }
                     }
                 }
             }
-            if (hasAttributeList || list != null || simpleValue.IsValid) {
-                complexValue = new ComplexValueNode(equalsTokenTextSpan, typeQName, attributeList, simpleValue,
-                    new ListNode<ElementNode>(list, openTokenTextSpan, closeTokenTextSpan), default(TextSpan));
+            if (hasAttributeList || elementList != null || simpleValue.IsValid) {
+                complexValue = new ComplexValueNode(equalsTokenTextSpan, typeQName, attributeList, elementList, simpleValue, default(TextSpan));
                 return true;
             }
             else {
                 TextSpan semicolonTokenTextSpan;
                 if (Token(';', out semicolonTokenTextSpan)) {
-                    complexValue = new ComplexValueNode(equalsTokenTextSpan, typeQName, default(ListOrSingleNode<AttributeNode>),
-                        default(SimpleValueNode), default(ListNode<ElementNode>), semicolonTokenTextSpan);
+                    complexValue = new ComplexValueNode(equalsTokenTextSpan, typeQName, null, null,
+                        default(SimpleValueNode), semicolonTokenTextSpan);
                     return true;
                 }
             }

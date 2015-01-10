@@ -71,7 +71,7 @@ real-value:
 ==============================
 
 
-compilation-unit:
+parsing-unit:
 element
 ;
 element:
@@ -106,7 +106,13 @@ attribute-value:
 simple-value
 ;
 children:
-'{' element* | simple-value '}'
+simple-value-child | element-children
+;
+simple-value-child:
+'{' simple-value '}'
+;
+element-children:
+'{' element* '}'
 ;
 
 simple-value:

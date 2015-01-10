@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 namespace XData {
-    [Serializable]
     public abstract class ProgramInfo {
         private volatile List<NamespaceInfo> _namespaces;
         public List<NamespaceInfo> Namespaces {
@@ -35,7 +34,6 @@ namespace XData {
             return null;
         }
     }
-    [Serializable]
     public sealed class NamespaceInfo {
         public NamespaceInfo(string uri, NamedObjectInfo[] globalObjects) {
             if (uri == null) throw new ArgumentNullException("uri");
@@ -45,7 +43,11 @@ namespace XData {
         }
         public readonly string Uri;
         public readonly NamedObjectInfo[] GlobalObjects;
-        public bool IsSystem { get { return Uri == SystemUri; } }
+        public bool IsSystem {
+            get {
+                return Uri == SystemUri;
+            }
+        }
         public NamedObjectInfo TryGetGlobalObject(FullName fullName) {
             foreach (var obj in GlobalObjects) {
                 if (obj.FullName == fullName) {
@@ -67,12 +69,14 @@ namespace XData {
         }
     }
 
-    [Serializable]
     public abstract class ObjectInfo {
-        protected ObjectInfo(Type clrType) {
+        protected ObjectInfo(Type clrType, bool isAbstract) {
             if (clrType == null) throw new ArgumentNullException("clrType");
             ClrType = clrType;
-            IsAbstract = clrType.IsAbstract;
+            IsAbstract = isAbstract;
+            //IsAbstract = clrType.IsAbstract;
+            //var ttt = typeof(object);
+            //ttt.FullName
         }
         public readonly Type ClrType;
         public readonly bool IsAbstract;
@@ -83,11 +87,11 @@ namespace XData {
                 }
                 throw new InvalidOperationException("Object '{0}' is abstract.".InvFormat(ClrType.FullName));
             }
-            return (XObject)Extensions.CreateInstance(ClrType);
+            return (XObject)Activator.CreateInstance(ClrType);// Extensions.CreateInstance(ClrType);
         }
-        public bool IsAssignableFrom(ObjectInfo other) {
-            return ClrType.IsAssignableFrom(other.ClrType);
-        }
+        //public bool IsAssignableFrom(ObjectInfo other) {
+        //    return ClrType.IsAssignableFrom(other.ClrType);
+        //}
 
         //public bool IsAssignableFrom(XObject obj) {
         //    if (obj == null) throw new ArgumentNullException("obj");
@@ -119,10 +123,9 @@ namespace XData {
         //    return obj;
         //}
     }
-    [Serializable]
     public abstract class NamedObjectInfo : ObjectInfo {
-        public NamedObjectInfo(Type clrType, FullName fullName)
-            : base(clrType) {
+        public NamedObjectInfo(Type clrType, bool isAbstract, FullName fullName)
+            : base(clrType, isAbstract) {
             FullName = fullName;
         }
         public readonly FullName FullName;
@@ -156,10 +159,9 @@ namespace XData {
         Time,
     }
 
-    [Serializable]
     public class TypeInfo : NamedObjectInfo {
-        public TypeInfo(Type clrType, FullName fullName, TypeKind kind, TypeInfo baseType)
-            : base(clrType, fullName) {
+        public TypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeKind kind, TypeInfo baseType)
+            : base(clrType, isAbstract, fullName) {
             _kind = kind;
 
             BaseType = baseType;
@@ -179,7 +181,6 @@ namespace XData {
         }
     }
 
-    [Serializable]
     public struct FacetSetInfo {
         public FacetSetInfo(
             ulong? minLength = null,
@@ -214,7 +215,6 @@ namespace XData {
         //    return false;
         //}
     }
-    [Serializable]
     public struct ValueAndBoundaryInfo {
         public ValueAndBoundaryInfo(ValueAndTextInfo valueAndText, bool isInclusive) {
             ValueAndText = valueAndText;
@@ -223,7 +223,6 @@ namespace XData {
         public readonly ValueAndTextInfo ValueAndText;
         public readonly bool IsInclusive;
     }
-    [Serializable]
     public struct ValueAndTextInfo {
         public ValueAndTextInfo(object value, string text) {
             Value = value;
@@ -232,7 +231,6 @@ namespace XData {
         public readonly object Value;
         public readonly string Text;
     }
-    [Serializable]
     public struct EnumerationsInfo {
         public EnumerationsInfo(ValueAndTextInfo[] enumerations, string totalText) {
             Enumerations = enumerations;
@@ -252,15 +250,14 @@ namespace XData {
     //    public readonly string Name;//opt
     //    public readonly object Value;
     //}
-    [Serializable]
     public sealed class PatternItemInfo {
         public PatternItemInfo(string pattern) {
             if (pattern == null) throw new ArgumentNullException("pattern");
             Pattern = pattern;
         }
         public readonly string Pattern;
-        private static readonly ConcurrentDictionary<string, Regex> _regexDict = new ConcurrentDictionary<string, Regex>();
-        public Regex Regex { get { return _regexDict.GetOrAdd(Pattern, p => new Regex(p)); } }
+        //private static readonly ConcurrentDictionary<string, Regex> _regexDict = new ConcurrentDictionary<string, Regex>();
+        //public Regex Regex { get { return _regexDict.GetOrAdd(Pattern, p => new Regex(p)); } }
     }
     public interface ISimpleTypeInfo {
         TypeKind Kind { get; }
@@ -268,10 +265,9 @@ namespace XData {
         FacetSetInfo? FacetSet { get; }
         ISimpleTypeInfo ItemType { get; }//for listed simple type
     }
-    [Serializable]
     public class SimpleTypeInfo : TypeInfo, ISimpleTypeInfo {
-        public SimpleTypeInfo(Type clrType, FullName fullName, TypeKind kind, TypeInfo baseType, Type valueClrType, FacetSetInfo? facetSet = null)
-            : base(clrType, fullName, kind, baseType) {
+        public SimpleTypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeKind kind, TypeInfo baseType, Type valueClrType, FacetSetInfo? facetSet = null)
+            : base(clrType, isAbstract, fullName, kind, baseType) {
             if (baseType == null) throw new ArgumentNullException("baseType");
             if (valueClrType == null) throw new ArgumentNullException("valueClrType");
             _valueClrType = valueClrType;
@@ -284,30 +280,27 @@ namespace XData {
         public virtual SimpleTypeInfo ItemType { get { return null; } }
         ISimpleTypeInfo ISimpleTypeInfo.ItemType { get { return ItemType; } }
     }
-    [Serializable]
     public sealed class AtomicTypeInfo : SimpleTypeInfo {
-        public AtomicTypeInfo(Type clrType, FullName fullName, TypeKind kind, SimpleTypeInfo baseType, Type valueClrType, FacetSetInfo? facetSet = null)
-            : base(clrType, fullName, kind, baseType, valueClrType, facetSet) { }
+        public AtomicTypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeKind kind, SimpleTypeInfo baseType, Type valueClrType, FacetSetInfo? facetSet = null)
+            : base(clrType, isAbstract, fullName, kind, baseType, valueClrType, facetSet) { }
         new public SimpleTypeInfo BaseType { get { return (SimpleTypeInfo)base.BaseType; } }
     }
-    [Serializable]
     public sealed class ListTypeInfo : SimpleTypeInfo {
-        public ListTypeInfo(Type clrType, FullName fullName, SimpleTypeInfo itemType)
-            : base(clrType, fullName, TypeKind.ListType, XSimpleType.ThisInfo, typeof(XListTypeValue<>)) {
+        public ListTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo itemType)
+            : base(clrType, isAbstract, fullName, TypeKind.ListType, XSimpleType.ThisInfo, typeof(XListTypeValue<>)) {
             if (itemType == null) throw new ArgumentNullException("itemType");
             _itemType = itemType;
         }
-        public ListTypeInfo(Type clrType, FullName fullName, ListTypeInfo baseType, FacetSetInfo facetSet)
-            : base(clrType, fullName, TypeKind.ListType, baseType, typeof(XListTypeValue<>), facetSet) { }
+        public ListTypeInfo(Type clrType, bool isAbstract, FullName fullName, ListTypeInfo baseType, FacetSetInfo facetSet)
+            : base(clrType, isAbstract, fullName, TypeKind.ListType, baseType, typeof(XListTypeValue<>), facetSet) { }
         new public SimpleTypeInfo BaseType { get { return (SimpleTypeInfo)base.BaseType; } }
         private readonly SimpleTypeInfo _itemType;//opt
         public override SimpleTypeInfo ItemType { get { return _itemType ?? BaseType.ItemType; } }
     }
-    [Serializable]
     public sealed class ComplexTypeInfo : TypeInfo {
-        public ComplexTypeInfo(Type clrType, FullName fullName, TypeInfo baseType,
+        public ComplexTypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeInfo baseType,
             AttributeSetInfo attributes, ObjectInfo children)
-            : base(clrType, fullName, TypeKind.ComplexType, baseType) {
+            : base(clrType, isAbstract, fullName, TypeKind.ComplexType, baseType) {
             Attributes = attributes;
             Children = children;
         }
@@ -317,10 +310,9 @@ namespace XData {
         //public SimpleTypeInfo AsSimpleType { get { return Children as SimpleTypeInfo; } }
     }
 
-    [Serializable]
     public sealed class AttributeSetInfo : ObjectInfo {
         public AttributeSetInfo(Type clrType, AttributeInfo[] attributes)
-            : base(clrType) {
+            : base(clrType, false) {
             Attributes = attributes;
         }
         public readonly AttributeInfo[] Attributes;
@@ -339,12 +331,11 @@ namespace XData {
         Global,
         Reference
     }
-    [Serializable]
     public abstract class EntityInfo : NamedObjectInfo {
-        public EntityInfo(Type clrType, FullName fullName, string displayName, TypeInfo type,
+        public EntityInfo(Type clrType, bool isAbstract, FullName fullName, string displayName, TypeInfo type,
             EntityDeclarationKind declarationKind, EntityInfo referentialEntity,
             bool isNullable)
-            : base(clrType, fullName) {
+            : base(clrType, isAbstract, fullName) {
             _displayName = displayName;
             Type = type;
             DeclarationKind = declarationKind;
@@ -377,12 +368,11 @@ namespace XData {
             }
         }
     }
-    [Serializable]
     public sealed class AttributeInfo : EntityInfo {
         public AttributeInfo(Type clrType, FullName fullName, string displayName, SimpleTypeInfo type,
             EntityDeclarationKind declarationKind, AttributeInfo referentialAttribute,
             bool isNullable)
-            : base(clrType, fullName, displayName, type, declarationKind, referentialAttribute, isNullable) {
+            : base(clrType, false, fullName, displayName, type, declarationKind, referentialAttribute, isNullable) {
         }
         new public SimpleTypeInfo Type {
             get {
@@ -404,14 +394,13 @@ namespace XData {
         bool IsEffectiveOptional { get; }
     }
 
-    [Serializable]
     public sealed class ElementInfo : EntityInfo, IChildInfo {
-        public ElementInfo(Type clrType, FullName fullName, string displayName, TypeInfo type,
+        public ElementInfo(Type clrType, bool isAbstract, FullName fullName, string displayName, TypeInfo type,
             EntityDeclarationKind declarationKind, ElementInfo referentialElement, bool isNullable,
             int order, bool isEffectiveOptional,
             ElementInfo substitutedElement, FullName[] directSubstitutingElementFullNames,
             ProgramInfo program)
-            : base(clrType, fullName, displayName, type, declarationKind, referentialElement, isNullable) {
+            : base(clrType, isAbstract, fullName, displayName, type, declarationKind, referentialElement, isNullable) {
             _order = order;
             _isEffectiveOptional = isEffectiveOptional;
             SubstitutedElement = substitutedElement;
@@ -470,7 +459,7 @@ namespace XData {
             if (IsReference) {
                 return ReferentialElement.TryGet(fullName);
             }
-            if (FullName == FullName) {
+            if (FullName == fullName) {
                 return this;
             }
             var directSubstitutingElements = DirectSubstitutingElements;
@@ -486,10 +475,9 @@ namespace XData {
         }
 
     }
-    [Serializable]
     public abstract class ChildContainerInfo : ObjectInfo, IChildInfo {
         protected ChildContainerInfo(Type clrType, string displayName, int order, bool isEffectiveOptional)
-            : base(clrType) {
+            : base(clrType, false) {
             _displayName = displayName;
             _order = order;
             _isEffectiveOptional = isEffectiveOptional;
@@ -518,7 +506,6 @@ namespace XData {
         Sequence,
         Choice
     }
-    [Serializable]
     public sealed class ChildSetInfo : ChildContainerInfo {
         public ChildSetInfo(Type clrType, string displayName, int order, bool isEffectiveOptional,
             ChildSetKind kind, IChildInfo[] members)
@@ -537,7 +524,6 @@ namespace XData {
             return null;
         }
     }
-    [Serializable]
     public sealed class ChildListInfo : ChildContainerInfo {
         public ChildListInfo(Type clrType, string displayName, int order, bool isEffectiveOptional,
             ulong minOccurs, ulong maxOccurs, IChildInfo item)

@@ -7,7 +7,6 @@ using System.Text;
 using XData.TextIO;
 
 namespace XData {
-    [Serializable]
     public abstract class XObject {
         protected XObject() { }
         private XObject _parent;
@@ -101,7 +100,6 @@ namespace XData {
         }
     }
 
-    [Serializable]
     public abstract class XType : XObject {
         protected XType() { }
         public TypeInfo TypeInfo {
@@ -109,7 +107,7 @@ namespace XData {
                 return (TypeInfo)ObjectInfo;
             }
         }
-        public static readonly TypeInfo ThisInfo = new TypeInfo(typeof(XType), TypeKind.Type.ToFullName(), TypeKind.Type, null);
+        public static readonly TypeInfo ThisInfo = new TypeInfo(typeof(XType), true, TypeKind.Type.ToFullName(), TypeKind.Type, null);
         //
         internal static TypeInfo GetTypeInfo(Context context, ProgramInfo programInfo, QualifiableNameNode typeQName,
             TypeInfo declTypeInfo, TextSpan declTypeTextSpan) {
@@ -122,7 +120,7 @@ namespace XData {
                         typeQName.TextSpan);
                     return null;
                 }
-                if (!declTypeInfo.IsAssignableFrom(typeInfo)) {
+                if (!typeInfo.IsEqualToOrDeriveFrom(declTypeInfo)) {
                     context.AddErrorDiagnostic(DiagnosticCode.TypeDoesNotEqualToOrDeriveFrom,
                         "Type '{0}' does not equal to or derive from '{1}'.".InvFormat(typeFullName.ToString(), declTypeInfo.FullName.ToString()),
                         typeQName.TextSpan);
@@ -140,7 +138,6 @@ namespace XData {
 
     }
 
-    [Serializable]
     public abstract class XSimpleType : XType, IEquatable<XSimpleType> {
         protected XSimpleType() { }
         private object _value;
@@ -205,7 +202,7 @@ namespace XData {
                 return obj.GetHashCode();
             }
             public int Compare(object x, object y) {
-                return Comparer.Default.Compare(x, y);
+                return Comparer<object>.Default.Compare(x, y);
             }
         }
         public virtual bool Equals(XSimpleType other) {
@@ -235,7 +232,8 @@ namespace XData {
                 return (SimpleTypeInfo)ObjectInfo;
             }
         }
-        new public static readonly SimpleTypeInfo ThisInfo = new SimpleTypeInfo(typeof(XSimpleType), TypeKind.SimpleType.ToFullName(), TypeKind.SimpleType, XType.ThisInfo, typeof(object), null);
+        new public static readonly SimpleTypeInfo ThisInfo = new SimpleTypeInfo(typeof(XSimpleType), true, TypeKind.SimpleType.ToFullName(), TypeKind.SimpleType,
+            XType.ThisInfo, typeof(object), null);
         //
         internal static bool TryCreate(Context context, ProgramInfo programInfo, SimpleTypeInfo simpleTypeInfo,
             SimpleValueNode simpleValueNode, out XSimpleType result) {
@@ -249,7 +247,6 @@ namespace XData {
             return true;
         }
     }
-    [Serializable]
     public abstract class XObjectList<T> : XObject, IList<T>, IReadOnlyList<T> where T : XObject {
         protected XObjectList() {
             _itemList = new List<T>();
@@ -327,7 +324,7 @@ namespace XData {
         }
     }
     #region List type
-    [Serializable]
+
     public sealed class XListTypeValue<T> : XObjectList<T>, IEquatable<XListTypeValue<T>> where T : XSimpleType {
         public XListTypeValue() { }
         public XListTypeValue(IEnumerable<T> items)
@@ -372,7 +369,6 @@ namespace XData {
         }
     }
 
-    [Serializable]
     public abstract class XListType<T> : XSimpleType, IList<T>, IReadOnlyList<T> where T : XSimpleType {
         protected XListType() { }
         protected XListType(XListTypeValue<T> value) {
@@ -451,12 +447,11 @@ namespace XData {
     }
     #endregion List type
     #region Atomic types
-    [Serializable]
+
     public abstract class XAtomicType : XSimpleType {
         protected XAtomicType() { }
 
     }
-    [Serializable]
     public class XString : XAtomicType {
         public XString() { }
         public XString(string value) { GenericValue = value; }
@@ -464,7 +459,7 @@ namespace XData {
             if (value == null) return null;
             return new XString(value);
         }
-        public static implicit operator string(XString obj) {
+        public static implicit operator string (XString obj) {
             if (obj == null) return null;
             return obj.Value;
         }
@@ -477,10 +472,10 @@ namespace XData {
             }
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XString), TypeKind.String.ToFullName(), TypeKind.String,
+        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XString), false, TypeKind.String.ToFullName(), TypeKind.String,
              XSimpleType.ThisInfo, typeof(string), null);
     }
-    [Serializable]
+
     public class XDecimal : XAtomicType {
         public XDecimal() { }
         public XDecimal(decimal? value) { GenericValue = value; }
@@ -492,11 +487,11 @@ namespace XData {
         public static implicit operator XDecimal(decimal value) {
             return new XDecimal(value);
         }
-        public static implicit operator decimal?(XDecimal obj) {
+        public static implicit operator decimal? (XDecimal obj) {
             if (obj == null) return null;
             return obj.NullableValue;
         }
-        public static explicit operator decimal(XDecimal obj) {
+        public static explicit operator decimal (XDecimal obj) {
             return obj.Value;
         }
         public decimal? NullableValue {
@@ -527,7 +522,7 @@ namespace XData {
             return decimal.TryParse(literal, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, NumberFormatInfo.InvariantInfo, out result);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XDecimal), TypeKind.Decimal.ToFullName(), TypeKind.Decimal,
+        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XDecimal), false, TypeKind.Decimal.ToFullName(), TypeKind.Decimal,
             XSimpleType.ThisInfo, typeof(decimal), null);
         //
         //
@@ -535,15 +530,29 @@ namespace XData {
         public static bool TryGetTypedValue(object value, out decimal? result) {
             result = value as decimal?;
             if (result == null && value != null) {
-                switch (Type.GetTypeCode(value.GetType())) {
-                    case TypeCode.Int64: result = (long)value; break;
-                    case TypeCode.Int32: result = (int)value; break;
-                    case TypeCode.Int16: result = (short)value; break;
-                    case TypeCode.SByte: result = (sbyte)value; break;
-                    case TypeCode.UInt64: result = (ulong)value; break;
-                    case TypeCode.UInt32: result = (uint)value; break;
-                    case TypeCode.UInt16: result = (ushort)value; break;
-                    case TypeCode.Byte: result = (byte)value; break;
+                if (value is long) {
+                    result = (long)value;
+                }
+                else if (value is int) {
+                    result = (int)value;
+                }
+                else if (value is short) {
+                    result = (short)value;
+                }
+                else if (value is sbyte) {
+                    result = (sbyte)value;
+                }
+                else if (value is ulong) {
+                    result = (ulong)value;
+                }
+                else if (value is uint) {
+                    result = (uint)value;
+                }
+                else if (value is ushort) {
+                    result = (ushort)value;
+                }
+                else if (value is byte) {
+                    result = (byte)value;
                 }
             }
             return result != null;
@@ -551,23 +560,35 @@ namespace XData {
         public static bool TryGetTypedValue(object value, out long? result) {
             result = value as long?;
             if (result == null && value != null) {
-                switch (Type.GetTypeCode(value.GetType())) {
-                    case TypeCode.Decimal: {
-                            var decimalValue = (decimal)value;
-                            if (decimalValue >= long.MinValue && decimalValue <= long.MaxValue) result = (long)decimalValue;
-                        }
-                        break;
-                    case TypeCode.Int32: result = (int)value; break;
-                    case TypeCode.Int16: result = (short)value; break;
-                    case TypeCode.SByte: result = (sbyte)value; break;
-                    case TypeCode.UInt64: {
-                            var ulongValue = (ulong)value;
-                            if (ulongValue <= long.MaxValue) result = (long)ulongValue;
-                        }
-                        break;
-                    case TypeCode.UInt32: result = (uint)value; break;
-                    case TypeCode.UInt16: result = (ushort)value; break;
-                    case TypeCode.Byte: result = (byte)value; break;
+                if (value is decimal) {
+                    var decimalValue = (decimal)value;
+                    if (decimalValue >= long.MinValue && decimalValue <= long.MaxValue) {
+                        result = (long)decimalValue;
+                    }
+                }
+                else if (value is int) {
+                    result = (int)value;
+                }
+                else if (value is short) {
+                    result = (short)value;
+                }
+                else if (value is sbyte) {
+                    result = (sbyte)value;
+                }
+                else if (value is ulong) {
+                    var ulongValue = (ulong)value;
+                    if (ulongValue <= long.MaxValue) {
+                        result = (long)ulongValue;
+                    }
+                }
+                else if (value is uint) {
+                    result = (uint)value;
+                }
+                else if (value is ushort) {
+                    result = (ushort)value;
+                }
+                else if (value is byte) {
+                    result = (byte)value;
                 }
             }
             return result != null;
@@ -575,35 +596,44 @@ namespace XData {
         public static bool TryGetTypedValue(object value, out ulong? result) {
             result = value as ulong?;
             if (result == null && value != null) {
-                switch (Type.GetTypeCode(value.GetType())) {
-                    case TypeCode.Decimal: {
-                            var decimalValue = (decimal)value;
-                            if (decimalValue >= 0 && decimalValue <= ulong.MaxValue) result = (ulong)decimalValue;
-                        }
-                        break;
-                    case TypeCode.Int64: {
-                            var longValue = (long)value;
-                            if (longValue >= 0) result = (ulong)longValue;
-                        }
-                        break;
-                    case TypeCode.Int32: {
-                            var intValue = (int)value;
-                            if (intValue >= 0) result = (ulong)intValue;
-                        }
-                        break;
-                    case TypeCode.Int16: {
-                            var shortValue = (short)value;
-                            if (shortValue >= 0) result = (ulong)shortValue;
-                        }
-                        break;
-                    case TypeCode.SByte: {
-                            var sbyteValue = (sbyte)value;
-                            if (sbyteValue >= 0) result = (ulong)sbyteValue;
-                        }
-                        break;
-                    case TypeCode.UInt32: result = (uint)value; break;
-                    case TypeCode.UInt16: result = (ushort)value; break;
-                    case TypeCode.Byte: result = (byte)value; break;
+                if (value is decimal) {
+                    var decimalValue = (decimal)value;
+                    if (decimalValue >= 0 && decimalValue <= ulong.MaxValue) {
+                        result = (ulong)decimalValue;
+                    }
+                }
+                else if (value is long) {
+                    var longValue = (long)value;
+                    if (longValue >= 0) {
+                        result = (ulong)longValue;
+                    }
+                }
+                else if (value is int) {
+                    var intValue = (int)value;
+                    if (intValue >= 0) {
+                        result = (ulong)intValue;
+                    }
+                }
+                else if (value is short) {
+                    var shortValue = (short)value;
+                    if (shortValue >= 0) {
+                        result = (ulong)shortValue;
+                    }
+                }
+                else if (value is sbyte) {
+                    var sbyteValue = (sbyte)value;
+                    if (sbyteValue >= 0) {
+                        result = (ulong)sbyteValue;
+                    }
+                }
+                else if (value is uint) {
+                    result = (uint)value;
+                }
+                else if (value is ushort) {
+                    result = (ushort)value;
+                }
+                else if (value is byte) {
+                    result = (byte)value;
                 }
             }
             return result != null;
@@ -611,31 +641,41 @@ namespace XData {
         public static bool TryGetTypedValue(object value, out int? result) {
             result = value as int?;
             if (result == null && value != null) {
-                switch (Type.GetTypeCode(value.GetType())) {
-                    case TypeCode.Decimal: {
-                            var decimalValue = (decimal)value;
-                            if (decimalValue >= int.MinValue && decimalValue <= int.MaxValue) result = (int)decimalValue;
-                        }
-                        break;
-                    case TypeCode.Int64: {
-                            var longValue = (long)value;
-                            if (longValue >= int.MinValue && longValue <= int.MaxValue) result = (int)longValue;
-                        }
-                        break;
-                    case TypeCode.Int16: result = (short)value; break;
-                    case TypeCode.SByte: result = (sbyte)value; break;
-                    case TypeCode.UInt64: {
-                            var ulongValue = (ulong)value;
-                            if (ulongValue <= int.MaxValue) result = (int)ulongValue;
-                        }
-                        break;
-                    case TypeCode.UInt32: {
-                            var uintValue = (uint)value;
-                            if (uintValue <= int.MaxValue) result = (int)uintValue;
-                        }
-                        break;
-                    case TypeCode.UInt16: result = (ushort)value; break;
-                    case TypeCode.Byte: result = (byte)value; break;
+                if (value is decimal) {
+                    var decimalValue = (decimal)value;
+                    if (decimalValue >= int.MinValue && decimalValue <= int.MaxValue) {
+                        result = (int)decimalValue;
+                    }
+                }
+                else if (value is long) {
+                    var longValue = (long)value;
+                    if (longValue >= int.MinValue && longValue <= int.MaxValue) {
+                        result = (int)longValue;
+                    }
+                }
+                else if (value is short) {
+                    result = (short)value;
+                }
+                else if (value is sbyte) {
+                    result = (sbyte)value;
+                }
+                else if (value is ulong) {
+                    var ulongValue = (ulong)value;
+                    if (ulongValue <= int.MaxValue) {
+                        result = (int)ulongValue;
+                    }
+                }
+                else if (value is uint) {
+                    var uintValue = (uint)value;
+                    if (uintValue <= int.MaxValue) {
+                        result = (int)uintValue;
+                    }
+                }
+                else if (value is ushort) {
+                    result = (ushort)value;
+                }
+                else if (value is byte) {
+                    result = (byte)value;
                 }
             }
             return result != null;
@@ -643,39 +683,47 @@ namespace XData {
         public static bool TryGetTypedValue(object value, out uint? result) {
             result = value as uint?;
             if (result == null && value != null) {
-                switch (Type.GetTypeCode(value.GetType())) {
-                    case TypeCode.Decimal: {
-                            var decimalValue = (decimal)value;
-                            if (decimalValue >= 0 && decimalValue <= uint.MaxValue) result = (uint)decimalValue;
-                        }
-                        break;
-                    case TypeCode.Int64: {
-                            var longValue = (long)value;
-                            if (longValue >= 0 && longValue <= uint.MaxValue) result = (uint)longValue;
-                        }
-                        break;
-                    case TypeCode.Int32: {
-                            var intValue = (int)value;
-                            if (intValue >= 0) result = (uint)intValue;
-                        }
-                        break;
-                    case TypeCode.Int16: {
-                            var shortValue = (short)value;
-                            if (shortValue >= 0) result = (uint)shortValue;
-                        }
-                        break;
-                    case TypeCode.SByte: {
-                            var sbyteValue = (sbyte)value;
-                            if (sbyteValue >= 0) result = (uint)sbyteValue;
-                        }
-                        break;
-                    case TypeCode.UInt64: {
-                            var ulongValue = (ulong)value;
-                            if (ulongValue <= uint.MaxValue) result = (uint)ulongValue;
-                        }
-                        break;
-                    case TypeCode.UInt16: result = (ushort)value; break;
-                    case TypeCode.Byte: result = (byte)value; break;
+                if (value is decimal) {
+                    var decimalValue = (decimal)value;
+                    if (decimalValue >= 0 && decimalValue <= uint.MaxValue) {
+                        result = (uint)decimalValue;
+                    }
+                }
+                else if (value is long) {
+                    var longValue = (long)value;
+                    if (longValue >= 0 && longValue <= uint.MaxValue) {
+                        result = (uint)longValue;
+                    }
+                }
+                else if (value is int) {
+                    var intValue = (int)value;
+                    if (intValue >= 0) {
+                        result = (uint)intValue;
+                    }
+                }
+                else if (value is short) {
+                    var shortValue = (short)value;
+                    if (shortValue >= 0) {
+                        result = (uint)shortValue;
+                    }
+                }
+                else if (value is sbyte) {
+                    var sbyteValue = (sbyte)value;
+                    if (sbyteValue >= 0) {
+                        result = (uint)sbyteValue;
+                    }
+                }
+                else if (value is ulong) {
+                    var ulongValue = (ulong)value;
+                    if (ulongValue <= uint.MaxValue) {
+                        result = (uint)ulongValue;
+                    }
+                }
+                else if (value is ushort) {
+                    result = (ushort)value;
+                }
+                else if (value is byte) {
+                    result = (byte)value;
                 }
             }
             return result != null;
@@ -683,39 +731,47 @@ namespace XData {
         public static bool TryGetTypedValue(object value, out short? result) {
             result = value as short?;
             if (result == null && value != null) {
-                switch (Type.GetTypeCode(value.GetType())) {
-                    case TypeCode.Decimal: {
-                            var decimalValue = (decimal)value;
-                            if (decimalValue >= short.MinValue && decimalValue <= short.MaxValue) result = (short)decimalValue;
-                        }
-                        break;
-                    case TypeCode.Int64: {
-                            var longValue = (long)value;
-                            if (longValue >= short.MinValue && longValue <= short.MaxValue) result = (short)longValue;
-                        }
-                        break;
-                    case TypeCode.Int32: {
-                            var intValue = (int)value;
-                            if (intValue >= short.MinValue && intValue <= short.MaxValue) result = (short)intValue;
-                        }
-                        break;
-                    case TypeCode.SByte: result = (sbyte)value; break;
-                    case TypeCode.UInt64: {
-                            var ulongValue = (ulong)value;
-                            if (ulongValue <= (ulong)short.MaxValue) result = (short)ulongValue;
-                        }
-                        break;
-                    case TypeCode.UInt32: {
-                            var uintValue = (uint)value;
-                            if (uintValue <= short.MaxValue) result = (short)uintValue;
-                        }
-                        break;
-                    case TypeCode.UInt16: {
-                            var ushortValue = (ushort)value;
-                            if (ushortValue <= short.MaxValue) result = (short)ushortValue;
-                        }
-                        break;
-                    case TypeCode.Byte: result = (byte)value; break;
+                if (value is decimal) {
+                    var decimalValue = (decimal)value;
+                    if (decimalValue >= short.MinValue && decimalValue <= short.MaxValue) {
+                        result = (short)decimalValue;
+                    }
+                }
+                else if (value is long) {
+                    var longValue = (long)value;
+                    if (longValue >= short.MinValue && longValue <= short.MaxValue) {
+                        result = (short)longValue;
+                    }
+                }
+                else if (value is int) {
+                    var intValue = (int)value;
+                    if (intValue >= short.MinValue && intValue <= short.MaxValue) {
+                        result = (short)intValue;
+                    }
+                }
+                else if (value is sbyte) {
+                    result = (sbyte)value;
+                }
+                else if (value is long) {
+                    var ulongValue = (ulong)value;
+                    if (ulongValue <= (ulong)short.MaxValue) {
+                        result = (short)ulongValue;
+                    }
+                }
+                else if (value is uint) {
+                    var uintValue = (uint)value;
+                    if (uintValue <= short.MaxValue) {
+                        result = (short)uintValue;
+                    }
+                }
+                else if (value is ushort) {
+                    var ushortValue = (ushort)value;
+                    if (ushortValue <= short.MaxValue) {
+                        result = (short)ushortValue;
+                    }
+                }
+                else if (value is byte) {
+                    result = (byte)value;
                 }
             }
             return result != null;
@@ -723,43 +779,50 @@ namespace XData {
         public static bool TryGetTypedValue(object value, out ushort? result) {
             result = value as ushort?;
             if (result == null && value != null) {
-                switch (Type.GetTypeCode(value.GetType())) {
-                    case TypeCode.Decimal: {
-                            var decimalValue = (decimal)value;
-                            if (decimalValue >= 0 && decimalValue <= ushort.MaxValue) result = (ushort)decimalValue;
-                        }
-                        break;
-                    case TypeCode.Int64: {
-                            var longValue = (long)value;
-                            if (longValue >= 0 && longValue <= ushort.MaxValue) result = (ushort)longValue;
-                        }
-                        break;
-                    case TypeCode.Int32: {
-                            var intValue = (int)value;
-                            if (intValue >= 0 && intValue <= ushort.MaxValue) result = (ushort)intValue;
-                        }
-                        break;
-                    case TypeCode.Int16: {
-                            var shortValue = (short)value;
-                            if (shortValue >= 0) result = (ushort)shortValue;
-                        }
-                        break;
-                    case TypeCode.SByte: {
-                            var sbyteValue = (sbyte)value;
-                            if (sbyteValue >= 0) result = (ushort)sbyteValue;
-                        }
-                        break;
-                    case TypeCode.UInt64: {
-                            var ulongValue = (ulong)value;
-                            if (ulongValue <= ushort.MaxValue) result = (ushort)ulongValue;
-                        }
-                        break;
-                    case TypeCode.UInt32: {
-                            var uintValue = (uint)value;
-                            if (uintValue <= ushort.MaxValue) result = (ushort)uintValue;
-                        }
-                        break;
-                    case TypeCode.Byte: result = (byte)value; break;
+                if (value is decimal) {
+                    var decimalValue = (decimal)value;
+                    if (decimalValue >= 0 && decimalValue <= ushort.MaxValue) {
+                        result = (ushort)decimalValue;
+                    }
+                }
+                else if (value is long) {
+                    var longValue = (long)value;
+                    if (longValue >= 0 && longValue <= ushort.MaxValue) {
+                        result = (ushort)longValue;
+                    }
+                }
+                else if (value is int) {
+                    var intValue = (int)value;
+                    if (intValue >= 0 && intValue <= ushort.MaxValue) {
+                        result = (ushort)intValue;
+                    }
+                }
+                else if (value is short) {
+                    var shortValue = (short)value;
+                    if (shortValue >= 0) {
+                        result = (ushort)shortValue;
+                    }
+                }
+                else if (value is sbyte) {
+                    var sbyteValue = (sbyte)value;
+                    if (sbyteValue >= 0) {
+                        result = (ushort)sbyteValue;
+                    }
+                }
+                else if (value is ulong) {
+                    var ulongValue = (ulong)value;
+                    if (ulongValue <= ushort.MaxValue) {
+                        result = (ushort)ulongValue;
+                    }
+                }
+                else if (value is uint) {
+                    var uintValue = (uint)value;
+                    if (uintValue <= ushort.MaxValue) {
+                        result = (ushort)uintValue;
+                    }
+                }
+                else if (value is byte) {
+                    result = (byte)value;
                 }
             }
             return result != null;
@@ -767,47 +830,53 @@ namespace XData {
         public static bool TryGetTypedValue(object value, out sbyte? result) {
             result = value as sbyte?;
             if (result == null && value != null) {
-                switch (Type.GetTypeCode(value.GetType())) {
-                    case TypeCode.Decimal: {
-                            var decimalValue = (decimal)value;
-                            if (decimalValue >= sbyte.MinValue && decimalValue <= sbyte.MaxValue) result = (sbyte)decimalValue;
-                        }
-                        break;
-                    case TypeCode.Int64: {
-                            var longValue = (long)value;
-                            if (longValue >= sbyte.MinValue && longValue <= sbyte.MaxValue) result = (sbyte)longValue;
-                        }
-                        break;
-                    case TypeCode.Int32: {
-                            var intValue = (int)value;
-                            if (intValue >= sbyte.MinValue && intValue <= sbyte.MaxValue) result = (sbyte)intValue;
-                        }
-                        break;
-                    case TypeCode.Int16: {
-                            var shortValue = (short)value;
-                            if (shortValue >= sbyte.MinValue && shortValue <= sbyte.MaxValue) result = (sbyte)shortValue;
-                        }
-                        break;
-                    case TypeCode.UInt64: {
-                            var ulongValue = (ulong)value;
-                            if (ulongValue <= (ulong)sbyte.MaxValue) result = (sbyte)ulongValue;
-                        }
-                        break;
-                    case TypeCode.UInt32: {
-                            var uintValue = (uint)value;
-                            if (uintValue <= sbyte.MaxValue) result = (sbyte)uintValue;
-                        }
-                        break;
-                    case TypeCode.UInt16: {
-                            var ushortValue = (ushort)value;
-                            if (ushortValue <= sbyte.MaxValue) result = (sbyte)ushortValue;
-                        }
-                        break;
-                    case TypeCode.Byte: {
-                            var byteValue = (byte)value;
-                            if (byteValue <= sbyte.MaxValue) result = (sbyte)byteValue;
-                        }
-                        break;
+                if (value is decimal) {
+                    var decimalValue = (decimal)value;
+                    if (decimalValue >= sbyte.MinValue && decimalValue <= sbyte.MaxValue) {
+                        result = (sbyte)decimalValue;
+                    }
+                }
+                else if (value is long) {
+                    var longValue = (long)value;
+                    if (longValue >= sbyte.MinValue && longValue <= sbyte.MaxValue) {
+                        result = (sbyte)longValue;
+                    }
+                }
+                else if (value is int) {
+                    var intValue = (int)value;
+                    if (intValue >= sbyte.MinValue && intValue <= sbyte.MaxValue) {
+                        result = (sbyte)intValue;
+                    }
+                }
+                else if (value is short) {
+                    var shortValue = (short)value;
+                    if (shortValue >= sbyte.MinValue && shortValue <= sbyte.MaxValue) {
+                        result = (sbyte)shortValue;
+                    }
+                }
+                else if (value is ulong) {
+                    var ulongValue = (ulong)value;
+                    if (ulongValue <= (ulong)sbyte.MaxValue) {
+                        result = (sbyte)ulongValue;
+                    }
+                }
+                else if (value is uint) {
+                    var uintValue = (uint)value;
+                    if (uintValue <= sbyte.MaxValue) {
+                        result = (sbyte)uintValue;
+                    }
+                }
+                else if (value is ushort) {
+                    var ushortValue = (ushort)value;
+                    if (ushortValue <= sbyte.MaxValue) {
+                        result = (sbyte)ushortValue;
+                    }
+                }
+                else if (value is byte) {
+                    var byteValue = (byte)value;
+                    if (byteValue <= sbyte.MaxValue) {
+                        result = (sbyte)byteValue;
+                    }
                 }
             }
             return result != null;
@@ -815,54 +884,59 @@ namespace XData {
         public static bool TryGetTypedValue(object value, out byte? result) {
             result = value as byte?;
             if (result == null && value != null) {
-                switch (Type.GetTypeCode(value.GetType())) {
-                    case TypeCode.Decimal: {
-                            var decimalValue = (decimal)value;
-                            if (decimalValue >= 0 && decimalValue <= byte.MaxValue) result = (byte)decimalValue;
-                        }
-                        break;
-                    case TypeCode.Int64: {
-                            var longValue = (long)value;
-                            if (longValue >= 0 && longValue <= byte.MaxValue) result = (byte)longValue;
-                        }
-                        break;
-                    case TypeCode.Int32: {
-                            var intValue = (int)value;
-                            if (intValue >= 0 && intValue <= byte.MaxValue) result = (byte)intValue;
-                        }
-                        break;
-                    case TypeCode.Int16: {
-                            var shortValue = (short)value;
-                            if (shortValue >= 0 && shortValue <= byte.MaxValue) result = (byte)shortValue;
-                        }
-                        break;
-                    case TypeCode.SByte: {
-                            var sbyteValue = (sbyte)value;
-                            if (sbyteValue >= 0) result = (byte)sbyteValue;
-                        }
-                        break;
-                    case TypeCode.UInt64: {
-                            var ulongValue = (ulong)value;
-                            if (ulongValue <= byte.MaxValue) result = (byte)ulongValue;
-                        }
-                        break;
-                    case TypeCode.UInt32: {
-                            var uintValue = (uint)value;
-                            if (uintValue <= byte.MaxValue) result = (byte)uintValue;
-                        }
-                        break;
-                    case TypeCode.UInt16: {
-                            var ushortValue = (ushort)value;
-                            if (ushortValue <= byte.MaxValue) result = (byte)ushortValue;
-                        }
-                        break;
+                if (value is decimal) {
+                    var decimalValue = (decimal)value;
+                    if (decimalValue >= 0 && decimalValue <= byte.MaxValue) {
+                        result = (byte)decimalValue;
+                    }
+                }
+                else if (value is long) {
+                    var longValue = (long)value;
+                    if (longValue >= 0 && longValue <= byte.MaxValue) {
+                        result = (byte)longValue;
+                    }
+                }
+                else if (value is int) {
+                    var intValue = (int)value;
+                    if (intValue >= 0 && intValue <= byte.MaxValue) {
+                        result = (byte)intValue;
+                    }
+                }
+                else if (value is short) {
+                    var shortValue = (short)value;
+                    if (shortValue >= 0 && shortValue <= byte.MaxValue) {
+                        result = (byte)shortValue;
+                    }
+                }
+                else if (value is sbyte) {
+                    var sbyteValue = (sbyte)value;
+                    if (sbyteValue >= 0) {
+                        result = (byte)sbyteValue;
+                    }
+                }
+                else if (value is ulong) {
+                    var ulongValue = (ulong)value;
+                    if (ulongValue <= byte.MaxValue) {
+                        result = (byte)ulongValue;
+                    }
+                }
+                else if (value is uint) {
+                    var uintValue = (uint)value;
+                    if (uintValue <= byte.MaxValue) {
+                        result = (byte)uintValue;
+                    }
+                }
+                else if (value is ushort) {
+                    var ushortValue = (ushort)value;
+                    if (ushortValue <= byte.MaxValue) {
+                        result = (byte)ushortValue;
+                    }
                 }
             }
             return result != null;
         }
         #endregion
     }
-    [Serializable]
     public class XInt64 : XDecimal {
         public XInt64() { }
         public XInt64(long? value) { GenericValue = value; }
@@ -874,11 +948,11 @@ namespace XData {
         public static implicit operator XInt64(long value) {
             return new XInt64(value);
         }
-        public static implicit operator long?(XInt64 obj) {
+        public static implicit operator long? (XInt64 obj) {
             if (obj == null) return null;
             return obj.NullableValue;
         }
-        public static explicit operator long(XInt64 obj) {
+        public static explicit operator long (XInt64 obj) {
             return obj.Value;
         }
         new public long? NullableValue {
@@ -901,10 +975,9 @@ namespace XData {
             return long.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XInt64), TypeKind.Int64.ToFullName(), TypeKind.Int64,
+        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XInt64), false, TypeKind.Int64.ToFullName(), TypeKind.Int64,
             XDecimal.ThisInfo, typeof(long), null);
     }
-    [Serializable]
     public class XInt32 : XInt64 {
         public XInt32() { }
         public XInt32(int? value) { GenericValue = value; }
@@ -916,11 +989,11 @@ namespace XData {
         public static implicit operator XInt32(int value) {
             return new XInt32(value);
         }
-        public static implicit operator int?(XInt32 obj) {
+        public static implicit operator int? (XInt32 obj) {
             if (obj == null) return null;
             return obj.NullableValue;
         }
-        public static explicit operator int(XInt32 obj) {
+        public static explicit operator int (XInt32 obj) {
             return obj.Value;
         }
         new public int? NullableValue {
@@ -943,11 +1016,10 @@ namespace XData {
             return int.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XInt32), TypeKind.Int32.ToFullName(), TypeKind.Int32,
+        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XInt32), false, TypeKind.Int32.ToFullName(), TypeKind.Int32,
             XInt64.ThisInfo, typeof(int), null);
     }
 
-    [Serializable]
     public class XInt16 : XInt32 {
         public XInt16() { }
         public XInt16(short? value) { GenericValue = value; }
@@ -959,11 +1031,11 @@ namespace XData {
         public static implicit operator XInt16(short value) {
             return new XInt16(value);
         }
-        public static implicit operator short?(XInt16 obj) {
+        public static implicit operator short? (XInt16 obj) {
             if (obj == null) return null;
             return obj.NullableValue;
         }
-        public static explicit operator short(XInt16 obj) {
+        public static explicit operator short (XInt16 obj) {
             return obj.Value;
         }
         new public short? NullableValue {
@@ -986,10 +1058,9 @@ namespace XData {
             return short.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XInt16), TypeKind.Int16.ToFullName(), TypeKind.Int16,
+        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XInt16), false, TypeKind.Int16.ToFullName(), TypeKind.Int16,
             XInt32.ThisInfo, typeof(short), null);
     }
-    [Serializable]
     public class XSByte : XInt16 {
         public XSByte() { }
         public XSByte(sbyte? value) { GenericValue = value; }
@@ -1001,11 +1072,11 @@ namespace XData {
         public static implicit operator XSByte(sbyte value) {
             return new XSByte(value);
         }
-        public static implicit operator sbyte?(XSByte obj) {
+        public static implicit operator sbyte? (XSByte obj) {
             if (obj == null) return null;
             return obj.NullableValue;
         }
-        public static explicit operator sbyte(XSByte obj) {
+        public static explicit operator sbyte (XSByte obj) {
             return obj.Value;
         }
         new public sbyte? NullableValue {
@@ -1028,11 +1099,10 @@ namespace XData {
             return sbyte.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XSByte), TypeKind.SByte.ToFullName(), TypeKind.SByte,
+        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XSByte), false, TypeKind.SByte.ToFullName(), TypeKind.SByte,
             XInt16.ThisInfo, typeof(sbyte), null);
     }
 
-    [Serializable]
     public class XUInt64 : XDecimal {
         public XUInt64() { }
         public XUInt64(ulong? value) { GenericValue = value; }
@@ -1044,11 +1114,11 @@ namespace XData {
         public static implicit operator XUInt64(ulong value) {
             return new XUInt64(value);
         }
-        public static implicit operator ulong?(XUInt64 obj) {
+        public static implicit operator ulong? (XUInt64 obj) {
             if (obj == null) return null;
             return obj.NullableValue;
         }
-        public static explicit operator ulong(XUInt64 obj) {
+        public static explicit operator ulong (XUInt64 obj) {
             return obj.Value;
         }
         new public ulong? NullableValue {
@@ -1071,10 +1141,10 @@ namespace XData {
             return ulong.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XUInt64), TypeKind.UInt64.ToFullName(), TypeKind.UInt64,
+        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XUInt64), false, TypeKind.UInt64.ToFullName(), TypeKind.UInt64,
             XDecimal.ThisInfo, typeof(long), null);
     }
-    [Serializable]
+
     public class XUInt32 : XUInt64 {
         public XUInt32() { }
         public XUInt32(uint? value) { GenericValue = value; }
@@ -1086,11 +1156,11 @@ namespace XData {
         public static implicit operator XUInt32(uint value) {
             return new XUInt32(value);
         }
-        public static implicit operator uint?(XUInt32 obj) {
+        public static implicit operator uint? (XUInt32 obj) {
             if (obj == null) return null;
             return obj.NullableValue;
         }
-        public static explicit operator uint(XUInt32 obj) {
+        public static explicit operator uint (XUInt32 obj) {
             return obj.Value;
         }
         new public uint? NullableValue {
@@ -1113,11 +1183,11 @@ namespace XData {
             return uint.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XUInt32), TypeKind.UInt32.ToFullName(), TypeKind.UInt32,
+        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XUInt32), false, TypeKind.UInt32.ToFullName(), TypeKind.UInt32,
             XUInt64.ThisInfo, typeof(uint), null);
     }
 
-    [Serializable]
+
     public class XUInt16 : XUInt32 {
         public XUInt16() { }
         public XUInt16(ushort? value) { GenericValue = value; }
@@ -1129,11 +1199,11 @@ namespace XData {
         public static implicit operator XUInt16(ushort value) {
             return new XUInt16(value);
         }
-        public static implicit operator ushort?(XUInt16 obj) {
+        public static implicit operator ushort? (XUInt16 obj) {
             if (obj == null) return null;
             return obj.NullableValue;
         }
-        public static explicit operator ushort(XUInt16 obj) {
+        public static explicit operator ushort (XUInt16 obj) {
             return obj.Value;
         }
         new public ushort? NullableValue {
@@ -1156,10 +1226,10 @@ namespace XData {
             return ushort.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XUInt16), TypeKind.UInt16.ToFullName(), TypeKind.UInt16,
+        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XUInt16), false, TypeKind.UInt16.ToFullName(), TypeKind.UInt16,
             XUInt32.ThisInfo, typeof(short), null);
     }
-    [Serializable]
+
     public class XByte : XUInt16 {
         public XByte() { }
         public XByte(byte? value) { GenericValue = value; }
@@ -1171,11 +1241,11 @@ namespace XData {
         public static implicit operator XByte(byte value) {
             return new XByte(value);
         }
-        public static implicit operator byte?(XByte obj) {
+        public static implicit operator byte? (XByte obj) {
             if (obj == null) return null;
             return obj.NullableValue;
         }
-        public static explicit operator byte(XByte obj) {
+        public static explicit operator byte (XByte obj) {
             return obj.Value;
         }
         new public byte? NullableValue {
@@ -1198,11 +1268,11 @@ namespace XData {
             return byte.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XByte), TypeKind.Byte.ToFullName(), TypeKind.Byte,
+        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XByte), false, TypeKind.Byte.ToFullName(), TypeKind.Byte,
             XUInt16.ThisInfo, typeof(byte), null);
     }
 
-    [Serializable]
+
     public class XDouble : XAtomicType {
         public XDouble() { }
         public XDouble(double? value) { GenericValue = value; }
@@ -1214,11 +1284,11 @@ namespace XData {
         public static implicit operator XDouble(double value) {
             return new XDouble(value);
         }
-        public static implicit operator double?(XDouble obj) {
+        public static implicit operator double? (XDouble obj) {
             if (obj == null) return null;
             return obj.NullableValue;
         }
-        public static explicit operator double(XDouble obj) {
+        public static explicit operator double (XDouble obj) {
             return obj.Value;
         }
         public double? NullableValue {
@@ -1298,10 +1368,10 @@ namespace XData {
         public const string PositiveInfinityLexicalValue = "INF";
         public const string NaNLexicalValue = "NaN";
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XDouble), TypeKind.Double.ToFullName(), TypeKind.Double,
+        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XDouble), false, TypeKind.Double.ToFullName(), TypeKind.Double,
             XSimpleType.ThisInfo, typeof(double), null);
     }
-    [Serializable]
+
     public class XSingle : XDouble {
         public XSingle() { }
         public XSingle(float? value) { GenericValue = value; }
@@ -1313,11 +1383,11 @@ namespace XData {
         public static implicit operator XSingle(float value) {
             return new XSingle(value);
         }
-        public static implicit operator float?(XSingle obj) {
+        public static implicit operator float? (XSingle obj) {
             if (obj == null) return null;
             return obj.NullableValue;
         }
-        public static explicit operator float(XSingle obj) {
+        public static explicit operator float (XSingle obj) {
             return obj.Value;
         }
         new public float? NullableValue {
@@ -1339,11 +1409,11 @@ namespace XData {
             }
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XSingle), TypeKind.Single.ToFullName(), TypeKind.Single,
+        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XSingle), false, TypeKind.Single.ToFullName(), TypeKind.Single,
             XDouble.ThisInfo, typeof(float), null);
 
     }
-    [Serializable]
+
     public class XBoolean : XAtomicType {
         public XBoolean() { }
         public XBoolean(bool? value) { GenericValue = value; }
@@ -1355,11 +1425,11 @@ namespace XData {
         public static implicit operator XBoolean(bool value) {
             return new XBoolean(value);
         }
-        public static implicit operator bool?(XBoolean obj) {
+        public static implicit operator bool? (XBoolean obj) {
             if (obj == null) return null;
             return obj.NullableValue;
         }
-        public static explicit operator bool(XBoolean obj) {
+        public static explicit operator bool (XBoolean obj) {
             return obj.Value;
         }
         public bool? NullableValue {
@@ -1393,12 +1463,11 @@ namespace XData {
             return true;
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XBoolean), TypeKind.Boolean.ToFullName(), TypeKind.Boolean,
+        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XBoolean), false, TypeKind.Boolean.ToFullName(), TypeKind.Boolean,
             XSimpleType.ThisInfo, typeof(bool), null);
     }
 
 
-    [Serializable]
     public sealed class XBinaryValue : XObject, IEquatable<XBinaryValue> {
         public XBinaryValue() { }
         public XBinaryValue(byte[] array) {
@@ -1464,10 +1533,12 @@ namespace XData {
         }
     }
 
-    [Serializable]
+
     public class XBinary : XAtomicType {
         public XBinary() { }
-        public XBinary(XBinaryValue value) { GenericValue = value; }
+        public XBinary(XBinaryValue value) {
+            GenericValue = value;
+        }
         public static implicit operator XBinary(XBinaryValue value) {
             if (value == null) return null;
             return new XBinary(value);
@@ -1499,16 +1570,20 @@ namespace XData {
             }
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XBinary), TypeKind.Binary.ToFullName(), TypeKind.Binary,
+        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XBinary), false, TypeKind.Binary.ToFullName(), TypeKind.Binary,
              XSimpleType.ThisInfo, typeof(XBinaryValue), null);
 
     }
 
-    [Serializable]
+
     public class XGuid : XAtomicType {
         public XGuid() { }
-        public XGuid(Guid? value) { GenericValue = value; }
-        public XGuid(Guid value) { GenericValue = value; }
+        public XGuid(Guid? value) {
+            GenericValue = value;
+        }
+        public XGuid(Guid value) {
+            GenericValue = value;
+        }
         public static implicit operator XGuid(Guid? value) {
             if (value == null) return null;
             return new XGuid(value);
@@ -1516,7 +1591,7 @@ namespace XData {
         public static implicit operator XGuid(Guid value) {
             return new XGuid(value);
         }
-        public static implicit operator Guid?(XGuid obj) {
+        public static implicit operator Guid? (XGuid obj) {
             if (obj == null) return null;
             return obj.NullableValue;
         }
@@ -1556,11 +1631,10 @@ namespace XData {
             return true;
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XGuid), TypeKind.Guid.ToFullName(), TypeKind.Guid,
+        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XGuid), false, TypeKind.Guid.ToFullName(), TypeKind.Guid,
             XSimpleType.ThisInfo, typeof(Guid), null);
     }
 
-    [Serializable]
     public class XDuration : XAtomicType {
         public XDuration() { }
         public XDuration(TimeSpan? value) {
@@ -1576,7 +1650,7 @@ namespace XData {
         public static implicit operator XDuration(TimeSpan value) {
             return new XDuration(value);
         }
-        public static implicit operator TimeSpan?(XDuration obj) {
+        public static implicit operator TimeSpan? (XDuration obj) {
             if (obj == null) return null;
             return obj.NullableValue;
         }
@@ -1616,12 +1690,11 @@ namespace XData {
             return true;
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XDuration), TypeKind.Duration.ToFullName(), TypeKind.Duration,
+        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XDuration), false, TypeKind.Duration.ToFullName(), TypeKind.Duration,
             XSimpleType.ThisInfo, typeof(TimeSpan), null);
     }
 
 
-    [Serializable]
     public class XDateTime : XAtomicType {
         public XDateTime() { }
         public XDateTime(DateTimeOffset? value) { GenericValue = value; }
@@ -1633,7 +1706,7 @@ namespace XData {
         public static implicit operator XDateTime(DateTimeOffset value) {
             return new XDateTime(value);
         }
-        public static implicit operator DateTimeOffset?(XDateTime obj) {
+        public static implicit operator DateTimeOffset? (XDateTime obj) {
             if (obj == null) return null;
             return obj.NullableValue;
         }
@@ -1670,7 +1743,6 @@ namespace XData {
             else if (value is TimeSpan) {
                 result = new DateTimeOffset(DateTime.MinValue, (TimeSpan)value);
                 return true;
-
             }
             return false;
         }
@@ -1714,11 +1786,11 @@ namespace XData {
             return true;
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XDateTime), TypeKind.DateTime.ToFullName(), TypeKind.DateTime,
+        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XDateTime), false, TypeKind.DateTime.ToFullName(), TypeKind.DateTime,
             XSimpleType.ThisInfo, typeof(DateTimeOffset), null);
     }
 
-    [Serializable]
+
     public class XDate : XDateTime {
         public XDate() { }
         public XDate(DateTime? value) { GenericValue = value; }
@@ -1730,7 +1802,7 @@ namespace XData {
         public static implicit operator XDate(DateTime value) {
             return new XDate(value);
         }
-        public static implicit operator DateTime?(XDate obj) {
+        public static implicit operator DateTime? (XDate obj) {
             if (obj == null) return null;
             return obj.NullableValue;
         }
@@ -1757,11 +1829,11 @@ namespace XData {
             }
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XDate), TypeKind.Date.ToFullName(), TypeKind.Date,
+        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XDate), false, TypeKind.Date.ToFullName(), TypeKind.Date,
             XDateTime.ThisInfo, typeof(DateTime), null);
 
     }
-    [Serializable]
+
     public class XTime : XDateTime {
         public XTime() { }
         public XTime(TimeSpan? value) { GenericValue = value; }
@@ -1773,7 +1845,7 @@ namespace XData {
         public static implicit operator XTime(TimeSpan value) {
             return new XTime(value);
         }
-        public static implicit operator TimeSpan?(XTime obj) {
+        public static implicit operator TimeSpan? (XTime obj) {
             if (obj == null) return null;
             return obj.NullableValue;
         }
@@ -1800,12 +1872,12 @@ namespace XData {
             }
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XTime), TypeKind.Time.ToFullName(), TypeKind.Time,
+        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XTime), false, TypeKind.Time.ToFullName(), TypeKind.Time,
             XDateTime.ThisInfo, typeof(TimeSpan), null);
 
     }
     #endregion Atomic types
-    [Serializable]
+
     public abstract class XComplexType : XType {
         protected XComplexType() { }
         //
@@ -1910,7 +1982,7 @@ namespace XData {
                 }
             }
             else {
-                if (attributeListNode.HasItem) {
+                if (attributeListNode != null && attributeListNode.Count > 0) {
                     context.AddErrorDiagnostic(DiagnosticCode.TypeProhibitsAttributes,
                         "Type '{0}' prohibits attributes.".InvFormat(effComplexTypeInfo.FullName.ToString()),
                         attributeListNode.OpenTokenTextSpan);
@@ -1919,8 +1991,8 @@ namespace XData {
             }
             //
             XObject children = null;
-            var simpleTypeInfo = effComplexTypeInfo.Children as SimpleTypeInfo;
             var simpleValueNode = complexValueNode.SimpleValue;
+            var simpleTypeInfo = effComplexTypeInfo.Children as SimpleTypeInfo;
             if (simpleTypeInfo != null) {
                 if (!simpleValueNode.IsValid) {
                     context.AddErrorDiagnostic(DiagnosticCode.TypeRequiresSimpleTypeChild,
@@ -1936,19 +2008,29 @@ namespace XData {
                 children = simpleType;
             }
             else {
+                var elementListNode = complexValueNode.ElementList;
                 var childSetInfo = effComplexTypeInfo.Children as ChildSetInfo;
-                if (simpleValueNode.IsValid) {
-                    context.AddErrorDiagnostic(DiagnosticCode.TypeRequiresElementChildren,
-                        "Type '{0}' requires elemment children.".InvFormat(effComplexTypeInfo.FullName.ToString()),
-                        simpleValueNode.TextSpan);
-                    return false;
+                if (childSetInfo != null) {
+                    if (simpleValueNode.IsValid) {
+                        context.AddErrorDiagnostic(DiagnosticCode.TypeRequiresElementChildren,
+                            "Type '{0}' requires elemment children.".InvFormat(effComplexTypeInfo.FullName.ToString()),
+                            simpleValueNode.TextSpan);
+                        return false;
+                    }
+                    XChildSet childSet;
+                    if (!XChildSet.TryCreate(context, programInfo, childSetInfo,
+                        complexValueNode.CloseElementTextSpan, elementListNode, out childSet)) {
+                        return false;
+                    }
+                    children = childSet;
                 }
-                XChildSet childSet;
-                if (!XChildSet.TryCreate(context, programInfo, childSetInfo,
-                    complexValueNode.CloseElementTextSpan, complexValueNode.ElementList, out childSet)) {
-                    return false;
+                else {
+                    if (simpleValueNode.IsValid || (elementListNode != null && elementListNode.Count > 0)) {
+                        context.AddErrorDiagnostic(DiagnosticCode.TypeProhibitsChildren,
+                            "Type '{0}' prohibits children.".InvFormat(effComplexTypeInfo.FullName.ToString()),
+                            complexValueNode.OpenElementTextSpan);
+                    }
                 }
-                children = childSet;
             }
             result = (XComplexType)effComplexTypeInfo.CreateInstance();
             result.Attributes = attributeSet;
@@ -1961,7 +2043,7 @@ namespace XData {
         FullName FullName { get; }
         XType Type { get; }
     }
-    [Serializable]
+
     public abstract class XAttribute : XObject, IEntityObject {
         protected XAttribute() {
             _fullName = GetFullName();
@@ -2091,7 +2173,7 @@ namespace XData {
         }
 
     }
-    [Serializable]
+
     public abstract class XAttributeSet : XObject, ICollection<XAttribute>, IReadOnlyCollection<XAttribute> {
         protected XAttributeSet() {
             _attributeList = new List<XAttribute>();
@@ -2216,17 +2298,17 @@ namespace XData {
         }
         //
         internal static bool TryCreate(Context context, ProgramInfo programInfo, AttributeSetInfo attributeSetInfo,
-            TextSpan equalsTokenTextSpan, ListOrSingleNode<AttributeNode> attributeListNode, out XAttributeSet result) {
+            TextSpan equalsTokenTextSpan, ListNode<AttributeNode> attributeListNode, out XAttributeSet result) {
             result = null;
 
             return true;
         }
     }
-    [Serializable]
+
     public abstract class XChild : XObject {
         public abstract int Order { get; }
     }
-    [Serializable]
+
     public abstract class XElement : XChild, IEntityObject {
         protected XElement() {
             _fullName = GetFullName();
@@ -2433,11 +2515,10 @@ namespace XData {
         Skipped,
         OK
     }
-    [Serializable]
+
     public abstract class XChildContainer : XChild {
         internal abstract void DirectAdd(XChild child);
     }
-    [Serializable]
     public abstract class XChildSet : XChildContainer, ICollection<XChild>, IReadOnlyCollection<XChild> {
         protected XChildSet() {
             _childList = new List<XChild>();
@@ -2579,20 +2660,22 @@ namespace XData {
         internal static bool TryCreate(Context context, ProgramInfo programInfo, ChildSetInfo childSetInfo,
             TextSpan closeElementTextSpan, ListNode<ElementNode> elementListNode, out XChildSet result) {
             result = null;
-            new CreationContext(context, programInfo, closeElementTextSpan, elementListNode.EffectiveList);
+            new CreationContext(context, programInfo, closeElementTextSpan, elementListNode);
 
 
             return true;
         }
+
         private struct CreationContext {
             internal CreationContext(Context context, ProgramInfo programInfo, TextSpan closeElementTextSpan, List<ElementNode> list) {
                 _context = context;
                 _programInfo = programInfo;
                 _closeElementTextSpan = closeElementTextSpan;
-                _list = list;
-                _count = list.Count;
+                _list = list ?? emptyList;
+                _count = _list.Count;
                 _index = 0;
             }
+            private static readonly List<ElementNode> emptyList = new List<ElementNode>();
             private readonly Context _context;
             private readonly ProgramInfo _programInfo;
             private readonly TextSpan _closeElementTextSpan;
@@ -2736,7 +2819,7 @@ namespace XData {
         }
 
     }
-    [Serializable]
+
     public abstract class XChildList<T> : XChildContainer, IList<T>, IReadOnlyList<T> where T : XChild {
         protected XChildList() {
             _childList = new List<T>();

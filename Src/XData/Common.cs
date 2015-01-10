@@ -8,7 +8,6 @@ using XData.TextIO;
 
 namespace XData {
 
-    [Serializable]
     public struct FullName : IEquatable<FullName> {
         public FullName(string uri, string name) {
             Uri = uri;
@@ -94,9 +93,9 @@ namespace XData {
         }
 
 
-        public static object CreateInstance(Type type) {
-            return Activator.CreateInstance(type, true);
-        }
+        //public static object CreateInstance(Type type) {
+        //    return Activator.CreateInstance(type);//, true);
+        //}
 
         public static int AggregateHash(int hash, int newValue) {
             unchecked {

@@ -27,6 +27,7 @@ namespace XData {
         TypeProhibitsAttributes,
         TypeRequiresSimpleTypeChild,
         TypeRequiresElementChildren,
+        TypeProhibitsChildren,
         RequiredChildMemberIsNotMatched,
         ChildListCountIsNotGreaterThanOrEqualToMinOccurs,
 
@@ -36,7 +37,7 @@ namespace XData {
 
         Max
     }
-    [Serializable]
+
     public struct Diagnostic {
         public Diagnostic(DiagnosticSeverity severity, int rawCode, string message, TextSpan textSpan, XObject obj) {
             //if (!severity.IsValid()) throw new ArgumentOutOfRangeException("severity");
@@ -108,7 +109,7 @@ namespace XData {
             return null;
         }
     }
-    [Serializable]
+
     public class Context {
         public Context() { }
         private List<Diagnostic> _diagnostics;

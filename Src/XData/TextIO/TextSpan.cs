@@ -2,7 +2,6 @@
 
 namespace XData.TextIO {
 
-    [Serializable]
     public struct TextSpan {
         public TextSpan(string filePath, int startIndex, int length, TextPosition startPosition, TextPosition endPosition) {
             //if (filePath == null) throw new ArgumentNullException("filePath");
@@ -34,7 +33,7 @@ namespace XData.TextIO {
             return null;
         }
     }
-    [Serializable]
+
     public struct TextPosition {
         public TextPosition(int line, int column) {
             //if (line < 1) throw new ArgumentOutOfRangeException("line");
