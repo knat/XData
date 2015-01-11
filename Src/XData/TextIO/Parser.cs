@@ -7,7 +7,10 @@ namespace XData.TextIO {
         protected ParserBase() {
             _simpleValueGetter = SimpleValue;
         }
-        protected readonly ItemNodeGetter<SimpleValueNode> _simpleValueGetter;
+        protected delegate bool ItemGetter<T>(out T node);
+        protected delegate bool ItemGetterEx<T>(List<T> list, out T node);
+
+        protected readonly ItemGetter<SimpleValueNode> _simpleValueGetter;
         protected void Set(string filePath, char[] data, Context context) {
             if (filePath == null) throw new ArgumentNullException("filePath");
             if (context == null) throw new ArgumentNullException("context");
@@ -253,7 +256,7 @@ namespace XData.TextIO {
             ErrorDiagnosticAndThrow("Simple value expected.");
             return value;
         }
-        protected bool List<T>(int startRawKind, int endRawKind, ItemNodeGetter<T> itemGetter, string errorMsg, out DelimitedListNode<T> result) {
+        protected bool List<T>(int startRawKind, int endRawKind, ItemGetter<T> itemGetter, string errorMsg, out DelimitedListNode<T> result) {
             TextSpan openTokenTextSpan, closeTokenTextSpan;
             if (Token(startRawKind, out openTokenTextSpan)) {
                 var listNode = new DelimitedListNode<T>(openTokenTextSpan);
@@ -275,7 +278,7 @@ namespace XData.TextIO {
             result = null;
             return false;
         }
-        protected bool List<T>(int startRawKind, int endRawKind, ItemNodeGetterEx<T> itemGetterEx, string errorMsg, out DelimitedListNode<T> result) {
+        protected bool List<T>(int startRawKind, int endRawKind, ItemGetterEx<T> itemGetterEx, string errorMsg, out DelimitedListNode<T> result) {
             TextSpan openTokenTextSpan, closeTokenTextSpan;
             if (Token(startRawKind, out openTokenTextSpan)) {
                 var listNode = new DelimitedListNode<T>(openTokenTextSpan);
@@ -344,8 +347,8 @@ namespace XData.TextIO {
             _attributeGetter = Attribute;
             _uriAliasingListStack = new Stack<DelimitedListNode<UriAliasingNode>>();
         }
-        private readonly ItemNodeGetterEx<UriAliasingNode> _uriAliasingGetter;
-        private readonly ItemNodeGetter<AttributeNode> _attributeGetter;
+        private readonly ItemGetterEx<UriAliasingNode> _uriAliasingGetter;
+        private readonly ItemGetter<AttributeNode> _attributeGetter;
         private readonly Stack<DelimitedListNode<UriAliasingNode>> _uriAliasingListStack;
         private bool _getFullName;
         private bool _resolveNullAlias;

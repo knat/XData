@@ -38,7 +38,10 @@ type:
 'type' name type-annotations? type-body
 ;
 type-annotations:
-'<' ('abstract' | 'sealed')? '>'
+'<' modifier? '>'
+;
+modifier:
+'abstract' | 'sealed'
 ;
 type-body:
 type-list | type-directness | type-extension | type-restriction
@@ -47,7 +50,7 @@ type-list:
 'list' qualifiable-name
 ;
 type-directness:
-attributes children? | struct-children | ';'
+attributes children? | structural-children | ';'
 ;
 type-extension:
 'extend' qualifiable-name attributes? struct-children?
@@ -66,4 +69,35 @@ structural-children:
 ;
 restricted-simple-child:
 '${' '}'
+;
+
+global-attribute:
+'attribute' name 'as' qualifiable-name
+;
+local-attribute:
+name local-attribute-annotations? 'as' qualifiable-name
+;
+local-attribute-annotations:
+'<' (qualified | default-value)* '>'
+;
+qualified:
+'qualified'
+;
+default-value:
+'default' ':' simple-value
+;
+attribute-ref:
+'&' qualifiable-name attribute-ref-annotations?
+;
+attribute-ref-annotations:
+'<' default-value? '>'
+;
+
+
+global-element:
+'element' name 'as' qualifiable-name
+;
+
+substitute:
+'substitute' qualifiable-name
 ;

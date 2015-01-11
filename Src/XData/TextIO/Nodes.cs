@@ -3,8 +3,6 @@ using System.Collections.Generic;
 
 namespace XData.TextIO {
 
-    public delegate bool ItemNodeGetter<T>(out T node);
-    public delegate bool ItemNodeGetterEx<T>(List<T> list, out T node);
 
     public sealed class DelimitedListNode<T> : List<T> {
         public DelimitedListNode(TextSpan openTokenTextSpan) {

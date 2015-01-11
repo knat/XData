@@ -45,6 +45,7 @@ namespace XData.TextIO {
         EqualsEquals,
         HashOpenBracket,
         DollarOpenBrace,
+        QuestionOpenBrace,
     }
     public sealed class Lexer {
         [ThreadStatic]
@@ -468,6 +469,19 @@ namespace XData.TextIO {
                         return CreateTokenAndAdvanceChar(ch);
                     }
                 }
+                else if (ch == '?') {
+                    var nextch = GetNextChar();
+                    if (nextch == '{') {
+                        state = CreateState(StateKind.None);
+                        AdvanceChar();
+                        AdvanceChar();
+                        return CreateToken(TokenKind.QuestionOpenBrace, state);
+                    }
+                    else {
+                        return CreateTokenAndAdvanceChar(ch);
+                    }
+                }
+
                 else {
                     return CreateTokenAndAdvanceChar(ch);
                 }

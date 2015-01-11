@@ -81,16 +81,16 @@ namespace XData.Compiler {
             : base(parent) {
 
         }
-        public NameNode Modifier;
+        public NameNode AbstractOrSealed;
         public TypeBodyNode Body;
         public bool IsAbstract {
             get {
-                return Modifier.Value == Parser.AbstractKeyword;
+                return AbstractOrSealed.Value == Parser.AbstractKeyword;
             }
         }
         public bool IsSealed {
             get {
-                return Modifier.Value == Parser.SealedKeyword;
+                return AbstractOrSealed.Value == Parser.SealedKeyword;
             }
         }
 
@@ -100,7 +100,7 @@ namespace XData.Compiler {
     }
     public sealed class TypeListNode : TypeBodyNode {
         public TypeListNode(Node parent) : base(parent) { }
-        public QualifiableNameNode ItemName;
+        public QualifiableNameNode ItemQName;
     }
     public sealed class TypeDirectnessNode : TypeBodyNode {
         public TypeDirectnessNode(Node parent) : base(parent) { }
@@ -109,7 +109,7 @@ namespace XData.Compiler {
     }
     public abstract class TypeDerivation : TypeBodyNode {
         public TypeDerivation(Node parent) : base(parent) { }
-        public QualifiableNameNode BaseName;
+        public QualifiableNameNode BaseQName;
         public AttributesNode Attributes;
     }
     public sealed class TypeExtension : TypeDerivation {
@@ -134,26 +134,42 @@ namespace XData.Compiler {
         public RestrictedSimpleChildNode(Node parent) : base(parent) { }
     }
 
-
-    public abstract class EntityNode : MemberNode {
-        protected EntityNode(Node parent, EntityDeclarationKind kind)
-            : base(parent) {
-            Kind = kind;
-        }
-        public readonly EntityDeclarationKind Kind;
+    public sealed class GlobalAttributeNode : MemberNode {
+        public GlobalAttributeNode(Node parent) : base(parent) { }
+        public QualifiableNameNode TypeQName;
     }
-    public sealed class AttributeNode : EntityNode {
-        public AttributeNode(Node parent, EntityDeclarationKind kind)
-            : base(parent, kind) {
-
-        }
-
+    public abstract class AttributeNode :Node {
+        protected AttributeNode(Node parent) : base(parent) { }
+        public SimpleValueNode DefaultValue;
     }
-    public sealed class ElementNode : EntityNode {
-        public ElementNode(Node parent, EntityDeclarationKind kind)
-            : base(parent, kind) {
+    public sealed class LocalAttributeNode : AttributeNode {
+        public LocalAttributeNode(Node parent) : base(parent) { }
+        public NameNode Name;
+        public NameNode Qualified;
+        public QualifiableNameNode TypeQName;
+    }
+    public sealed class AttributeRefNode : AttributeNode {
+        public AttributeRefNode(Node parent) : base(parent) { }
+        public QualifiableNameNode QName;
+    }
 
+
+
+    public sealed class GlobalElementNode : MemberNode {
+        public GlobalElementNode(Node parent) : base(parent) { }
+        public NameNode AbstractOrSealed;
+        public bool IsAbstract {
+            get {
+                return AbstractOrSealed.Value == Parser.AbstractKeyword;
+            }
         }
+        public bool IsSealed {
+            get {
+                return AbstractOrSealed.Value == Parser.SealedKeyword;
+            }
+        }
+
+        public QualifiableNameNode TypeQName;
 
     }
 

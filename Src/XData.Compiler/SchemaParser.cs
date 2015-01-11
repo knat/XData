@@ -3,18 +3,26 @@ using System.Collections.Generic;
 using XData.TextIO;
 
 namespace XData.Compiler {
-    public sealed class Parser : ParserBase {
+
+    public sealed  class Parser : ParserBase {
         public const string AbstractKeyword = "abstract";
         public const string AliasKeyword = "alias";
         public const string AsKeyword = "as";
         public const string AttributeKeyword = "attribute";
+        public const string DefaultKeyword = "default";
         public const string ElementKeyword = "element";
+        public const string ExtendsKeyword = "extends";
 
         public const string ImportKeyword = "import";
-        public const string ListKeyword = "list";
+        public const string ListsKeyword = "lists";
 
         public const string NamespaceKeyword = "namespace";
+        public const string QualifiedKeyword = "qualified";
+
+        public const string RestrictsKeyword = "restricts";
         public const string SealedKeyword = "sealed";
+        public const string SubstitutesKeyword = "substitutes";
+
         public const string TypeKeyword = "type";
         //
         //
@@ -22,13 +30,22 @@ namespace XData.Compiler {
             _uriAliasingGetter = UriAliasing;
             _namespaceGetter = Namespace;
             _importGetter = Import;
-            _memberGetter = Member;
+            _namespaceMmemberGetter = NamespaceMember;
+            _abstractOrSealedGetter = AbstractOrSealed;
+            _qualifiedGetter = Qualified;
+            _defaultGetter = Default;
+            _substituteGetter = Substitute;
         }
         private delegate bool ItemNodeGetter<T>(Node parent, out T node);
         private readonly ItemNodeGetter<UriAliasingNode> _uriAliasingGetter;
         private readonly ItemNodeGetter<NamespaceNode> _namespaceGetter;
         private readonly ItemNodeGetter<ImportNode> _importGetter;
-        private readonly ItemNodeGetter<MemberNode> _memberGetter;
+        private readonly ItemNodeGetter<MemberNode> _namespaceMmemberGetter;
+        private readonly ItemGetter<NameNode> _abstractOrSealedGetter;
+        private readonly ItemGetter<NameNode> _qualifiedGetter;
+        private readonly ItemGetter<SimpleValueNode> _defaultGetter;
+        private readonly ItemGetter<QualifiableNameNode> _substituteGetter;
+
         private bool List<T>(Node parent, ItemNodeGetter<T> itemGetter, out List<T> result) {
             result = null;
             T item;
@@ -63,7 +80,7 @@ namespace XData.Compiler {
                 result.Uri = UriExpected();
                 TokenExpected('{');
                 List(result, _importGetter, out result.ImportList);
-                List(result, _memberGetter, out result.MemberList);
+                List(result, _namespaceMmemberGetter, out result.MemberList);
                 TokenExpected('}');
                 return true;
             }
@@ -106,52 +123,85 @@ namespace XData.Compiler {
             ErrorDiagnosticAndThrow("Uri expected.");
             return uri;
         }
-        private bool Member(Node parent, out MemberNode result) {
-            TypeNode type;
-            if (Type(parent, out type)) {
+        private bool NamespaceMember(Node parent, out MemberNode result) {
+            if (!Type(parent, out result)) {
+                if (!GlobalElement(parent, out result)) {
+                    if (!GlobalAttribute(parent, out result)) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+        private bool Type(Node parent, out MemberNode result) {
+            if (Keyword(TypeKeyword)) {
+                var type = new TypeNode(parent);
+                type.Name = NameExpected();
+                Annotations(_abstractOrSealedGetter, out type.AbstractOrSealed, "abstract, sealed or > expected.");
+                if (!TypeRestriction(type, out type.Body)) {
+                    if (!TypeExtension(type, out type.Body)) {
+                        if (!TypeList(type, out type.Body)) {
+                            if (!TypeDirectness(type, out type.Body)) {
+                                ErrorDiagnosticAndThrow("Type directness, type list, type extension or type restriction expected.");
+                            }
+                        }
+                    }
+                }
                 result = type;
                 return true;
             }
-            ElementNode element;
-            if (Element(parent, EntityDeclarationKind.Global, out element)) {
-                result = element;
-                return true;
+            result = null;
+            return false;
+        }
+        private bool TypeDirectness(Node parent, out TypeBodyNode result) {
+            var directness = new TypeDirectnessNode(parent);
+            var hasAttributes = Attributes(directness, out directness.Attributes);
+            var hasChildren = StructuralChildren(directness, out directness.StructuralChildren);
+            var hasSemicolon = false;
+            if (!hasAttributes && !hasChildren) {
+                hasSemicolon = Token(';');
             }
-            AttributeNode attribute;
-            if (Attribute(parent, EntityDeclarationKind.Global, out attribute)) {
-                result = attribute;
+            if (hasAttributes || hasChildren || hasSemicolon) {
+                result = directness;
                 return true;
             }
             result = null;
             return false;
         }
-        private bool Type(Node parent, out TypeNode result) {
-            if (Keyword(TypeKeyword)) {
-                result = new TypeNode(parent);
-                result.Name = NameExpected();
-                if (Token('<')) {
-                    AbstractOrSealed(out result.Modifier);
-                    if (!Token('>')) {
-                        ErrorDiagnosticAndThrow(result.Modifier.IsValid ? "> expected." : "abstract, sealed or > expected.");
+        private bool TypeList(Node parent, out TypeBodyNode result) {
+            if (Keyword(ListsKeyword)) {
+                var list = new TypeListNode(parent);
+                list.ItemQName = QualifiableNameExpected();
+                result = list;
+                return true;
+            }
+            result = null;
+            return false;
+        }
+        private bool TypeExtension(Node parent, out TypeBodyNode result) {
+            if (Keyword(ExtendsKeyword)) {
+                var extension = new TypeExtension(parent);
+                extension.BaseQName = QualifiableNameExpected();
+                Attributes(extension, out extension.Attributes);
+                StructuralChildren(extension, out extension.StructuralChildren);
+                result = extension;
+                return true;
+            }
+            result = null;
+            return false;
+        }
+        private bool TypeRestriction(Node parent, out TypeBodyNode result) {
+            if (Keyword(RestrictsKeyword)) {
+                var restriction = new TypeRestriction(parent);
+                restriction.BaseQName = QualifiableNameExpected();
+                Attributes(restriction, out restriction.Attributes);
+                if (!RestrictedSimpleChild(restriction, out restriction.Children)) {
+                    StructuralChildrenNode sc;
+                    if (StructuralChildren(restriction, out sc)) {
+                        restriction.Children = sc;
                     }
                 }
-                TypeListNode list;
-                if (TypeList(parent, out list)) {
-                    result.Body = list;
-                }
-                else {
-
-                }
-
-                return true;
-            }
-            result = null;
-            return false;
-        }
-        private bool TypeList(Node parent, out TypeListNode result) {
-            if (Keyword(ListKeyword)) {
-                result = new TypeListNode(parent);
-                result.ItemName = QualifiableNameExpected();
+                result = restriction;
                 return true;
             }
             result = null;
@@ -162,57 +212,133 @@ namespace XData.Compiler {
             if (Token('[')) {
                 result = new AttributesNode(parent);
 
+                return true;
             }
             result = null;
             return false;
         }
-        private bool StructChildren(Node parent, out StructuralChildrenNode result) {
+        private bool StructuralChildren(Node parent, out StructuralChildrenNode result) {
             if (Token('{')) {
                 result = new StructuralChildrenNode(parent);
-
-            }
-            result = null;
-            return false;
-        }
-        private bool RestrictedSimpleChild(Node parent, out RestrictedSimpleChildNode result) {
-            if (Token(TokenKind.DollarOpenBrace)) {
-                result = new RestrictedSimpleChildNode(parent);
-
-            }
-            result = null;
-            return false;
-        }
-
-        private bool Attribute(Node parent, EntityDeclarationKind kind, out AttributeNode result) {
-            if (Keyword(AttributeKeyword)) {
-                result = new AttributeNode(parent, kind);
-                result.Name = NameExpected();
 
                 return true;
             }
             result = null;
             return false;
         }
-        private bool Element(Node parent, EntityDeclarationKind kind, out ElementNode result) {
-            if (Keyword(ElementKeyword)) {
-                result = new ElementNode(parent, kind);
-                result.Name = NameExpected();
+        private bool RestrictedSimpleChild(Node parent, out ChildrenNode result) {
+            if (Token(TokenKind.DollarOpenBrace)) {
+                var rs = new RestrictedSimpleChildNode(parent);
 
+                result = rs;
+                return true;
+            }
+            result = null;
+            return false;
+        }
+
+        private bool GlobalAttribute(Node parent, out MemberNode result) {
+            if (Keyword(AttributeKeyword)) {
+                var attribute = new GlobalAttributeNode(parent);
+                attribute.Name = NameExpected();
+                KeywordExpected(AsKeyword);
+                attribute.TypeQName = QualifiableNameExpected();
+                result = attribute;
+                return true;
+            }
+            result = null;
+            return false;
+        }
+        private bool LocalAttribute(Node parent, out AttributeNode result) {
+            NameNode name;
+            if (Name(out name)) {
+                var attribute = new LocalAttributeNode(parent) { Name = name };
+                Annotations(_qualifiedGetter, _defaultGetter, out attribute.Qualified, out attribute.DefaultValue, "qualified, default value or > expected.");
+                KeywordExpected(AsKeyword);
+                attribute.TypeQName = QualifiableNameExpected();
+                result = attribute;
+                return true;
+            }
+            result = null;
+            return false;
+        }
+        private bool AttributeRef(Node parent, out AttributeNode result) {
+            if (Token('&')) {
+                var attRef = new AttributeRefNode(parent);
+                attRef.QName = QualifiableNameExpected();
+                Annotations(_defaultGetter, out attRef.DefaultValue, "Default value or > expected.");
+                result = attRef;
+                return true;
+            }
+            result = null;
+            return false;
+        }
+        private bool GlobalElement(Node parent, out MemberNode result) {
+            if (Keyword(ElementKeyword)) {
+                var element = new GlobalElementNode(parent);
+                element.Name = NameExpected();
+
+                KeywordExpected(AsKeyword);
+                element.TypeQName = QualifiableNameExpected();
+                result = element;
                 return true;
             }
             result = null;
             return false;
         }
         private bool AbstractOrSealed(out NameNode result) {
-            if (Keyword(AbstractKeyword, out result)) {
+            if (!Keyword(AbstractKeyword, out result)) {
+                if (!Keyword(SealedKeyword, out result)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        private bool Qualified(out NameNode result) {
+            return Keyword(QualifiedKeyword, out result);
+        }
+        private bool Default(out SimpleValueNode result) {
+            if (Keyword(DefaultKeyword)) {
+                TokenExpected(':');
+                result = SimpleValueExpected();
                 return true;
             }
-            if (Keyword(SealedKeyword, out result)) {
+            result = default(SimpleValueNode);
+            return false;
+        }
+        private bool Substitute(out QualifiableNameNode result) {
+            if (Keyword(SubstitutesKeyword)) {
+                TokenExpected(':');
+                result = QualifiableNameExpected();
                 return true;
             }
+            result = default(QualifiableNameNode);
             return false;
         }
 
+        private void Annotations<T>(ItemGetter<T> getter, out T value, string errMsg) {
+            value = default(T);
+            if (Token('<')) {
+                getter(out value);
+                if (!Token('>')) {
+                    ErrorDiagnosticAndThrow(errMsg);
+                }
+            }
+        }
+        private void Annotations<T1, T2>(ItemGetter<T1> getter1, ItemGetter<T2> getter2, out T1 value1, out T2 value2, string errMsg) {
+            value1 = default(T1);
+            value2 = default(T2);
+            if (Token('<')) {
+                var hasValue1 = getter1(out value1);
+                var hasValue2 = getter2(out value2);
+                if (hasValue2 && !hasValue1) {
+                    getter1(out value1);
+                }
+                if (!Token('>')) {
+                    ErrorDiagnosticAndThrow(errMsg);
+                }
+            }
+        }
 
     }
 }
