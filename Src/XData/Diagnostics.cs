@@ -14,9 +14,10 @@ namespace XData {
     public enum DiagnosticCode {
         None = 0,
         Parsing = -1000,
-        //DuplicateDefaultUri,
-        //DuplicateUriAlias,
-        //InvalidUriAlias,
+        DuplicateDefaultUri,
+        DuplicateUriAlias,
+        InvalidUriAlias,
+
         ElementIsAbstract,
         ElementIsNotNullable,
         ElementRequiresComplexTypeValue,

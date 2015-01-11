@@ -28,6 +28,9 @@ namespace XData.TextIO {
             _context.AddDiagnostic(DiagnosticSeverity.Error, rawCode, errMsg, textSpan, null);
             throw _parsingExceptionObj;
         }
+        protected void ErrorDiagnosticAndThrow(DiagnosticCode code, string errMsg, TextSpan textSpan) {
+            ErrorDiagnosticAndThrow((int)code, errMsg, textSpan);
+        }
         protected void ErrorDiagnosticAndThrow(string errMsg, TextSpan textSpan) {
             ErrorDiagnosticAndThrow((int)DiagnosticCode.Parsing, errMsg, textSpan);
         }
@@ -250,17 +253,6 @@ namespace XData.TextIO {
             ErrorDiagnosticAndThrow("Simple value expected.");
             return value;
         }
-        protected bool List<T>(ItemNodeGetter<T> itemGetter, out List<T> result) {
-            result = null;
-            T item;
-            while (itemGetter(out item)) {
-                if (result == null) {
-                    result = new List<T>();
-                }
-                result.Add(item);
-            }
-            return result != null;
-        }
         protected bool List<T>(int startRawKind, int endRawKind, ItemNodeGetter<T> itemGetter, string errorMsg, out DelimitedListNode<T> result) {
             TextSpan openTokenTextSpan, closeTokenTextSpan;
             if (Token(startRawKind, out openTokenTextSpan)) {
@@ -445,10 +437,12 @@ namespace XData.TextIO {
                 var isDefaultValue = isDefault.Value;
                 foreach (var item in list) {
                     if (item.IsDefault && isDefaultValue) {
-                        ErrorDiagnosticAndThrow("Duplicate default uri.", uri.TextSpan);
+                        ErrorDiagnosticAndThrow(DiagnosticCode.DuplicateDefaultUri,
+                            "Duplicate default uri.", uri.TextSpan);
                     }
                     else if (item.Alias == alias) {
-                        ErrorDiagnosticAndThrow("Duplicate uri alias '{0}'.".InvFormat(alias.ToString()), alias.TextSpan);
+                        ErrorDiagnosticAndThrow(DiagnosticCode.DuplicateUriAlias,
+                            "Duplicate uri alias '{0}'.".InvFormat(alias.ToString()), alias.TextSpan);
                     }
                 }
                 uriAliasing = new UriAliasingNode(alias, uri, isDefaultValue);
@@ -494,7 +488,8 @@ namespace XData.TextIO {
                 }
             }
             if (!isNull) {
-                ErrorDiagnosticAndThrow("Invalid uri alias '{0}'.".InvFormat(alias.ToString()), alias.TextSpan);
+                ErrorDiagnosticAndThrow(DiagnosticCode.InvalidUriAlias,
+                    "Invalid uri alias '{0}'.".InvFormat(alias.ToString()), alias.TextSpan);
             }
             return null;
         }

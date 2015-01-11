@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("XData.Schema")]
+[assembly: AssemblyTitle("XData.Compiler")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("XData.Schema")]
+[assembly: AssemblyProduct("XData.Compiler")]
 [assembly: AssemblyCopyright("Copyright ©  2015")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("210dbe62-3c9b-4b7c-8ca2-81c9e8e754ee")]
+[assembly: Guid("138eeb06-4c8a-4d3c-8031-17b452aedea8")]
 
 // Version information for an assembly consists of the following four values:
 //

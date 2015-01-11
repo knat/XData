@@ -1,0 +1,69 @@
+﻿
+
+compilation-unit:
+uri-aliasing* namespace*
+;
+
+uri-aliasing:
+'alias' uri-value 'as' uri-alias ';'
+;
+uri-value:
+string-value
+;
+uri-alias:
+name
+;
+uri:
+uri-value | uri-alias
+;
+
+namespace:
+'namespace' uri '{' namespace-import* namespace-member* '}'
+;
+namespace-import:
+'import' uri ('as' namespace-alias)? //';'
+;
+namespace-alias:
+name
+;
+namespace-member:
+type | global-attribute | global-element 
+;
+
+qualifiable-name:
+(namespace-alias ':')? name
+;
+
+type:
+'type' name type-annotations? type-body
+;
+type-annotations:
+'<' ('abstract' | 'sealed')? '>'
+;
+type-body:
+type-list | type-directness | type-extension | type-restriction
+;
+type-list:
+'list' qualifiable-name
+;
+type-directness:
+attributes children? | struct-children | ';'
+;
+type-extension:
+'extend' qualifiable-name attributes? struct-children?
+;
+type-restriction:
+'restrict' qualifiable-name attributes? (struct-children | facets)?
+;
+
+
+
+attributes:
+'[' ']'
+;
+structural-children:
+'{' '}'
+;
+restricted-simple-child:
+'${' '}'
+;
