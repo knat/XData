@@ -97,6 +97,16 @@ namespace XData.TextIO {
         protected void TokenExpected(TokenKind kind, string errMsg) {
             TokenExpected((int)kind, errMsg);
         }
+        protected void TokenExpected(char ch, out TextSpan textSpan) {
+            if (!Token(ch, out textSpan)) {
+                ErrorDiagnosticAndThrow(ch.ToString() + " expected.");
+            }
+        }
+        protected void TokenExpected(int rawKind, string errMsg, out TextSpan textSpan) {
+            if (!Token(rawKind, out textSpan)) {
+                ErrorDiagnosticAndThrow(errMsg);
+            }
+        }
         protected void EndOfFileExpected() {
             TokenExpected(char.MaxValue, "End of file expected.");
         }
@@ -140,6 +150,16 @@ namespace XData.TextIO {
                 return true;
             }
             keyword = default(NameNode);
+            return false;
+        }
+        protected bool Keyword(string keywordValue, out TextSpan textSpan) {
+            var token = GetToken();
+            if (token.Kind == TokenKind.Name && token.Value == keywordValue) {
+                textSpan = token.ToTextSpan(_filePath);
+                ConsumeToken();
+                return true;
+            }
+            textSpan = default(TextSpan);
             return false;
         }
         protected virtual bool QualifiableName(out QualifiableNameNode qName) {
@@ -213,6 +233,13 @@ namespace XData.TextIO {
         protected AtomicValueNode StringValueExpected() {
             return AtomicValueExpected(AtomicValueKind.String);
         }
+        protected bool IntegerValue(out AtomicValueNode atomicValue) {
+            return AtomicValue(out atomicValue, AtomicValueKind.Integer);
+        }
+        protected AtomicValueNode IntegerValueExpected() {
+            return AtomicValueExpected(AtomicValueKind.Integer);
+        }
+
         protected bool TypeIndicator(out QualifiableNameNode typeQName) {
             if (Token('(')) {
                 typeQName = QualifiableNameExpected();
@@ -224,7 +251,7 @@ namespace XData.TextIO {
         }
         protected bool SimpleValue(QualifiableNameNode typeQName, out SimpleValueNode simpleValue) {
             AtomicValueNode atom;
-            DelimitedListNode<SimpleValueNode> list = null;
+            DelimitedList<SimpleValueNode> list = null;
             var hasAtom = AtomicValue(out atom);
             var hasList = false;
             if (!hasAtom) {
@@ -256,18 +283,18 @@ namespace XData.TextIO {
             ErrorDiagnosticAndThrow("Simple value expected.");
             return value;
         }
-        protected bool List<T>(int startRawKind, int endRawKind, ItemGetter<T> itemGetter, string errorMsg, out DelimitedListNode<T> result) {
+        protected bool List<T>(int startRawKind, int endRawKind, ItemGetter<T> itemGetter, string errorMsg, out DelimitedList<T> result) {
             TextSpan openTokenTextSpan, closeTokenTextSpan;
             if (Token(startRawKind, out openTokenTextSpan)) {
-                var listNode = new DelimitedListNode<T>(openTokenTextSpan);
+                var list = new DelimitedList<T>(openTokenTextSpan);
                 while (true) {
                     T item;
                     if (itemGetter(out item)) {
-                        listNode.Add(item);
+                        list.Add(item);
                     }
                     else if (Token(endRawKind, out closeTokenTextSpan)) {
-                        listNode.CloseTokenTextSpan = closeTokenTextSpan;
-                        result = listNode;
+                        list.CloseTokenTextSpan = closeTokenTextSpan;
+                        result = list;
                         return true;
                     }
                     else {
@@ -278,18 +305,18 @@ namespace XData.TextIO {
             result = null;
             return false;
         }
-        protected bool List<T>(int startRawKind, int endRawKind, ItemGetterEx<T> itemGetterEx, string errorMsg, out DelimitedListNode<T> result) {
+        protected bool List<T>(int startRawKind, int endRawKind, ItemGetterEx<T> itemGetterEx, string errorMsg, out DelimitedList<T> result) {
             TextSpan openTokenTextSpan, closeTokenTextSpan;
             if (Token(startRawKind, out openTokenTextSpan)) {
-                var listNode = new DelimitedListNode<T>(openTokenTextSpan);
+                var list = new DelimitedList<T>(openTokenTextSpan);
                 while (true) {
                     T item;
-                    if (itemGetterEx(listNode, out item)) {
-                        listNode.Add(item);
+                    if (itemGetterEx(list, out item)) {
+                        list.Add(item);
                     }
                     else if (Token(endRawKind, out closeTokenTextSpan)) {
-                        listNode.CloseTokenTextSpan = closeTokenTextSpan;
-                        result = listNode;
+                        list.CloseTokenTextSpan = closeTokenTextSpan;
+                        result = list;
                         return true;
                     }
                     else {
@@ -345,11 +372,11 @@ namespace XData.TextIO {
         private Parser() {
             _uriAliasingGetter = UriAliasing;
             _attributeGetter = Attribute;
-            _uriAliasingListStack = new Stack<DelimitedListNode<UriAliasingNode>>();
+            _uriAliasingListStack = new Stack<DelimitedList<UriAliasingNode>>();
         }
         private readonly ItemGetterEx<UriAliasingNode> _uriAliasingGetter;
         private readonly ItemGetter<AttributeNode> _attributeGetter;
-        private readonly Stack<DelimitedListNode<UriAliasingNode>> _uriAliasingListStack;
+        private readonly Stack<DelimitedList<UriAliasingNode>> _uriAliasingListStack;
         private bool _getFullName;
         private bool _resolveNullAlias;
         private bool ParsingUnit(string filePath, char[] data, Context context, out ElementNode result) {
@@ -412,7 +439,7 @@ namespace XData.TextIO {
         //    return false;
         //}
         private bool UriAliasingList() {
-            DelimitedListNode<UriAliasingNode> list;
+            DelimitedList<UriAliasingNode> list;
             if (List('<', '>', _uriAliasingGetter, "Uri aliasing or > expected.", out list)) {
                 _uriAliasingListStack.Push(list);
             }
@@ -543,9 +570,9 @@ namespace XData.TextIO {
             }
         }
         private bool ComplexValue(TextSpan equalsTokenTextSpan, QualifiableNameNode typeQName, out ComplexValueNode complexValue) {
-            DelimitedListNode<AttributeNode> attributeList;
+            DelimitedList<AttributeNode> attributeList;
             var hasAttributeList = List('[', ']', _attributeGetter, "Attribute or ] expected.", out attributeList);
-            DelimitedListNode<ElementNode> elementList = null;
+            DelimitedList<ElementNode> elementList = null;
             var simpleValue = default(SimpleValueNode);
             TextSpan openTokenTextSpan, closeTokenTextSpan;
             if (Token('{', out openTokenTextSpan)) {
@@ -553,7 +580,7 @@ namespace XData.TextIO {
                     TokenExpected('}');
                 }
                 else {
-                    elementList = new DelimitedListNode<ElementNode>(openTokenTextSpan);
+                    elementList = new DelimitedList<ElementNode>(openTokenTextSpan);
                     while (true) {
                         ElementNode element;
                         if (Element(out element)) {

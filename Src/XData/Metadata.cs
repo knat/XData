@@ -187,27 +187,27 @@ namespace XData {
             ulong? maxLength = null,
             byte? totalDigits = null,
             byte? fractionDigits = null,
-            ValueAndBoundaryInfo? lowerValue = null,
-            ValueAndBoundaryInfo? upperValue = null,
+            ValueBoundaryInfo? minValue = null,
+            ValueBoundaryInfo? maxValue = null,
             EnumerationsInfo? enumerations = null,
-            PatternItemInfo[] patterns = null) {
+            PatternInfo pattern = null) {
             MinLength = minLength;
             MaxLength = maxLength;
             TotalDigits = totalDigits;
             FractionDigits = fractionDigits;
-            LowerValue = lowerValue;
-            UpperValue = upperValue;
+            MinValue = minValue;
+            MaxValue = maxValue;
             Enumerations = enumerations;
-            Patterns = patterns;
+            Pattern = pattern;
         }
         public readonly ulong? MinLength;
         public readonly ulong? MaxLength;
         public readonly byte? TotalDigits;
         public readonly byte? FractionDigits;
-        public readonly ValueAndBoundaryInfo? LowerValue;
-        public readonly ValueAndBoundaryInfo? UpperValue;
+        public readonly ValueBoundaryInfo? MinValue;
+        public readonly ValueBoundaryInfo? MaxValue;
         public readonly EnumerationsInfo? Enumerations;
-        public readonly PatternItemInfo[] Patterns;
+        public readonly PatternInfo Pattern;
         //public bool EnumerationsContains(object value) {
         //    if (Enumerations != null)
         //        foreach (var i in Enumerations)
@@ -215,16 +215,16 @@ namespace XData {
         //    return false;
         //}
     }
-    public struct ValueAndBoundaryInfo {
-        public ValueAndBoundaryInfo(ValueAndTextInfo valueAndText, bool isInclusive) {
-            ValueAndText = valueAndText;
+    public struct ValueBoundaryInfo {
+        public ValueBoundaryInfo(ValueTextInfo valueText, bool isInclusive) {
+            ValueText = valueText;
             IsInclusive = isInclusive;
         }
-        public readonly ValueAndTextInfo ValueAndText;
+        public readonly ValueTextInfo ValueText;
         public readonly bool IsInclusive;
     }
-    public struct ValueAndTextInfo {
-        public ValueAndTextInfo(object value, string text) {
+    public struct ValueTextInfo {
+        public ValueTextInfo(object value, string text) {
             Value = value;
             Text = text;
         }
@@ -232,11 +232,11 @@ namespace XData {
         public readonly string Text;
     }
     public struct EnumerationsInfo {
-        public EnumerationsInfo(ValueAndTextInfo[] enumerations, string totalText) {
-            Enumerations = enumerations;
+        public EnumerationsInfo(ValueTextInfo[] items, string totalText) {
+            Items = items;
             TotalText = totalText;
         }
-        public readonly ValueAndTextInfo[] Enumerations;
+        public readonly ValueTextInfo[] Items;
         public readonly string TotalText;
     }
 
@@ -250,8 +250,8 @@ namespace XData {
     //    public readonly string Name;//opt
     //    public readonly object Value;
     //}
-    public sealed class PatternItemInfo {
-        public PatternItemInfo(string pattern) {
+    public sealed class PatternInfo {
+        public PatternInfo(string pattern) {
             if (pattern == null) throw new ArgumentNullException("pattern");
             Pattern = pattern;
         }
@@ -385,7 +385,7 @@ namespace XData {
             }
         }
         public readonly bool IsOptional;
-        public readonly ValueAndTextInfo? DefaultValue;
+        public readonly ValueTextInfo? DefaultValue;
 
     }
     public interface IChildInfo {

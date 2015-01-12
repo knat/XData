@@ -38,66 +38,78 @@ type:
 'type' name type-annotations? type-body
 ;
 type-annotations:
-'<' modifier? '>'
+'<' ('abstract' | 'sealed')? '>'
 ;
-modifier:
-'abstract' | 'sealed'
-;
+
 type-body:
 type-list | type-directness | type-extension | type-restriction
 ;
 type-list:
-'list' qualifiable-name
+'lists qualifiable-name
 ;
 type-directness:
 attributes children? | structural-children | ';'
 ;
 type-extension:
-'extend' qualifiable-name attributes? struct-children?
+'extends' qualifiable-name attributes? root-structural-children?
 ;
 type-restriction:
-'restrict' qualifiable-name attributes? (struct-children | facets)?
+'restricts' qualifiable-name attributes? (root-structural-children | simple-value-restrictions)?
+;
+
+simple-value-restrictions:
+'${' '}'
 ;
 
 
 
 attributes:
-'[' ']'
-;
-structural-children:
-'{' '}'
-;
-restricted-simple-child:
-'${' '}'
+'[' (local-attribute | global-attribute-ref)* ']'
 ;
 
 global-attribute:
-'attribute' name 'as' qualifiable-name
+'attribute' name global-attribute-annotations? 'as' qualifiable-name
 ;
+global-attribute-annotations:
+'<' 'nullable'? '>'
+;
+
 local-attribute:
 name local-attribute-annotations? 'as' qualifiable-name
 ;
 local-attribute-annotations:
-'<' (qualified | default-value)* '>'
+'<' (optional | member-name | qualified)* '>'
+;
+global-attribute-ref:
+'&' qualifiable-name attribute-ref-annotations?
+;
+attribute-ref-annotations:
+'<' (optional | member-name)* '>'
 ;
 qualified:
 'qualified'
 ;
-default-value:
-'default' ':' simple-value
+optional:
+'?'
 ;
-attribute-ref:
-'&' qualifiable-name attribute-ref-annotations?
+member-name:
+'membername' ':' name
 ;
-attribute-ref-annotations:
-'<' default-value? '>'
-;
-
 
 global-element:
-'element' name 'as' qualifiable-name
+'element' name global-element-annotations? 'as' qualifiable-name
+;
+global-element-annotations:
+'<' ('nullable' | 'abstract' | 'sealed' | substitution)* '>'
+;
+substitution:
+'substitutes' qualifiable-name
 ;
 
-substitute:
-'substitute' qualifiable-name
+root-structural-children:
+'{' '}'
+;
+
+occurrence:
+'?' | '*' | '+' | integer-value '..' integer-value?
 ;

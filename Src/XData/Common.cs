@@ -91,6 +91,15 @@ namespace XData {
         public static string ToInvString(this ulong i) {
             return i.ToString(CultureInfo.InvariantCulture);
         }
+        public static string ToInvString(this byte i) {
+            return i.ToString(CultureInfo.InvariantCulture);
+        }
+        public static bool TryToInvUInt64(this string s, out ulong result) {
+            return ulong.TryParse(s, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
+        }
+        public static bool TryToInvByte(this string s, out byte result) {
+            return byte.TryParse(s, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
+        }
 
 
         //public static object CreateInstance(Type type) {

@@ -3,6 +3,14 @@ using System.Collections.Generic;
 using XData.TextIO;
 
 namespace XData.Compiler {
+    public enum DiagnosticCodeEx {
+        None = 0,
+        UInt64ValueRequired = -2000,
+        ByteValueRequired,
+        MaxValueMustEqualToOrBeGreaterThanMinValue,
+        MaxValueMustBeGreaterThanZero,
+
+    }
     public abstract class Node {
         protected Node(Node parent) {
             Parent = parent;
@@ -68,15 +76,15 @@ namespace XData.Compiler {
         }
         public UriNode Uri;
         public List<ImportNode> ImportList;
-        public List<MemberNode> MemberList;
+        public List<NamespaceMemberNode> MemberList;
     }
-    public abstract class MemberNode : Node {
-        protected MemberNode(Node parent)
+    public abstract class NamespaceMemberNode : Node {
+        protected NamespaceMemberNode(Node parent)
             : base(parent) {
         }
         public NameNode Name;
     }
-    public sealed class TypeNode : MemberNode {
+    public sealed class TypeNode : NamespaceMemberNode {
         public TypeNode(Node parent)
             : base(parent) {
 
@@ -105,59 +113,150 @@ namespace XData.Compiler {
     public sealed class TypeDirectnessNode : TypeBodyNode {
         public TypeDirectnessNode(Node parent) : base(parent) { }
         public AttributesNode Attributes;
-        public StructuralChildrenNode StructuralChildren;
+        public RootStructuralChildrenNode StructuralChildren;
     }
     public abstract class TypeDerivation : TypeBodyNode {
         public TypeDerivation(Node parent) : base(parent) { }
         public QualifiableNameNode BaseQName;
         public AttributesNode Attributes;
+        public RootStructuralChildrenNode StructuralChildren;
     }
     public sealed class TypeExtension : TypeDerivation {
         public TypeExtension(Node parent) : base(parent) { }
-        public StructuralChildrenNode StructuralChildren;
     }
     public sealed class TypeRestriction : TypeDerivation {
         public TypeRestriction(Node parent) : base(parent) { }
-        public ChildrenNode Children;
+        public SimpleValueRestrictionsNode SimpleValueRestrictions;
     }
 
     public sealed class AttributesNode : Node {
         public AttributesNode(Node parent) : base(parent) { }
+        public List<MemberAttributeNode> AttributeList;
+        public TextSpan CloseTokenTextSpan;
     }
-    public abstract class ChildrenNode : Node {
-        public ChildrenNode(Node parent) : base(parent) { }
+    public sealed class RootStructuralChildrenNode : Node {
+        public RootStructuralChildrenNode(Node parent) : base(parent) { }
+        public List<MemberChildNode> ChildList;
+        public TextSpan CloseTokenTextSpan;
     }
-    public sealed class StructuralChildrenNode : ChildrenNode {
-        public StructuralChildrenNode(Node parent) : base(parent) { }
-    }
-    public sealed class RestrictedSimpleChildNode : ChildrenNode {
-        public RestrictedSimpleChildNode(Node parent) : base(parent) { }
+    public sealed class SimpleValueRestrictionsNode : Node {
+        public SimpleValueRestrictionsNode(Node parent) : base(parent) { }
+        public IntegerRangeNode<ulong> Lengths;
+        public IntegerRangeNode<byte> Digits;
+        public ValueRangeNode Values;
+        public EnumerationsNode Enumerations;
+        public AtomicValueNode Pattern;
     }
 
-    public sealed class GlobalAttributeNode : MemberNode {
+    public struct IntegerRangeNode<T> where T : struct {
+        public IntegerRangeNode(T? minValue, T? maxValue, TextSpan textSpan) {
+            MinValue = minValue;
+            MaxValue = maxValue;
+            TextSpan = textSpan;
+        }
+        public readonly T? MinValue;
+        public readonly T? MaxValue;
+        public readonly TextSpan TextSpan;
+        public bool IsValid {
+            get {
+                return TextSpan.IsValid;
+            }
+        }
+    }
+    public struct ValueRangeNode {
+        public ValueRangeNode(ValueBoundaryNode? minValue, ValueBoundaryNode? maxValue, TextSpan textSpan) {
+            MinValue = minValue;
+            MaxValue = maxValue;
+            TextSpan = textSpan;
+        }
+        public readonly ValueBoundaryNode? MinValue;
+        public readonly ValueBoundaryNode? MaxValue;
+        public readonly TextSpan TextSpan;
+        public bool IsValid {
+            get {
+                return TextSpan.IsValid;
+            }
+        }
+    }
+    public struct ValueBoundaryNode {
+        public ValueBoundaryNode(SimpleValueNode value, bool isInclusive) {
+            Value = value;
+            IsInclusive = isInclusive;
+        }
+        public readonly SimpleValueNode Value;
+        public readonly bool IsInclusive;
+        public bool IsValid {
+            get {
+                return Value.IsValid;
+            }
+        }
+    }
+    public struct EnumerationsNode {
+        public EnumerationsNode(List<SimpleValueNode> itemList, TextSpan textSpan) {
+            ItemList = itemList;
+            TextSpan = textSpan;
+        }
+        public readonly List<SimpleValueNode> ItemList;
+        public readonly TextSpan TextSpan;
+        public bool IsValid {
+            get {
+                return TextSpan.IsValid;
+            }
+        }
+    }
+
+
+
+    public sealed class GlobalAttributeNode : NamespaceMemberNode {
         public GlobalAttributeNode(Node parent) : base(parent) { }
+        public TextSpan Nullable;
         public QualifiableNameNode TypeQName;
+        public bool IsNullable {
+            get {
+                return Nullable.IsValid;
+            }
+        }
     }
-    public abstract class AttributeNode :Node {
-        protected AttributeNode(Node parent) : base(parent) { }
-        public SimpleValueNode DefaultValue;
+    public abstract class MemberAttributeNode : Node {
+        protected MemberAttributeNode(Node parent) : base(parent) { }
+        public TextSpan Optional;
+        public NameNode MemberName;
+        public bool IsOptional {
+            get {
+                return Optional.IsValid;
+            }
+        }
     }
-    public sealed class LocalAttributeNode : AttributeNode {
+    public sealed class LocalAttributeNode : MemberAttributeNode {
         public LocalAttributeNode(Node parent) : base(parent) { }
         public NameNode Name;
-        public NameNode Qualified;
+        public TextSpan Nullable;
+        public TextSpan Qualified;
         public QualifiableNameNode TypeQName;
+        public bool IsNullable {
+            get {
+                return Nullable.IsValid;
+            }
+        }
+        public bool IsQualified {
+            get {
+                return Qualified.IsValid;
+            }
+        }
     }
-    public sealed class AttributeRefNode : AttributeNode {
-        public AttributeRefNode(Node parent) : base(parent) { }
+    public sealed class GlobalAttributeRefNode : MemberAttributeNode {
+        public GlobalAttributeRefNode(Node parent) : base(parent) { }
         public QualifiableNameNode QName;
     }
 
 
 
-    public sealed class GlobalElementNode : MemberNode {
+    public sealed class GlobalElementNode : NamespaceMemberNode {
         public GlobalElementNode(Node parent) : base(parent) { }
         public NameNode AbstractOrSealed;
+        public TextSpan Nullable;
+        public QualifiableNameNode Substitution;
+        public QualifiableNameNode TypeQName;
         public bool IsAbstract {
             get {
                 return AbstractOrSealed.Value == Parser.AbstractKeyword;
@@ -168,9 +267,55 @@ namespace XData.Compiler {
                 return AbstractOrSealed.Value == Parser.SealedKeyword;
             }
         }
-
-        public QualifiableNameNode TypeQName;
-
+        public bool IsNullable {
+            get {
+                return Nullable.IsValid;
+            }
+        }
     }
+    public abstract class MemberChildNode : Node {
+        protected MemberChildNode(Node parent) : base(parent) { }
+        public OccurrenceNode Occurrence;
+        public NameNode MemberName;
+    }
+    public sealed class LocalElementNode : MemberChildNode {
+        public LocalElementNode(Node parent) : base(parent) { }
+        public NameNode Name;
+        public TextSpan Nullable;
+        public QualifiableNameNode TypeQName;
+        public bool IsNullable {
+            get {
+                return Nullable.IsValid;
+            }
+        }
+    }
+    public sealed class GlobalElementRefNode : MemberChildNode {
+        public GlobalElementRefNode(Node parent) : base(parent) { }
+        public QualifiableNameNode QName;
+    }
+    public sealed class StructuralChildrenNode : MemberChildNode {
+        public StructuralChildrenNode(Node parent) : base(parent) { }
+        public bool IsSequence;
+        public List<MemberChildNode> ChildList;
+        public TextSpan CloseTokenTextSpan;
+    }
+
+
+    public struct OccurrenceNode {
+        public OccurrenceNode(ulong minValue, ulong maxValue, TextSpan textSpan) {
+            MinValue = minValue;
+            MaxValue = maxValue;
+            TextSpan = textSpan;
+        }
+        public readonly ulong MinValue;
+        public readonly ulong MaxValue;
+        public readonly TextSpan TextSpan;
+        public bool IsValid {
+            get {
+                return TextSpan.IsValid;
+            }
+        }
+    }
+
 
 }
