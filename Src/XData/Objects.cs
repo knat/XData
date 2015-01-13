@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using XData.TextIO;
+using XData.IO.Text;
 
 namespace XData {
     public abstract class XObject {

@@ -1,28 +1,37 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.IO;
 
-namespace XData.TextIO {
+namespace XData.IO.Text {
     public abstract class ParserBase {
         protected ParserBase() {
             _simpleValueGetter = SimpleValue;
         }
         protected delegate bool ItemGetter<T>(out T node);
         protected delegate bool ItemGetterEx<T>(List<T> list, out T node);
-
         protected readonly ItemGetter<SimpleValueNode> _simpleValueGetter;
-        protected void Set(string filePath, char[] data, Context context) {
-            if (filePath == null) throw new ArgumentNullException("filePath");
-            if (context == null) throw new ArgumentNullException("context");
-            _lexer = Lexer.GetInstance(data);
+        protected void Set(string filePath, TextReader reader, Context context) {
+            if (filePath == null) {
+                throw new ArgumentNullException("filePath");
+            }
+            if (context == null) {
+                throw new ArgumentNullException("context");
+            }
+            _lexer = Lexer.Get(reader);
             _filePath = filePath;
-            _data = data;
             _context = context;
+            _token = null;
+        }
+        protected virtual void Clear() {
+            if (_lexer != null) {
+                _lexer.Clear();
+            }
+            _filePath = null;
+            _context = null;
             _token = null;
         }
         private Lexer _lexer;
         private string _filePath;
-        private char[] _data;
         private Context _context;
         private Token? _token;
         protected sealed class ParsingException : Exception { }
@@ -366,8 +375,8 @@ namespace XData.TextIO {
     public sealed class Parser : ParserBase {
         [ThreadStatic]
         private static Parser _instance;
-        public static bool Parse(string filePath, char[] data, Context context, out ElementNode result) {
-            return (_instance ?? (_instance = new Parser())).ParsingUnit(filePath, data, context, out result);
+        public static bool Parse(string filePath, TextReader reader, Context context, out ElementNode result) {
+            return (_instance ?? (_instance = new Parser())).ParsingUnit(filePath, reader, context, out result);
         }
         private Parser() {
             _uriAliasingGetter = UriAliasing;
@@ -379,8 +388,12 @@ namespace XData.TextIO {
         private readonly Stack<DelimitedList<UriAliasingNode>> _uriAliasingListStack;
         private bool _getFullName;
         private bool _resolveNullAlias;
-        private bool ParsingUnit(string filePath, char[] data, Context context, out ElementNode result) {
-            Set(filePath, data, context);
+        protected override void Clear() {
+            base.Clear();
+            _uriAliasingListStack.Clear();
+        }
+        private bool ParsingUnit(string filePath, TextReader reader, Context context, out ElementNode result) {
+            Set(filePath, reader, context);
             _uriAliasingListStack.Clear();
             _resolveNullAlias = true;
             try {
@@ -392,7 +405,11 @@ namespace XData.TextIO {
                     ErrorDiagnosticAndThrow("Element expected.");
                 }
             }
-            catch (ParsingException) { }
+            catch (ParsingException) {
+            }
+            finally {
+                Clear();
+            }
             result = default(ElementNode);
             return false;
         }

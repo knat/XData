@@ -35,7 +35,7 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- A reference to the entire .NET Framework is automatically included -->
-    <Content Include="TextIO\Grammars.txt" />
+    <Content Include="IO\Text\Grammars.txt" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Common.cs" />
@@ -44,10 +44,10 @@
     <None Include="Metah.X.cs" />
     <Compile Include="Objects.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TextIO\Lexer.cs" />
-    <Compile Include="TextIO\Nodes.cs" />
-    <Compile Include="TextIO\Parser.cs" />
-    <Compile Include="TextIO\TextSpan.cs" />
+    <Compile Include="IO\Text\Lexer.cs" />
+    <Compile Include="IO\Text\Nodes.cs" />
+    <Compile Include="IO\Text\Parser.cs" />
+    <Compile Include="IO\Text\TextSpan.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

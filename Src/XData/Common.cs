@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Text;
-using System.Xml.Linq;
-using XData.TextIO;
+using XData.IO.Text;
 
 namespace XData {
 
@@ -54,33 +52,44 @@ namespace XData {
 
 
     public static class Extensions {
-        private const int _stringBuilderMaxCount = 8;
-        [ThreadStatic]
-        private static StringBuilder[] _stringBuilders;
-        [ThreadStatic]
-        private static int _stringBuilderIndex;
+        private const int _stringBuilderCount = 4;
+        private const int _stringBuilderCapacity = 256;
+        private static readonly StringBuilder[] _stringBuilders = new StringBuilder[_stringBuilderCount];
         public static StringBuilder AcquireStringBuilder() {
-            if (_stringBuilderIndex < _stringBuilderMaxCount) {
-                var sbs = _stringBuilders ?? (_stringBuilders = new StringBuilder[_stringBuilderMaxCount]);
-                var sb = sbs[_stringBuilderIndex];
-                if (sb == null) {
-                    sb = new StringBuilder();
-                    sbs[_stringBuilderIndex] = sb;
+            var sbs = _stringBuilders;
+            StringBuilder sb = null;
+            lock (_stringBuilders) {
+                for (var i = 0; i < _stringBuilderCount; ++i) {
+                    if (sbs[i] != null) {
+                        sb = sbs[i];
+                        sbs[i] = null;
+                        break;
+                    }
                 }
-                ++_stringBuilderIndex;
+            }
+            if (sb != null) {
                 sb.Clear();
                 return sb;
             }
-            return new StringBuilder();
+            return new StringBuilder(_stringBuilderCapacity);
         }
-        public static void ReleaseStringBuilder() {
-            if (_stringBuilderIndex > 0) {
-                --_stringBuilderIndex;
+        public static void ReleaseStringBuilder(StringBuilder sb) {
+            if (sb != null && sb.Capacity <= _stringBuilderCapacity) {
+                var sbs = _stringBuilders;
+                lock (_stringBuilders) {
+                    for (var i = 0; i < _stringBuilderCount; ++i) {
+                        if (sbs[i] == null) {
+                            sbs[i] = sb;
+                            return;
+                        }
+                    }
+                }
             }
         }
         public static string ToStringAndRelease(this StringBuilder sb) {
-            ReleaseStringBuilder();
-            return sb.ToString();
+            var str = sb.ToString();
+            ReleaseStringBuilder(sb);
+            return str;
         }
         public static string InvFormat(this string format, params string[] args) {
             return AcquireStringBuilder().AppendFormat(CultureInfo.InvariantCulture, format, args).ToStringAndRelease();

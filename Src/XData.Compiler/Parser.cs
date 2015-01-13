@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using XData.TextIO;
+using System.IO;
+using XData.IO.Text;
 
 namespace XData.Compiler {
 
@@ -28,6 +29,12 @@ namespace XData.Compiler {
         public const string ValuesKeyword = "values";
         //
         //
+        [ThreadStatic]
+        private static Parser _instance;
+        public static bool Parse(string filePath, TextReader reader, Context context,
+            Node parent, out CompilationUnitNode result) {
+            return (_instance ?? (_instance = new Parser())).CompilationUnit(filePath, reader, context, parent, out result);
+        }
         private Parser() {
             _uriAliasingGetter = UriAliasing;
             _namespaceGetter = Namespace;
@@ -50,7 +57,6 @@ namespace XData.Compiler {
         private readonly NodeItemGetter<NamespaceMemberNode> _namespaceMemberGetter;
         private readonly NodeItemGetter<MemberAttributeNode> _memberAttributeGetter;
         private readonly NodeItemGetter<MemberChildNode> _memberChildGetter;
-
         private readonly ItemGetter<NameNode> _abstractOrSealedGetter;
         private readonly ItemGetter<TextSpan> _qualifiedGetter;
         private readonly ItemGetter<TextSpan> _nullableGetter;
@@ -58,7 +64,24 @@ namespace XData.Compiler {
         private readonly ItemGetter<NameNode> _memberNameGetter;
         private readonly ItemGetter<QualifiableNameNode> _substitutionGetter;
         private readonly ItemGetter<OccurrenceNode> _occurrenceGetter;
-
+        private bool CompilationUnit(string filePath, TextReader reader, Context context,
+            Node parent, out CompilationUnitNode result) {
+            Set(filePath, reader, context);
+            try {
+                result = new CompilationUnitNode(parent);
+                List(result, _uriAliasingGetter, out result.UriAliasingList);
+                List(result, _namespaceGetter, out result.NamespaceList);
+                EndOfFileExpected();
+                return true;
+            }
+            catch (ParsingException) {
+            }
+            finally {
+                Clear();
+            }
+            result = null;
+            return false;
+        }
         private void ErrorDiagnosticAndThrow(DiagnosticCodeEx code, string errMsg, TextSpan textSpan) {
             ErrorDiagnosticAndThrow((int)code, errMsg, textSpan);
         }
@@ -73,13 +96,6 @@ namespace XData.Compiler {
                 result.Add(item);
             }
             return result != null;
-        }
-
-        private bool CompilationUnit(Node parent, out CompilationUnitNode result) {
-            result = new CompilationUnitNode(parent);
-            List(result, _uriAliasingGetter, out result.UriAliasingList);
-            List(result, _namespaceGetter, out result.NamespaceList);
-            return true;
         }
         private bool UriAliasing(Node parent, out UriAliasingNode result) {
             if (Keyword(AliasKeyword)) {

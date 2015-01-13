@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using XData.TextIO;
+using XData.IO.Text;
 
 namespace XData.Compiler {
     public enum DiagnosticCodeEx {
@@ -35,9 +35,7 @@ namespace XData.Compiler {
         public List<CompilationUnitNode> CompilationUnitList;
     }
     public sealed class CompilationUnitNode : Node {
-        public CompilationUnitNode(Node parent)
-            : base(parent) {
-        }
+        public CompilationUnitNode(Node parent) : base(parent) { }
         public List<UriAliasingNode> UriAliasingList;
         public List<NamespaceNode> NamespaceList;
     }

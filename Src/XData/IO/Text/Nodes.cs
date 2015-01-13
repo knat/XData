@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace XData.TextIO {
+namespace XData.IO.Text {
     public sealed class DelimitedList<T> : List<T> {
         public DelimitedList(TextSpan openTokenTextSpan) {
             OpenTokenTextSpan = openTokenTextSpan;

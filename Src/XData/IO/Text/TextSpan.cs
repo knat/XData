@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace XData.TextIO {
+namespace XData.IO.Text {
 
     public struct TextSpan {
         public TextSpan(string filePath, int startIndex, int length, TextPosition startPosition, TextPosition endPosition) {
