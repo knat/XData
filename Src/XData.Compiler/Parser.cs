@@ -35,9 +35,14 @@ namespace XData.Compiler {
             Node parent, out CompilationUnitNode result) {
             return (_instance ?? (_instance = new Parser())).CompilationUnit(filePath, reader, context, parent, out result);
         }
+        public static bool Parse(string filePath, TextReader reader, Context context,
+            Node parent, out CodeCompilationUnitNode result) {
+            return (_instance ?? (_instance = new Parser())).CodeCompilationUnit(filePath, reader, context, parent, out result);
+        }
         private Parser() {
             _uriAliasingGetter = UriAliasing;
             _namespaceGetter = Namespace;
+            _codeNamespaceGetter = CodeNamespace;
             _importGetter = Import;
             _namespaceMemberGetter = NamespaceMember;
             _memberAttributeGetter = MemberAttribute;
@@ -50,26 +55,28 @@ namespace XData.Compiler {
             _substitutionGetter = Substitution;
             _occurrenceGetter = Occurrence;
         }
-        private delegate bool NodeItemGetter<T>(Node parent, out T node);
-        private readonly NodeItemGetter<UriAliasingNode> _uriAliasingGetter;
-        private readonly NodeItemGetter<NamespaceNode> _namespaceGetter;
-        private readonly NodeItemGetter<ImportNode> _importGetter;
-        private readonly NodeItemGetter<NamespaceMemberNode> _namespaceMemberGetter;
-        private readonly NodeItemGetter<MemberAttributeNode> _memberAttributeGetter;
-        private readonly NodeItemGetter<MemberChildNode> _memberChildGetter;
-        private readonly ItemGetter<NameNode> _abstractOrSealedGetter;
-        private readonly ItemGetter<TextSpan> _qualifiedGetter;
-        private readonly ItemGetter<TextSpan> _nullableGetter;
-        private readonly ItemGetter<TextSpan> _optionalGetter;
-        private readonly ItemGetter<NameNode> _memberNameGetter;
-        private readonly ItemGetter<QualifiableNameNode> _substitutionGetter;
-        private readonly ItemGetter<OccurrenceNode> _occurrenceGetter;
+        private delegate bool NodeGetterWithParent<T>(Node parent, out T node);
+        private delegate bool NodeGetterWithParentList<T>(Node parent, List<T> list, out T node);
+        private readonly NodeGetterWithList<UriAliasingNode> _uriAliasingGetter;
+        private readonly NodeGetterWithParent<NamespaceNode> _namespaceGetter;
+        private readonly NodeGetterWithParent<CodeNamespaceNode> _codeNamespaceGetter;
+        private readonly NodeGetterWithParentList<ImportNode> _importGetter;
+        private readonly NodeGetterWithParentList<NamespaceMemberNode> _namespaceMemberGetter;
+        private readonly NodeGetterWithParent<MemberAttributeNode> _memberAttributeGetter;
+        private readonly NodeGetterWithParent<MemberChildNode> _memberChildGetter;
+        private readonly NodeGetter<NameNode> _abstractOrSealedGetter;
+        private readonly NodeGetter<TextSpan> _qualifiedGetter;
+        private readonly NodeGetter<TextSpan> _nullableGetter;
+        private readonly NodeGetter<TextSpan> _optionalGetter;
+        private readonly NodeGetter<NameNode> _memberNameGetter;
+        private readonly NodeGetter<QualifiableNameNode> _substitutionGetter;
+        private readonly NodeGetter<OccurrenceNode> _occurrenceGetter;
         private bool CompilationUnit(string filePath, TextReader reader, Context context,
             Node parent, out CompilationUnitNode result) {
             Set(filePath, reader, context);
             try {
                 result = new CompilationUnitNode(parent);
-                List(result, _uriAliasingGetter, out result.UriAliasingList);
+                List(_uriAliasingGetter, out result.UriAliasingList);
                 List(result, _namespaceGetter, out result.NamespaceList);
                 EndOfFileExpected();
                 return true;
@@ -82,35 +89,28 @@ namespace XData.Compiler {
             result = null;
             return false;
         }
-        private void ErrorDiagnosticAndThrow(DiagnosticCodeEx code, string errMsg, TextSpan textSpan) {
-            ErrorDiagnosticAndThrow((int)code, errMsg, textSpan);
-        }
-
-        private bool List<T>(Node parent, NodeItemGetter<T> itemGetter, out List<T> result) {
-            result = null;
-            T item;
-            while (itemGetter(parent, out item)) {
-                if (result == null) {
-                    result = new List<T>();
-                }
-                result.Add(item);
-            }
-            return result != null;
-        }
-        private bool UriAliasing(Node parent, out UriAliasingNode result) {
-            if (Keyword(AliasKeyword)) {
-                var value = StringValueExpected();
-                KeywordExpected(AsKeyword);
-                result = new UriAliasingNode(value, NameExpected());
+        private bool CodeCompilationUnit(string filePath, TextReader reader, Context context,
+            Node parent, out CodeCompilationUnitNode result) {
+            Set(filePath, reader, context);
+            try {
+                result = new CodeCompilationUnitNode(parent);
+                List(_uriAliasingGetter, out result.UriAliasingList);
+                List(result, _codeNamespaceGetter, out result.NamespaceList);
+                EndOfFileExpected();
                 return true;
             }
-            result = default(UriAliasingNode);
+            catch (ParsingException) {
+            }
+            finally {
+                Clear();
+            }
+            result = null;
             return false;
         }
         private bool Namespace(Node parent, out NamespaceNode result) {
             if (Keyword(NamespaceKeyword)) {
                 result = new NamespaceNode(parent);
-                result.Uri = UriExpected();
+                result.UriNode = UriExpected(result);
                 TokenExpected('{');
                 List(result, _importGetter, out result.ImportList);
                 List(result, _namespaceMemberGetter, out result.MemberList);
@@ -120,12 +120,114 @@ namespace XData.Compiler {
             result = default(NamespaceNode);
             return false;
         }
-        private bool Import(Node parent, out ImportNode result) {
+        private bool CodeNamespace(Node parent, out CodeNamespaceNode result) {
+            if (Keyword(NamespaceKeyword)) {
+                result = new CodeNamespaceNode(parent);
+                result.UriNode = UriExpected(result);
+                TokenExpected('=');
+                if (!CSharpNamespaceName(out result.Name)) {
+                    ErrorDiagnosticAndThrow("C# namespace name expected.");
+                }
+                return true;
+            }
+            result = default(CodeNamespaceNode);
+            return false;
+        }
+        private bool CSharpNamespaceName(out CSharpNamespaceNameNode result) {
+            result = null;
+            NameNode name;
+            if (Name(out name)) {
+                result = new CSharpNamespaceNameNode { TextSpan = name.TextSpan };
+                result.Add(name.Value);
+                while (true) {
+                    if (Token('.')) {
+                        result.Add(NameExpected().Value);
+                    }
+                    else {
+                        break;
+                    }
+                }
+            }
+            return result != null;
+        }
+        private void CheckAlias(NameNode alias) {
+            if (alias.Value == "sys") {
+                ErrorDiagnosticAndThrow(DiagnosticCodeEx.AliasSysIsReserved,
+                    "Alias 'sys' is reserved.", alias.TextSpan);
+            }
+        }
+        private bool UriAliasing(List<UriAliasingNode> list, out UriAliasingNode result) {
+            if (Keyword(AliasKeyword)) {
+                var value = StringValueExpected();
+                KeywordExpected(AsKeyword);
+                var alias = NameExpected();
+                CheckAlias(alias);
+                if (list != null) {
+                    foreach (var item in list) {
+                        if (item.Alias == alias) {
+                            ErrorDiagnosticAndThrow(DiagnosticCodeEx.DuplicateUriAlias,
+                                "Duplicate uri alias '{0}'.".InvFormat(alias.ToString()), alias.TextSpan);
+                        }
+                    }
+                }
+                result = new UriAliasingNode(value, alias);
+                return true;
+            }
+            result = default(UriAliasingNode);
+            return false;
+        }
+        private bool Uri(Node parent, out UriNode result) {
+            string value = null;
+            NameNode alias;
+            var stringValue = default(AtomicValueNode);
+            if (Name(out alias)) {
+                var uaList = parent.CompilationUnit.UriAliasingList;
+                if (uaList != null) {
+                    foreach (var ua in uaList) {
+                        if (ua.Alias == alias) {
+                            value = ua.Value.Value;
+                            break;
+                        }
+                    }
+                }
+                if (value == null) {
+                    ErrorDiagnosticAndThrow(DiagnosticCodeEx.InvalidUriAlias,
+                        "Invalid uri alias '{0}'.".InvFormat(alias.ToString()), alias.TextSpan);
+                }
+            }
+            else if (StringValue(out stringValue)) {
+                value = stringValue.Value;
+            }
+            if (value != null) {
+                result = new UriNode(alias, stringValue, value);
+                return true;
+            }
+            result = default(UriNode);
+            return false;
+        }
+        private UriNode UriExpected(Node parent) {
+            UriNode uri;
+            if (Uri(parent, out uri)) {
+                return uri;
+            }
+            ErrorDiagnosticAndThrow("Uri expected.");
+            return uri;
+        }
+        private bool Import(Node parent, List<ImportNode> list, out ImportNode result) {
             if (Keyword(ImportKeyword)) {
-                var uri = UriExpected();
+                var uri = UriExpected(parent);
                 var alias = default(NameNode);
                 if (Keyword(AsKeyword)) {
                     alias = NameExpected();
+                    CheckAlias(alias);
+                    if (list != null) {
+                        foreach (var item in list) {
+                            if (item.Alias == alias) {
+                                ErrorDiagnosticAndThrow(DiagnosticCodeEx.DuplicateImportAlias,
+                                    "Duplicate import alias '{0}'.".InvFormat(alias.ToString()), alias.TextSpan);
+                            }
+                        }
+                    }
                 }
                 result = new ImportNode(uri, alias);
                 return true;
@@ -133,34 +235,20 @@ namespace XData.Compiler {
             result = default(ImportNode);
             return false;
         }
-        private bool Uri(out UriNode result) {
-            NameNode alias;
-            var value = default(AtomicValueNode);
-            var hasValue = false;
-            var hasAlias = Name(out alias);
-            if (!hasAlias) {
-                hasValue = StringValue(out value);
-            }
-            if (hasAlias || hasValue) {
-                result = new UriNode(alias, value);
-                return true;
-            }
-            result = default(UriNode);
-            return false;
-        }
-        private UriNode UriExpected() {
-            UriNode uri;
-            if (Uri(out uri)) {
-                return uri;
-            }
-            ErrorDiagnosticAndThrow("Uri expected.");
-            return uri;
-        }
-        private bool NamespaceMember(Node parent, out NamespaceMemberNode result) {
+        private bool NamespaceMember(Node parent, List<NamespaceMemberNode> list, out NamespaceMemberNode result) {
             if (!Type(parent, out result)) {
                 if (!GlobalElement(parent, out result)) {
                     if (!GlobalAttribute(parent, out result)) {
                         return false;
+                    }
+                }
+            }
+            if (list != null) {
+                var name = result.Name;
+                foreach (var item in list) {
+                    if (item.Name == name) {
+                        ErrorDiagnosticAndThrow(DiagnosticCodeEx.DuplicateNamespaceMember,
+                            "Duplicate namespace member '{0}'.".InvFormat(name.ToString()), name.TextSpan);
                     }
                 }
             }
@@ -634,7 +722,7 @@ namespace XData.Compiler {
             return false;
         }
 
-        private bool Unordered<T>(ItemGetter<T> getter, out T value, string errMsg, int startToken = '<', int endToken = '>') {
+        private bool Unordered<T>(NodeGetter<T> getter, out T value, string errMsg, int startToken = '<', int endToken = '>') {
             value = default(T);
             if (Token(startToken)) {
                 getter(out value);
@@ -645,7 +733,7 @@ namespace XData.Compiler {
             }
             return false;
         }
-        private bool Unordered<T1, T2>(ItemGetter<T1> getter1, ItemGetter<T2> getter2,
+        private bool Unordered<T1, T2>(NodeGetter<T1> getter1, NodeGetter<T2> getter2,
             out T1 value1, out T2 value2, string errMsg, int startToken = '<', int endToken = '>') {
             value1 = default(T1);
             value2 = default(T2);
@@ -673,7 +761,7 @@ namespace XData.Compiler {
             }
             return false;
         }
-        private bool Unordered<T1, T2, T3>(ItemGetter<T1> getter1, ItemGetter<T2> getter2, ItemGetter<T3> getter3,
+        private bool Unordered<T1, T2, T3>(NodeGetter<T1> getter1, NodeGetter<T2> getter2, NodeGetter<T3> getter3,
             out T1 value1, out T2 value2, out T3 value3, string errMsg, int startToken = '<', int endToken = '>') {
             value1 = default(T1);
             value2 = default(T2);
@@ -707,7 +795,7 @@ namespace XData.Compiler {
             }
             return false;
         }
-        private bool Unordered<T1, T2, T3, T4>(ItemGetter<T1> getter1, ItemGetter<T2> getter2, ItemGetter<T3> getter3, ItemGetter<T4> getter4,
+        private bool Unordered<T1, T2, T3, T4>(NodeGetter<T1> getter1, NodeGetter<T2> getter2, NodeGetter<T3> getter3, NodeGetter<T4> getter4,
             out T1 value1, out T2 value2, out T3 value3, out T4 value4, string errMsg, int startToken = '<', int endToken = '>') {
             value1 = default(T1);
             value2 = default(T2);
@@ -748,7 +836,7 @@ namespace XData.Compiler {
             return false;
         }
 
-        private bool Unordered<T1, T2, T3, T4, T5>(ItemGetter<T1> getter1, ItemGetter<T2> getter2, ItemGetter<T3> getter3, ItemGetter<T4> getter4, ItemGetter<T5> getter5,
+        private bool Unordered<T1, T2, T3, T4, T5>(NodeGetter<T1> getter1, NodeGetter<T2> getter2, NodeGetter<T3> getter3, NodeGetter<T4> getter4, NodeGetter<T5> getter5,
             out T1 value1, out T2 value2, out T3 value3, out T4 value4, out T5 value5, string errMsg, int startToken = '<', int endToken = '>') {
             value1 = default(T1);
             value2 = default(T2);
@@ -794,7 +882,31 @@ namespace XData.Compiler {
             }
             return false;
         }
-
+        private void ErrorDiagnosticAndThrow(DiagnosticCodeEx code, string errMsg, TextSpan textSpan) {
+            ErrorDiagnosticAndThrow((int)code, errMsg, textSpan);
+        }
+        private bool List<T>(Node parent, NodeGetterWithParent<T> nodeGetterWithParent, out List<T> result) {
+            result = null;
+            T item;
+            while (nodeGetterWithParent(parent, out item)) {
+                if (result == null) {
+                    result = new List<T>();
+                }
+                result.Add(item);
+            }
+            return result != null;
+        }
+        private bool List<T>(Node parent, NodeGetterWithParentList<T> nodeGetterWithParentList, out List<T> result) {
+            result = null;
+            T item;
+            while (nodeGetterWithParentList(parent, result, out item)) {
+                if (result == null) {
+                    result = new List<T>();
+                }
+                result.Add(item);
+            }
+            return result != null;
+        }
 
     }
 }

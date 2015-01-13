@@ -3,13 +3,53 @@ using System.Collections.Generic;
 using XData.IO.Text;
 
 namespace XData.Compiler {
-    public enum DiagnosticCodeEx {
-        None = 0,
-        UInt64ValueRequired = -2000,
-        ByteValueRequired,
-        MaxValueMustEqualToOrBeGreaterThanMinValue,
-        MaxValueMustBeGreaterThanZero,
+    public sealed class ProgramNode : Node {
+        public ProgramNode() : base(null) {
+            CompilationUnitList = new List<CompilationUnitNode>();
+        }
+        public readonly List<CompilationUnitNode> CompilationUnitList;
+        public List<CodeCompilationUnitNode> CodeCompilationUnitList;
+        //
+        public List<NamespaceNode> NamespaceList;
+        public Dictionary<string, List<NamespaceNode>> NamespaceDict;
+        public void Analyze() {
+            var nsList = new List<NamespaceNode>();
+            foreach (var cu in CompilationUnitList) {
+                if (cu.NamespaceList != null) {
+                    nsList.AddRange(cu.NamespaceList);
+                }
+            }
+            NamespaceList = nsList;
+            //
+            var nsDict = new Dictionary<string, List<NamespaceNode>>();
+            foreach (var ns in nsList) {
+                var uri = ns.Uri;
+                List<NamespaceNode> list;
+                if (!nsDict.TryGetValue(uri, out list)) {
+                    list = new List<NamespaceNode>();
+                    nsDict.Add(uri, list);
+                }
+                list.Add(ns);
+            }
+            NamespaceDict = nsDict;
+            //
+            foreach (var snsList in nsDict.Values) {
+                for (var i = 0; i < snsList.Count - 1; ++i) {
+                    for (var j = i + 1; j < snsList.Count; ++j) {
+                        snsList[i].CheckDuplicateMembers(snsList[j].MemberList);
+                    }
+                }
+            }
+            //
+            foreach (var ns in nsList) {
 
+            }
+
+
+            //var programSymbol = new ProgramSymbol();
+
+            //return programSymbol;
+        }
     }
     public abstract class Node {
         protected Node(Node parent) {
@@ -28,27 +68,105 @@ namespace XData.Compiler {
             }
             return null;
         }
-
+        private CompilationUnitNode _compilationUnit;
+        public CompilationUnitNode CompilationUnit {
+            get {
+                return _compilationUnit ?? (_compilationUnit = GetAncestor<CompilationUnitNode>());
+            }
+        }
+        private NamespaceNode _namespace;
+        public NamespaceNode NamespaceNode {
+            get {
+                return _namespace ?? (_namespace = GetAncestor<NamespaceNode>());
+            }
+        }
     }
-    public sealed class CompilerNode : Node {
-        public CompilerNode() : base(null) { }
-        public List<CompilationUnitNode> CompilationUnitList;
-    }
-    public sealed class CompilationUnitNode : Node {
+    public class CompilationUnitNode : Node {
         public CompilationUnitNode(Node parent) : base(parent) { }
         public List<UriAliasingNode> UriAliasingList;
         public List<NamespaceNode> NamespaceList;
     }
+    public sealed class CodeCompilationUnitNode : CompilationUnitNode {
+        public CodeCompilationUnitNode(Node parent) : base(parent) { }
+        new public List<CodeNamespaceNode> NamespaceList;
+    }
+    public class NamespaceNode : Node {
+        public NamespaceNode(Node parent) : base(parent) { }
+        public UriNode UriNode;
+        public List<ImportNode> ImportList;
+        public List<NamespaceMemberNode> MemberList;
+        //
+        public string Uri {
+            get {
+                return UriNode.Value;
+            }
+        }
+        public void CheckDuplicateMembers(List<NamespaceMemberNode> otherList) {
+            if (MemberList != null && otherList != null) {
+                foreach (var thisItem in MemberList) {
+                    foreach (var otherItem in otherList) {
+                        if (thisItem.Name == otherItem.Name) {
+
+                        }
+                    }
+                }
+            }
+        }
+    }
+    public sealed class CodeNamespaceNode : NamespaceNode {
+        public CodeNamespaceNode(Node parent) : base(parent) { }
+        public CSharpNamespaceNameNode Name;
+    }
+    public sealed class CSharpNamespaceNameNode : List<string>, IEquatable<CSharpNamespaceNameNode> {
+        public TextSpan TextSpan;
+        public bool Equals(CSharpNamespaceNameNode other) {
+            if (object.ReferenceEquals(this, other)) return true;
+            if (object.ReferenceEquals(other, null)) return false;
+            var count = Count;
+            if (count != other.Count) {
+                return false;
+            }
+            for (var i = 0; i < count; i++) {
+                if (this[i] != other[i]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        public override bool Equals(object obj) {
+            return Equals(obj as CSharpNamespaceNameNode);
+        }
+        public override int GetHashCode() {
+            var hash = 17;
+            var count = Math.Min(Count, 5);
+            for (var i = 0; i < count; i++) {
+                hash = Extensions.AggregateHash(hash, this[i].GetHashCode());
+            }
+            return hash;
+        }
+        public static bool operator ==(CSharpNamespaceNameNode left, CSharpNamespaceNameNode right) {
+            if (object.ReferenceEquals(left, null)) {
+                return object.ReferenceEquals(right, null);
+            }
+            return left.Equals(right);
+        }
+        public static bool operator !=(CSharpNamespaceNameNode left, CSharpNamespaceNameNode right) {
+            return !(left == right);
+        }
+    }
+
     public struct UriNode {
-        public UriNode(NameNode alias, AtomicValueNode value) {
+        public UriNode(NameNode alias, AtomicValueNode stringValue, string value) {
             Alias = alias;
+            StringValue = stringValue;
             Value = value;
         }
         public readonly NameNode Alias;
-        public readonly AtomicValueNode Value;
+        public readonly AtomicValueNode StringValue;
+        public readonly string Value;
         public bool IsValid {
             get {
-                return Alias.IsValid || Value.IsValid;
+                return Alias.IsValid || StringValue.IsValid;
             }
         }
     }
@@ -67,14 +185,6 @@ namespace XData.Compiler {
         }
         public readonly UriNode Uri;
         public readonly NameNode Alias;//opt
-    }
-    public sealed class NamespaceNode : Node {
-        public NamespaceNode(Node parent)
-            : base(parent) {
-        }
-        public UriNode Uri;
-        public List<ImportNode> ImportList;
-        public List<NamespaceMemberNode> MemberList;
     }
     public abstract class NamespaceMemberNode : Node {
         protected NamespaceMemberNode(Node parent)

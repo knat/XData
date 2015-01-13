@@ -349,7 +349,7 @@ namespace XData {
         }
         public override int GetHashCode() {
             var hash = 17;
-            var count = Math.Min(_itemList.Count, 7);
+            var count = Math.Min(_itemList.Count, 5);
             for (var i = 0; i < count; i++) {
                 hash = Extensions.AggregateHash(hash, _itemList[i].GetHashCode());
             }
@@ -1513,7 +1513,7 @@ namespace XData {
                 return 0;
             }
             var hash = 17;
-            var count = Math.Min(_array.Length, 13);
+            var count = Math.Min(_array.Length, 11);
             for (var i = 0; i < count; i++) {
                 hash = Extensions.AggregateHash(hash, _array[i]);
             }

@@ -7,9 +7,9 @@ namespace XData.IO.Text {
         protected ParserBase() {
             _simpleValueGetter = SimpleValue;
         }
-        protected delegate bool ItemGetter<T>(out T node);
-        protected delegate bool ItemGetterEx<T>(List<T> list, out T node);
-        protected readonly ItemGetter<SimpleValueNode> _simpleValueGetter;
+        protected delegate bool NodeGetter<T>(out T node);
+        protected delegate bool NodeGetterWithList<T>(List<T> list, out T node);
+        protected readonly NodeGetter<SimpleValueNode> _simpleValueGetter;
         protected void Set(string filePath, TextReader reader, Context context) {
             if (filePath == null) {
                 throw new ArgumentNullException("filePath");
@@ -292,13 +292,13 @@ namespace XData.IO.Text {
             ErrorDiagnosticAndThrow("Simple value expected.");
             return value;
         }
-        protected bool List<T>(int startRawKind, int endRawKind, ItemGetter<T> itemGetter, string errorMsg, out DelimitedList<T> result) {
+        protected bool List<T>(int startRawKind, int endRawKind, NodeGetter<T> nodeGetter, string errorMsg, out DelimitedList<T> result) {
             TextSpan openTokenTextSpan, closeTokenTextSpan;
             if (Token(startRawKind, out openTokenTextSpan)) {
                 var list = new DelimitedList<T>(openTokenTextSpan);
                 while (true) {
                     T item;
-                    if (itemGetter(out item)) {
+                    if (nodeGetter(out item)) {
                         list.Add(item);
                     }
                     else if (Token(endRawKind, out closeTokenTextSpan)) {
@@ -314,13 +314,13 @@ namespace XData.IO.Text {
             result = null;
             return false;
         }
-        protected bool List<T>(int startRawKind, int endRawKind, ItemGetterEx<T> itemGetterEx, string errorMsg, out DelimitedList<T> result) {
+        protected bool List<T>(int startRawKind, int endRawKind, NodeGetterWithList<T> nodeGetterWithList, string errorMsg, out DelimitedList<T> result) {
             TextSpan openTokenTextSpan, closeTokenTextSpan;
             if (Token(startRawKind, out openTokenTextSpan)) {
                 var list = new DelimitedList<T>(openTokenTextSpan);
                 while (true) {
                     T item;
-                    if (itemGetterEx(list, out item)) {
+                    if (nodeGetterWithList(list, out item)) {
                         list.Add(item);
                     }
                     else if (Token(endRawKind, out closeTokenTextSpan)) {
@@ -335,6 +335,17 @@ namespace XData.IO.Text {
             }
             result = null;
             return false;
+        }
+        protected bool List<T>(NodeGetterWithList<T> nodeGetterWithList, out List<T> result) {
+            result = null;
+            T item;
+            while (nodeGetterWithList(result, out item)) {
+                if (result == null) {
+                    result = new List<T>();
+                }
+                result.Add(item);
+            }
+            return result != null;
         }
 
         //protected bool ListOrSingle<T>(int startRawKind, int endRawKind, TryGetter<T> itemGetter, string errorMsg, out ListOrSingleNode<T> listOrSingle) {
@@ -383,8 +394,8 @@ namespace XData.IO.Text {
             _attributeGetter = Attribute;
             _uriAliasingListStack = new Stack<DelimitedList<UriAliasingNode>>();
         }
-        private readonly ItemGetterEx<UriAliasingNode> _uriAliasingGetter;
-        private readonly ItemGetter<AttributeNode> _attributeGetter;
+        private readonly NodeGetterWithList<UriAliasingNode> _uriAliasingGetter;
+        private readonly NodeGetter<AttributeNode> _attributeGetter;
         private readonly Stack<DelimitedList<UriAliasingNode>> _uriAliasingListStack;
         private bool _getFullName;
         private bool _resolveNullAlias;
@@ -482,14 +493,16 @@ namespace XData.IO.Text {
             if (isDefault != null) {
                 var uri = StringValueExpected();
                 var isDefaultValue = isDefault.Value;
-                foreach (var item in list) {
-                    if (item.IsDefault && isDefaultValue) {
-                        ErrorDiagnosticAndThrow(DiagnosticCode.DuplicateDefaultUri,
-                            "Duplicate default uri.", uri.TextSpan);
-                    }
-                    else if (item.Alias == alias) {
-                        ErrorDiagnosticAndThrow(DiagnosticCode.DuplicateUriAlias,
-                            "Duplicate uri alias '{0}'.".InvFormat(alias.ToString()), alias.TextSpan);
+                if (list != null) {
+                    foreach (var item in list) {
+                        if (item.IsDefault && isDefaultValue) {
+                            ErrorDiagnosticAndThrow(DiagnosticCode.DuplicateDefaultUri,
+                                "Duplicate default uri.", uri.TextSpan);
+                        }
+                        else if (item.Alias == alias) {
+                            ErrorDiagnosticAndThrow(DiagnosticCode.DuplicateUriAlias,
+                                "Duplicate uri alias '{0}'.".InvFormat(alias.ToString()), alias.TextSpan);
+                        }
                     }
                 }
                 uriAliasing = new UriAliasingNode(alias, uri, isDefaultValue);

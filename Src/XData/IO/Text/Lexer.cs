@@ -18,7 +18,7 @@ namespace XData.IO.Text {
         public readonly int Length;
         public readonly TextPosition StartPosition;
         public readonly TextPosition EndPosition;
-        public readonly string Value;//for name, value or error token
+        public readonly string Value;//for TokenKind.Name to TokenKind.RealValue and TokenKind.Error
         public TokenKind Kind {
             get {
                 return (TokenKind)RawKind;
@@ -43,10 +43,10 @@ namespace XData.IO.Text {
         WhitespaceOrNewLine,
         SingleLineComment,
         MultiLineComment,
-        VerbatimName,
         Name,
-        VerbatimStringValue,
+        VerbatimName,
         StringValue,
+        VerbatimStringValue,
         CharValue,
         IntegerValue,
         DecimalValue,
@@ -138,10 +138,10 @@ namespace XData.IO.Text {
             InWhitespace,
             InSingleLineComment,
             InMultiLineComment,
-            InVerbatimName,
             InName,
-            InVerbatimStringValue,
+            InVerbatimName,
             InStringValue,
+            InVerbatimStringValue,
             InCharValue,
             InNumericValueInteger,
             InNumericValueFraction,
@@ -224,26 +224,6 @@ namespace XData.IO.Text {
                         return CreateToken(stateKind == StateKind.InName ? TokenKind.Name : TokenKind.VerbatimName, state, sb.ToStringAndRelease());
                     }
                 }
-                else if (stateKind == StateKind.InVerbatimStringValue) {
-                    if (ch == '"') {
-                        AdvanceChar();
-                        ch = GetChar();
-                        if (ch == '"') {
-                            sb.Append('"');
-                            AdvanceChar();
-                        }
-                        else {
-                            return CreateToken(TokenKind.VerbatimStringValue, state, sb.ToStringAndRelease());
-                        }
-                    }
-                    else if (ch == char.MaxValue) {
-                        return CreateErrorToken("\" expected.");
-                    }
-                    else {
-                        sb.Append(ch);
-                        AdvanceChar();
-                    }
-                }
                 else if (stateKind == StateKind.InStringValue) {
                     if (ch == '\\') {
                         AdvanceChar();
@@ -257,6 +237,26 @@ namespace XData.IO.Text {
                         return CreateToken(TokenKind.StringValue, state, sb.ToStringAndRelease());
                     }
                     else if (IsNewLine(ch) || ch == char.MaxValue) {
+                        return CreateErrorToken("\" expected.");
+                    }
+                    else {
+                        sb.Append(ch);
+                        AdvanceChar();
+                    }
+                }
+                else if (stateKind == StateKind.InVerbatimStringValue) {
+                    if (ch == '"') {
+                        AdvanceChar();
+                        ch = GetChar();
+                        if (ch == '"') {
+                            sb.Append('"');
+                            AdvanceChar();
+                        }
+                        else {
+                            return CreateToken(TokenKind.VerbatimStringValue, state, sb.ToStringAndRelease());
+                        }
+                    }
+                    else if (ch == char.MaxValue) {
                         return CreateErrorToken("\" expected.");
                     }
                     else {

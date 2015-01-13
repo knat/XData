@@ -53,15 +53,15 @@ namespace XData {
 
     public static class Extensions {
         private const int _stringBuilderCount = 4;
-        private const int _stringBuilderCapacity = 256;
+        private const int _stringBuilderCapacity = 64;
         private static readonly StringBuilder[] _stringBuilders = new StringBuilder[_stringBuilderCount];
         public static StringBuilder AcquireStringBuilder() {
             var sbs = _stringBuilders;
             StringBuilder sb = null;
             lock (_stringBuilders) {
                 for (var i = 0; i < _stringBuilderCount; ++i) {
-                    if (sbs[i] != null) {
-                        sb = sbs[i];
+                    sb = sbs[i];
+                    if (sb != null) {
                         sbs[i] = null;
                         break;
                     }
@@ -74,7 +74,7 @@ namespace XData {
             return new StringBuilder(_stringBuilderCapacity);
         }
         public static void ReleaseStringBuilder(StringBuilder sb) {
-            if (sb != null && sb.Capacity <= _stringBuilderCapacity) {
+            if (sb != null && sb.Capacity <= _stringBuilderCapacity * 8) {
                 var sbs = _stringBuilders;
                 lock (_stringBuilders) {
                     for (var i = 0; i < _stringBuilderCount; ++i) {

@@ -7,13 +7,9 @@ using XData.IO.Text;
 namespace Test {
     class Program {
         static void Main(string[] args) {
-            var sb = new StringBuilder(4);
-            sb.Append('a', 400);
-            var str = sb.ToString();
-            sb.Clear();
 
             //TestLexer();
-            //TestParser();
+            TestParser();
         }
 
         static void TestLexer() {
