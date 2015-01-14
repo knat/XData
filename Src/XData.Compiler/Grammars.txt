@@ -48,7 +48,7 @@ type-list:
 'lists qualifiable-name
 ;
 type-directness:
-attributes children? | structural-children | ';'
+attributes structural-children? | structural-children | ';'
 ;
 type-extension:
 'extends' qualifiable-name attributes? root-structural-children?

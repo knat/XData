@@ -140,10 +140,11 @@ namespace XData {
                 return HasErrorDiagnosticsCore(0);
             }
         }
-        private bool HasErrorDiagnosticsCore(int startIndex) {
+        private bool HasErrorDiagnosticsCore(int index) {
             if (_diagnostics != null) {
-                for (var i = startIndex; i < _diagnostics.Count; i++) {
-                    if (_diagnostics[i].IsError) {
+                var count = _diagnostics.Count;
+                for (; index < count; ++index) {
+                    if (_diagnostics[index].IsError) {
                         return true;
                     }
                 }

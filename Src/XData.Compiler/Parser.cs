@@ -62,8 +62,8 @@ namespace XData.Compiler {
         private readonly NodeGetterWithParent<CodeNamespaceNode> _codeNamespaceGetter;
         private readonly NodeGetterWithParentList<ImportNode> _importGetter;
         private readonly NodeGetterWithParentList<NamespaceMemberNode> _namespaceMemberGetter;
-        private readonly NodeGetterWithParent<MemberAttributeNode> _memberAttributeGetter;
-        private readonly NodeGetterWithParent<MemberChildNode> _memberChildGetter;
+        private readonly NodeGetterWithParentList<MemberAttributeNode> _memberAttributeGetter;
+        private readonly NodeGetterWithParentList<MemberChildNode> _memberChildGetter;
         private readonly NodeGetter<NameNode> _abstractOrSealedGetter;
         private readonly NodeGetter<TextSpan> _qualifiedGetter;
         private readonly NodeGetter<TextSpan> _nullableGetter;
@@ -152,13 +152,20 @@ namespace XData.Compiler {
         }
         private void CheckAlias(NameNode alias) {
             if (alias.Value == "sys") {
-                ErrorDiagnosticAndThrow(DiagnosticCodeEx.AliasSysIsReserved,
+                ErrorDiagnosticAndThrow(DiagnosticCodeEx.AliasIsReserved,
                     "Alias 'sys' is reserved.", alias.TextSpan);
+            }
+        }
+        private void CheckUri(AtomicValueNode uri) {
+            if (uri.Value == NamespaceInfo.SystemUri) {
+                ErrorDiagnosticAndThrow(DiagnosticCodeEx.UriIsReserved,
+                    "Uri '" + NamespaceInfo.SystemUri + "' is reserved.", uri.TextSpan);
             }
         }
         private bool UriAliasing(List<UriAliasingNode> list, out UriAliasingNode result) {
             if (Keyword(AliasKeyword)) {
-                var value = StringValueExpected();
+                var uri = StringValueExpected();
+                CheckUri(uri);
                 KeywordExpected(AsKeyword);
                 var alias = NameExpected();
                 CheckAlias(alias);
@@ -170,7 +177,7 @@ namespace XData.Compiler {
                         }
                     }
                 }
-                result = new UriAliasingNode(value, alias);
+                result = new UriAliasingNode(uri, alias);
                 return true;
             }
             result = default(UriAliasingNode);
@@ -185,7 +192,7 @@ namespace XData.Compiler {
                 if (uaList != null) {
                     foreach (var ua in uaList) {
                         if (ua.Alias == alias) {
-                            value = ua.Value.Value;
+                            value = ua.Uri.Value;
                             break;
                         }
                     }
@@ -196,6 +203,7 @@ namespace XData.Compiler {
                 }
             }
             else if (StringValue(out stringValue)) {
+                CheckUri(stringValue);
                 value = stringValue.Value;
             }
             if (value != null) {
@@ -366,6 +374,9 @@ namespace XData.Compiler {
             }
             result = null;
             return false;
+        }
+        protected override bool SimpleValue(out SimpleValueNode simpleValue) {
+            return SimpleValue(default(QualifiableNameNode), out simpleValue);
         }
         private bool Lengths(out IntegerRangeNode<ulong> result) {
             if (Keyword(LengthsKeyword)) {
@@ -539,11 +550,22 @@ namespace XData.Compiler {
             result = null;
             return false;
         }
-        private bool MemberAttribute(Node parent, out MemberAttributeNode result) {
-            if (LocalAttribute(parent, out result)) {
-                return true;
+        private bool MemberAttribute(Node parent, List<MemberAttributeNode> list, out MemberAttributeNode result) {
+            if (!LocalAttribute(parent, out result)) {
+                if (!GlobalAttributeRef(parent, out result)) {
+                    return false;
+                }
             }
-            return GlobalAttributeRef(parent, out result);
+            if (list != null) {
+                var memberName = result.MemberName;
+                foreach (var item in list) {
+                    if (item.MemberName == memberName) {
+                        ErrorDiagnosticAndThrow(DiagnosticCodeEx.DuplicateMemberName,
+                            "Duplicate member name '{0}'.".InvFormat(memberName.ToString()), memberName.TextSpan);
+                    }
+                }
+            }
+            return true;
         }
         private bool LocalAttribute(Node parent, out MemberAttributeNode result) {
             NameNode name;
@@ -552,6 +574,9 @@ namespace XData.Compiler {
                 Unordered(_nullableGetter, _optionalGetter, _memberNameGetter, _qualifiedGetter,
                     out attribute.Nullable, out attribute.Optional, out attribute.MemberName, out attribute.Qualified,
                     "nullable, ?, membername, qualified or > expected.");
+                if (!attribute.MemberName.IsValid) {
+                    attribute.MemberName = name;
+                }
                 KeywordExpected(AsKeyword);
                 attribute.TypeQName = QualifiableNameExpected();
                 result = attribute;
@@ -563,9 +588,12 @@ namespace XData.Compiler {
         private bool GlobalAttributeRef(Node parent, out MemberAttributeNode result) {
             if (Token('&')) {
                 var attribute = new GlobalAttributeRefNode(parent);
-                attribute.QName = QualifiableNameExpected();
+                attribute.GlobalAttributeQName = QualifiableNameExpected();
                 Unordered(_optionalGetter, _memberNameGetter,
                     out attribute.Optional, out attribute.MemberName, "?, membername or > expected.");
+                if (!attribute.MemberName.IsValid) {
+                    attribute.MemberName = attribute.GlobalAttributeQName.Name;
+                }
                 result = attribute;
                 return true;
             }
@@ -577,7 +605,7 @@ namespace XData.Compiler {
                 var element = new GlobalElementNode(parent);
                 element.Name = NameExpected();
                 Unordered(_abstractOrSealedGetter, _nullableGetter, _substitutionGetter,
-                    out element.AbstractOrSealed, out element.Nullable, out element.Substitution,
+                    out element.AbstractOrSealed, out element.Nullable, out element.SubstitutedGlobalElementQName,
                     "abstract, sealed, nullable, substitutes or > expected.");
                 KeywordExpected(AsKeyword);
                 element.TypeQName = QualifiableNameExpected();
@@ -587,10 +615,21 @@ namespace XData.Compiler {
             result = null;
             return false;
         }
-        private bool MemberChild(Node parent, out MemberChildNode result) {
+        private bool MemberChild(Node parent, List<MemberChildNode> list, out MemberChildNode result) {
             if (!LocalElement(parent, out result)) {
                 if (!GlobalElementRef(parent, out result)) {
-                    return StructuralChildren(parent, out result);
+                    if (!StructuralChildren(parent, out result)) {
+                        return false;
+                    }
+                }
+            }
+            if (list != null) {
+                var memberName = result.MemberName;
+                foreach (var item in list) {
+                    if (item.MemberName == memberName) {
+                        ErrorDiagnosticAndThrow(DiagnosticCodeEx.DuplicateMemberName,
+                            "Duplicate member name '{0}'.".InvFormat(memberName.ToString()), memberName.TextSpan);
+                    }
                 }
             }
             return true;
@@ -602,6 +641,9 @@ namespace XData.Compiler {
                 Unordered(_nullableGetter, _occurrenceGetter, _memberNameGetter,
                     out element.Nullable, out element.Occurrence, out element.MemberName,
                     "nullable, occurrence, membername or > expected.");
+                if (!element.MemberName.IsValid) {
+                    element.MemberName = name;
+                }
                 KeywordExpected(AsKeyword);
                 element.TypeQName = QualifiableNameExpected();
                 result = element;
@@ -613,9 +655,12 @@ namespace XData.Compiler {
         private bool GlobalElementRef(Node parent, out MemberChildNode result) {
             if (Token('&')) {
                 var element = new GlobalElementRefNode(parent);
-                element.QName = QualifiableNameExpected();
+                element.GlobalElementQName = QualifiableNameExpected();
                 Unordered(_occurrenceGetter, _memberNameGetter,
                     out element.Occurrence, out element.MemberName, "occurrence, membername or > expected.");
+                if (!element.MemberName.IsValid) {
+                    element.MemberName = element.GlobalElementQName.Name;
+                }
                 result = element;
                 return true;
             }
@@ -636,6 +681,9 @@ namespace XData.Compiler {
                 TokenExpected('}', out children.CloseTokenTextSpan);
                 Unordered(_occurrenceGetter, _memberNameGetter,
                     out children.Occurrence, out children.MemberName, "occurrence, membername or > expected.");
+                if (!children.MemberName.IsValid) {
+                    children.MemberName = new NameNode(children.IsSequence ? "Seq" : "Choice", children.CloseTokenTextSpan);
+                }
                 result = children;
                 return true;
             }

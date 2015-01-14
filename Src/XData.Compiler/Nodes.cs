@@ -11,7 +11,7 @@ namespace XData.Compiler {
         public List<CodeCompilationUnitNode> CodeCompilationUnitList;
         //
         public List<NamespaceNode> NamespaceList;
-        public Dictionary<string, List<NamespaceNode>> NamespaceDict;
+        public NamespaceNodeDict NamespaceDict;
         public void Analyze() {
             var nsList = new List<NamespaceNode>();
             foreach (var cu in CompilationUnitList) {
@@ -21,30 +21,28 @@ namespace XData.Compiler {
             }
             NamespaceList = nsList;
             //
-            var nsDict = new Dictionary<string, List<NamespaceNode>>();
+            var nsDict = new NamespaceNodeDict();
             foreach (var ns in nsList) {
                 var uri = ns.Uri;
-                List<NamespaceNode> list;
-                if (!nsDict.TryGetValue(uri, out list)) {
-                    list = new List<NamespaceNode>();
-                    nsDict.Add(uri, list);
+                LogicalNamespaceNode logicalNS;
+                if (!nsDict.TryGetValue(uri, out logicalNS)) {
+                    logicalNS = new LogicalNamespaceNode();
+                    nsDict.Add(uri, logicalNS);
                 }
-                list.Add(ns);
+                logicalNS.Add(ns);
+                ns.LogicalNamespace = logicalNS;
             }
             NamespaceDict = nsDict;
             //
-            foreach (var snsList in nsDict.Values) {
-                for (var i = 0; i < snsList.Count - 1; ++i) {
-                    for (var j = i + 1; j < snsList.Count; ++j) {
-                        snsList[i].CheckDuplicateMembers(snsList[j].MemberList);
-                    }
-                }
-            }
-            //
             foreach (var ns in nsList) {
-
+                ns.ResolveImports(nsDict);
             }
-
+            foreach (var logicalNS in nsDict.Values) {
+                logicalNS.CheckDuplicateMembers();
+            }
+            foreach (var ns in nsList) {
+                ns.Resolve();
+            }
 
             //var programSymbol = new ProgramSymbol();
 
@@ -68,6 +66,12 @@ namespace XData.Compiler {
             }
             return null;
         }
+        private ProgramNode _program;
+        public ProgramNode Program {
+            get {
+                return _program ?? (_program = GetAncestor<ProgramNode>());
+            }
+        }
         private CompilationUnitNode _compilationUnit;
         public CompilationUnitNode CompilationUnit {
             get {
@@ -75,7 +79,7 @@ namespace XData.Compiler {
             }
         }
         private NamespaceNode _namespace;
-        public NamespaceNode NamespaceNode {
+        public NamespaceNode Namespace {
             get {
                 return _namespace ?? (_namespace = GetAncestor<NamespaceNode>());
             }
@@ -90,27 +94,149 @@ namespace XData.Compiler {
         public CodeCompilationUnitNode(Node parent) : base(parent) { }
         new public List<CodeNamespaceNode> NamespaceList;
     }
+    public sealed class NamespaceNodeDict : Dictionary<string, LogicalNamespaceNode> {
+
+    }
+    public sealed class LogicalNamespaceNode : List<NamespaceNode> {
+
+        public void CheckDuplicateMembers() {
+            var count = Count;
+            for (var i = 0; i < count - 1; ++i) {
+                for (var j = i + 1; j < count; ++j) {
+                    this[i].CheckDuplicateMembers(this[j].MemberList);
+                }
+            }
+        }
+        public NamespaceMemberNode TryGetMember(NameNode name) {
+            var count = Count;
+            for (var i = 0; i < count; ++i) {
+                var memberList = this[i].MemberList;
+                if (memberList != null) {
+                    foreach (var member in memberList) {
+                        if (member.Name == name) {
+                            return member;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+    }
     public class NamespaceNode : Node {
         public NamespaceNode(Node parent) : base(parent) { }
         public UriNode UriNode;
         public List<ImportNode> ImportList;
         public List<NamespaceMemberNode> MemberList;
         //
+        public LogicalNamespaceNode LogicalNamespace;
+        //
         public string Uri {
             get {
                 return UriNode.Value;
             }
         }
+        public void ResolveImports(NamespaceNodeDict nsDict) {
+            if (ImportList != null) {
+                for (var i = 0; i < ImportList.Count; ++i) {
+                    var import = ImportList[i];
+                    if (!nsDict.TryGetValue(import.Uri.Value, out import.LogicalNamespace)) {
+                        ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.InvalidImportUri,
+                            "Invalid import uri '{0}'.".InvFormat(import.Uri.Value), import.Uri.TextSpan);
+                    }
+                }
+            }
+        }
         public void CheckDuplicateMembers(List<NamespaceMemberNode> otherList) {
             if (MemberList != null && otherList != null) {
-                foreach (var thisItem in MemberList) {
-                    foreach (var otherItem in otherList) {
-                        if (thisItem.Name == otherItem.Name) {
-
+                foreach (var thisMember in MemberList) {
+                    foreach (var otherMember in otherList) {
+                        if (thisMember.Name == otherMember.Name) {
+                            ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.DuplicateNamespaceMember,
+                                "Duplicate namespace member '{0}'.".InvFormat(otherMember.Name.ToString()), otherMember.Name.TextSpan);
                         }
                     }
                 }
             }
+        }
+        public void Resolve() {
+            if (MemberList != null) {
+                foreach (var member in MemberList) {
+                    member.Resolve();
+                }
+            }
+        }
+        public NamespaceMemberNode Resolve(QualifiableNameNode qName) {
+            NamespaceMemberNode result = null;
+            var name = qName.Name;
+            if (qName.IsQualified) {
+                var alias = qName.Alias;
+                if (alias.Value == "sys") {
+                    result = SystemTypeNode.TryGet(name.Value);
+                }
+                else {
+                    ImportNode? import = null;
+                    if (ImportList != null) {
+                        foreach (var item in ImportList) {
+                            if (item.Alias == alias) {
+                                import = item;
+                                break;
+                            }
+                        }
+                    }
+                    if (import == null) {
+                        ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.InvalidQualifiableNameAlias,
+                            "Invalid qualifiable name alias '{0}'.".InvFormat(alias.ToString()), alias.TextSpan);
+                    }
+                    result = import.Value.LogicalNamespace.TryGetMember(name);
+                }
+            }
+            else {
+                result = LogicalNamespace.TryGetMember(name);
+                if (result == null) {
+                    result = SystemTypeNode.TryGet(name.Value);
+                    if (ImportList != null) {
+                        foreach (var item in ImportList) {
+                            var member = item.LogicalNamespace.TryGetMember(name);
+                            if (member != null) {
+                                if (result != null) {
+                                    ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.AmbiguousNameReference,
+                                        "Ambiguous name reference '{0}'.".InvFormat(name.ToString()), name.TextSpan);
+                                }
+                                result = member;
+                            }
+                        }
+                    }
+                }
+            }
+            if (result == null) {
+                ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.InvalidNameReference,
+                    "Invalid name reference '{0}'.".InvFormat(name.ToString()), name.TextSpan);
+            }
+            return result;
+        }
+        public TypeNode ResolveAsType(QualifiableNameNode qName) {
+            var result = Resolve(qName) as TypeNode;
+            if (result == null) {
+                ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.InvalidTypeNameReference,
+                    "Invalid type name reference '{0}'.".InvFormat(qName.ToString()), qName.TextSpan);
+            }
+            return result;
+        }
+        public GlobalAttributeNode ResolveAsAttribute(QualifiableNameNode qName) {
+            var result = Resolve(qName) as GlobalAttributeNode;
+            if (result == null) {
+                ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.InvalidAttributeNameReference,
+                    "Invalid attribute name reference '{0}'.".InvFormat(qName.ToString()), qName.TextSpan);
+            }
+            return result;
+        }
+        public GlobalElementNode ResolveAsElement(QualifiableNameNode qName) {
+            var result = Resolve(qName) as GlobalElementNode;
+            if (result == null) {
+                ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.InvalidElementNameReference,
+                    "Invalid element name reference '{0}'.".InvFormat(qName.ToString()), qName.TextSpan);
+            }
+            return result;
         }
     }
     public sealed class CodeNamespaceNode : NamespaceNode {
@@ -154,7 +280,6 @@ namespace XData.Compiler {
             return !(left == right);
         }
     }
-
     public struct UriNode {
         public UriNode(NameNode alias, AtomicValueNode stringValue, string value) {
             Alias = alias;
@@ -164,38 +289,73 @@ namespace XData.Compiler {
         public readonly NameNode Alias;
         public readonly AtomicValueNode StringValue;
         public readonly string Value;
-        public bool IsValid {
+        //public bool IsValid {
+        //    get {
+        //        return Alias.IsValid || StringValue.IsValid;
+        //    }
+        //}
+        public TextSpan TextSpan {
             get {
-                return Alias.IsValid || StringValue.IsValid;
+                if (Alias.IsValid) {
+                    return Alias.TextSpan;
+                }
+                return StringValue.TextSpan;
             }
         }
     }
     public struct UriAliasingNode {
-        public UriAliasingNode(AtomicValueNode value, NameNode alias) {
-            Value = value;
+        public UriAliasingNode(AtomicValueNode uri, NameNode alias) {
+            Uri = uri;
             Alias = alias;
         }
-        public readonly AtomicValueNode Value;
+        public readonly AtomicValueNode Uri;
         public readonly NameNode Alias;
     }
     public struct ImportNode {
         public ImportNode(UriNode uri, NameNode alias) {
             Uri = uri;
             Alias = alias;
+            LogicalNamespace = null;
         }
         public readonly UriNode Uri;
         public readonly NameNode Alias;//opt
+        public LogicalNamespaceNode LogicalNamespace;
     }
     public abstract class NamespaceMemberNode : Node {
-        protected NamespaceMemberNode(Node parent)
-            : base(parent) {
+        protected NamespaceMemberNode(Node parent) : base(parent) {
         }
         public NameNode Name;
+        private FullName? _fullName;
+        public FullName FullName {
+            get {
+                if (_fullName == null) {
+                    _fullName = new FullName(Namespace.Uri, Name.Value);
+                }
+                return _fullName.Value;
+            }
+        }
+        public abstract void Resolve();
     }
-    public sealed class TypeNode : NamespaceMemberNode {
-        public TypeNode(Node parent)
-            : base(parent) {
-
+    public sealed class SystemTypeNode : TypeNode {
+        private SystemTypeNode() : base(null) {
+        }
+        public TypeKind Kind;
+        private static readonly Dictionary<string, SystemTypeNode> Dict;
+        static SystemTypeNode() {
+            Dict = new Dictionary<string, SystemTypeNode>();
+            for (var kind = TypeKind.SimpleType; kind <= TypeKind.Time; ++kind) {
+                var name = kind.ToString();
+                Dict.Add(name, new SystemTypeNode() { Name = new NameNode(name, default(TextSpan)), Kind = kind });
+            }
+        }
+        public static SystemTypeNode TryGet(string name) {
+            SystemTypeNode result;
+            Dict.TryGetValue(name, out result);
+            return result;
+        }
+    }
+    public class TypeNode : NamespaceMemberNode {
+        public TypeNode(Node parent) : base(parent) {
         }
         public NameNode AbstractOrSealed;
         public TypeBodyNode Body;
@@ -209,25 +369,50 @@ namespace XData.Compiler {
                 return AbstractOrSealed.Value == Parser.SealedKeyword;
             }
         }
-
+        public override void Resolve() {
+            Body.Resolve();
+        }
     }
     public abstract class TypeBodyNode : Node {
         protected TypeBodyNode(Node parent) : base(parent) { }
+        public abstract void Resolve();
     }
     public sealed class TypeListNode : TypeBodyNode {
         public TypeListNode(Node parent) : base(parent) { }
         public QualifiableNameNode ItemQName;
+        public TypeNode ItemType;
+        public override void Resolve() {
+            ItemType = Namespace.ResolveAsType(ItemQName);
+        }
     }
     public sealed class TypeDirectnessNode : TypeBodyNode {
         public TypeDirectnessNode(Node parent) : base(parent) { }
         public AttributesNode Attributes;
         public RootStructuralChildrenNode StructuralChildren;
+        public override void Resolve() {
+            if (Attributes != null) {
+                Attributes.Resolve();
+            }
+            if (StructuralChildren != null) {
+                StructuralChildren.Resolve();
+            }
+        }
     }
     public abstract class TypeDerivation : TypeBodyNode {
         public TypeDerivation(Node parent) : base(parent) { }
         public QualifiableNameNode BaseQName;
         public AttributesNode Attributes;
         public RootStructuralChildrenNode StructuralChildren;
+        public TypeNode BaseType;
+        public override void Resolve() {
+            BaseType = Namespace.ResolveAsType(BaseQName);
+            if (Attributes != null) {
+                Attributes.Resolve();
+            }
+            if (StructuralChildren != null) {
+                StructuralChildren.Resolve();
+            }
+        }
     }
     public sealed class TypeExtension : TypeDerivation {
         public TypeExtension(Node parent) : base(parent) { }
@@ -237,16 +422,6 @@ namespace XData.Compiler {
         public SimpleValueRestrictionsNode SimpleValueRestrictions;
     }
 
-    public sealed class AttributesNode : Node {
-        public AttributesNode(Node parent) : base(parent) { }
-        public List<MemberAttributeNode> AttributeList;
-        public TextSpan CloseTokenTextSpan;
-    }
-    public sealed class RootStructuralChildrenNode : Node {
-        public RootStructuralChildrenNode(Node parent) : base(parent) { }
-        public List<MemberChildNode> ChildList;
-        public TextSpan CloseTokenTextSpan;
-    }
     public sealed class SimpleValueRestrictionsNode : Node {
         public SimpleValueRestrictionsNode(Node parent) : base(parent) { }
         public IntegerRangeNode<ulong> Lengths;
@@ -285,6 +460,7 @@ namespace XData.Compiler {
                 return TextSpan.IsValid;
             }
         }
+
     }
     public struct ValueBoundaryNode {
         public ValueBoundaryNode(SimpleValueNode value, bool isInclusive) {
@@ -311,29 +487,56 @@ namespace XData.Compiler {
                 return TextSpan.IsValid;
             }
         }
-    }
 
+    }
 
 
     public sealed class GlobalAttributeNode : NamespaceMemberNode {
         public GlobalAttributeNode(Node parent) : base(parent) { }
         public TextSpan Nullable;
         public QualifiableNameNode TypeQName;
+        public TypeNode Type;
         public bool IsNullable {
             get {
                 return Nullable.IsValid;
             }
         }
+        public override void Resolve() {
+            Type = Namespace.ResolveAsType(TypeQName);
+        }
     }
+    public sealed class AttributesNode : Node {
+        public AttributesNode(Node parent) : base(parent) { }
+        public List<MemberAttributeNode> AttributeList;
+        public TextSpan CloseTokenTextSpan;
+        public void Resolve() {
+            if (AttributeList != null) {
+                var count = AttributeList.Count;
+                for (var i = 0; i < count; ++i) {
+                    var attribute = AttributeList[i];
+                    attribute.Resolve();
+                    for (var j = 0; j < i - 1; ++j) {
+                        if (AttributeList[j].FullName == attribute.FullName) {
+                            ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.DuplicateAttributeFullName,
+                                "Duplicate attribute full name '{0}'.".InvFormat(attribute.FullName.ToString()), attribute.MemberName.TextSpan);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     public abstract class MemberAttributeNode : Node {
         protected MemberAttributeNode(Node parent) : base(parent) { }
         public TextSpan Optional;
         public NameNode MemberName;
+        public FullName FullName;
         public bool IsOptional {
             get {
                 return Optional.IsValid;
             }
         }
+        public abstract void Resolve();
     }
     public sealed class LocalAttributeNode : MemberAttributeNode {
         public LocalAttributeNode(Node parent) : base(parent) { }
@@ -341,6 +544,7 @@ namespace XData.Compiler {
         public TextSpan Nullable;
         public TextSpan Qualified;
         public QualifiableNameNode TypeQName;
+        public TypeNode Type;
         public bool IsNullable {
             get {
                 return Nullable.IsValid;
@@ -351,20 +555,29 @@ namespace XData.Compiler {
                 return Qualified.IsValid;
             }
         }
+        public override void Resolve() {
+            Type = Namespace.ResolveAsType(TypeQName);
+            FullName = new FullName(IsQualified ? Namespace.Uri : null, Name.Value);
+        }
     }
     public sealed class GlobalAttributeRefNode : MemberAttributeNode {
         public GlobalAttributeRefNode(Node parent) : base(parent) { }
-        public QualifiableNameNode QName;
+        public QualifiableNameNode GlobalAttributeQName;
+        public GlobalAttributeNode GlobalAttribute;
+        public override void Resolve() {
+            GlobalAttribute = Namespace.ResolveAsAttribute(GlobalAttributeQName);
+            FullName = GlobalAttribute.FullName;
+        }
     }
-
-
 
     public sealed class GlobalElementNode : NamespaceMemberNode {
         public GlobalElementNode(Node parent) : base(parent) { }
         public NameNode AbstractOrSealed;
         public TextSpan Nullable;
-        public QualifiableNameNode Substitution;
+        public QualifiableNameNode SubstitutedGlobalElementQName;
         public QualifiableNameNode TypeQName;
+        public GlobalElementNode SubstitutedGlobalElement;
+        public TypeNode Type;
         public bool IsAbstract {
             get {
                 return AbstractOrSealed.Value == Parser.AbstractKeyword;
@@ -380,32 +593,73 @@ namespace XData.Compiler {
                 return Nullable.IsValid;
             }
         }
+        public override void Resolve() {
+            if (SubstitutedGlobalElementQName.IsValid) {
+                SubstitutedGlobalElement = Namespace.ResolveAsElement(SubstitutedGlobalElementQName);
+            }
+            Type = Namespace.ResolveAsType(TypeQName);
+        }
     }
+    public sealed class RootStructuralChildrenNode : Node {
+        public RootStructuralChildrenNode(Node parent) : base(parent) { }
+        public List<MemberChildNode> ChildList;
+        public TextSpan CloseTokenTextSpan;
+        public void Resolve() {
+            if (ChildList != null) {
+                foreach (var item in ChildList) {
+                    item.Resolve();
+                }
+            }
+        }
+    }
+
     public abstract class MemberChildNode : Node {
         protected MemberChildNode(Node parent) : base(parent) { }
         public OccurrenceNode Occurrence;
         public NameNode MemberName;
+        public abstract void Resolve();
     }
-    public sealed class LocalElementNode : MemberChildNode {
+    public abstract class MemberElementNode : MemberChildNode {
+        protected MemberElementNode(Node parent) : base(parent) { }
+        public FullName FullName;
+    }
+    public sealed class LocalElementNode : MemberElementNode {
         public LocalElementNode(Node parent) : base(parent) { }
         public NameNode Name;
         public TextSpan Nullable;
         public QualifiableNameNode TypeQName;
+        public TypeNode Type;
         public bool IsNullable {
             get {
                 return Nullable.IsValid;
             }
         }
+        public override void Resolve() {
+            Type = Namespace.ResolveAsType(TypeQName);
+            FullName = new FullName(Namespace.Uri, Name.Value);
+        }
     }
-    public sealed class GlobalElementRefNode : MemberChildNode {
+    public sealed class GlobalElementRefNode : MemberElementNode {
         public GlobalElementRefNode(Node parent) : base(parent) { }
-        public QualifiableNameNode QName;
+        public QualifiableNameNode GlobalElementQName;
+        public GlobalElementNode GlobalElement;
+        public override void Resolve() {
+            GlobalElement = Namespace.ResolveAsElement(GlobalElementQName);
+            FullName = GlobalElement.FullName;
+        }
     }
     public sealed class StructuralChildrenNode : MemberChildNode {
         public StructuralChildrenNode(Node parent) : base(parent) { }
         public bool IsSequence;
         public List<MemberChildNode> ChildList;
         public TextSpan CloseTokenTextSpan;
+        public override void Resolve() {
+            if (ChildList != null) {
+                foreach (var item in ChildList) {
+                    item.Resolve();
+                }
+            }
+        }
     }
 
 

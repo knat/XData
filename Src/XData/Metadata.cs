@@ -130,7 +130,7 @@ namespace XData {
         }
         public readonly FullName FullName;
     }
-
+    //DOT NOT EDIT the order
     public enum TypeKind : byte {
         None = 0,
         Type,//not allowed for use
@@ -167,7 +167,11 @@ namespace XData {
             BaseType = baseType;
         }
         private readonly TypeKind _kind;
-        public TypeKind Kind { get { return _kind; } }
+        public TypeKind Kind {
+            get {
+                return _kind;
+            }
+        }
 
         public readonly TypeInfo BaseType;//opt
         public bool IsEqualToOrDeriveFrom(TypeInfo other) {
@@ -181,6 +185,12 @@ namespace XData {
         }
     }
 
+    public interface ISimpleTypeInfo {
+        TypeKind Kind { get; }
+        Type ValueClrType { get; }
+        FacetSetInfo? FacetSet { get; }
+        ISimpleTypeInfo ItemType { get; }//for listed simple type
+    }
     public struct FacetSetInfo {
         public FacetSetInfo(
             ulong? minLength = null,
@@ -190,7 +200,7 @@ namespace XData {
             ValueBoundaryInfo? minValue = null,
             ValueBoundaryInfo? maxValue = null,
             EnumerationsInfo? enumerations = null,
-            PatternInfo pattern = null) {
+            PatternInfo? pattern = null) {
             MinLength = minLength;
             MaxLength = maxLength;
             TotalDigits = totalDigits;
@@ -207,7 +217,7 @@ namespace XData {
         public readonly ValueBoundaryInfo? MinValue;
         public readonly ValueBoundaryInfo? MaxValue;
         public readonly EnumerationsInfo? Enumerations;
-        public readonly PatternInfo Pattern;
+        public readonly PatternInfo? Pattern;
         //public bool EnumerationsContains(object value) {
         //    if (Enumerations != null)
         //        foreach (var i in Enumerations)
@@ -250,7 +260,7 @@ namespace XData {
     //    public readonly string Name;//opt
     //    public readonly object Value;
     //}
-    public sealed class PatternInfo {
+    public struct PatternInfo {
         public PatternInfo(string pattern) {
             if (pattern == null) throw new ArgumentNullException("pattern");
             Pattern = pattern;
@@ -258,12 +268,6 @@ namespace XData {
         public readonly string Pattern;
         //private static readonly ConcurrentDictionary<string, Regex> _regexDict = new ConcurrentDictionary<string, Regex>();
         //public Regex Regex { get { return _regexDict.GetOrAdd(Pattern, p => new Regex(p)); } }
-    }
-    public interface ISimpleTypeInfo {
-        TypeKind Kind { get; }
-        Type ValueClrType { get; }
-        FacetSetInfo? FacetSet { get; }
-        ISimpleTypeInfo ItemType { get; }//for listed simple type
     }
     public class SimpleTypeInfo : TypeInfo, ISimpleTypeInfo {
         public SimpleTypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeKind kind, TypeInfo baseType, Type valueClrType, FacetSetInfo? facetSet = null)

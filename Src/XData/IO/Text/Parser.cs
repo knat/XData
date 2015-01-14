@@ -35,10 +35,10 @@ namespace XData.IO.Text {
         private Context _context;
         private Token? _token;
         protected sealed class ParsingException : Exception { }
-        private static readonly ParsingException _parsingExceptionObj = new ParsingException();
+        private static readonly ParsingException _parsingException = new ParsingException();
         protected void ErrorDiagnosticAndThrow(int rawCode, string errMsg, TextSpan textSpan) {
             _context.AddDiagnostic(DiagnosticSeverity.Error, rawCode, errMsg, textSpan, null);
-            throw _parsingExceptionObj;
+            throw _parsingException;
         }
         protected void ErrorDiagnosticAndThrow(DiagnosticCode code, string errMsg, TextSpan textSpan) {
             ErrorDiagnosticAndThrow((int)code, errMsg, textSpan);
@@ -273,7 +273,7 @@ namespace XData.IO.Text {
             simpleValue = default(SimpleValueNode);
             return false;
         }
-        protected bool SimpleValue(out SimpleValueNode simpleValue) {
+        protected virtual bool SimpleValue(out SimpleValueNode simpleValue) {
             QualifiableNameNode typeQName;
             var hasTypeQName = TypeIndicator(out typeQName);
             if (SimpleValue(typeQName, out simpleValue)) {
