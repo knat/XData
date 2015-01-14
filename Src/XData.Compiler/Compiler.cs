@@ -29,15 +29,15 @@ namespace XData.Compiler {
         InvalidTypeNameReference,
         InvalidAttributeNameReference,
         InvalidElementNameReference,
-
-
         UInt64ValueRequired,
         ByteValueRequired,
         MaxValueMustEqualToOrBeGreaterThanMinValue,
         MaxValueMustBeGreaterThanZero,
         DuplicateMemberName,
         DuplicateAttributeFullName,
-
+        InvalidNamespaceName,
+        InconsistentCSharpNamespaceName,
+        CSharpNamespaceNameNotSpecifiedForNamespace,
     }
 
     public sealed class ContextEx : Context {

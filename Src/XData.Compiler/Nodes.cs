@@ -43,6 +43,40 @@ namespace XData.Compiler {
             foreach (var ns in nsList) {
                 ns.Resolve();
             }
+            //
+            var needGenCode = false;
+            if (CodeCompilationUnitList != null) {
+                CodeNamespaceNode firstCodeNS = null;
+                foreach (var cu in CodeCompilationUnitList) {
+                    foreach (var ns in cu.NamespaceList) {
+                        if (firstCodeNS == null) {
+                            firstCodeNS = ns;
+                        }
+                        LogicalNamespaceNode logicalNS;
+                        if (!nsDict.TryGetValue(ns.Uri, out logicalNS)) {
+                            ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.InvalidNamespaceName,
+                                "Invalid namespace name '{0}'.".InvFormat(ns.Uri), ns.UriNode.TextSpan);
+                        }
+                        if (logicalNS.CSharpNamespaceName == null) {
+                            logicalNS.CSharpNamespaceName = ns.CSharpNamespaceName;
+                        }
+                        else if (logicalNS.CSharpNamespaceName != ns.CSharpNamespaceName) {
+                            ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.InconsistentCSharpNamespaceName,
+                                "Inconsistent C# namespace name '{0}' and '{1}'.".InvFormat(logicalNS.CSharpNamespaceName.ToString(), ns.CSharpNamespaceName.ToString()),
+                                ns.CSharpNamespaceName.TextSpan);
+                        }
+                        needGenCode = true;
+                    }
+                }
+                if (needGenCode) {
+                    foreach (var logicalNS in nsDict.Values) {
+                        if (logicalNS.CSharpNamespaceName == null) {
+                            ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.CSharpNamespaceNameNotSpecifiedForNamespace,
+                                "C# namespace name is not specified for namespace '{0}'.".InvFormat(logicalNS.Uri), firstCodeNS.UriNode.TextSpan);
+                        }
+                    }
+                }
+            }
 
             //var programSymbol = new ProgramSymbol();
 
@@ -98,7 +132,12 @@ namespace XData.Compiler {
 
     }
     public sealed class LogicalNamespaceNode : List<NamespaceNode> {
-
+        public string Uri {
+            get {
+                return this[0].Uri;
+            }
+        }
+        public CSharpNamespaceNameNode CSharpNamespaceName;
         public void CheckDuplicateMembers() {
             var count = Count;
             for (var i = 0; i < count - 1; ++i) {
@@ -241,45 +280,9 @@ namespace XData.Compiler {
     }
     public sealed class CodeNamespaceNode : NamespaceNode {
         public CodeNamespaceNode(Node parent) : base(parent) { }
-        public CSharpNamespaceNameNode Name;
+        public CSharpNamespaceNameNode CSharpNamespaceName;
     }
-    public sealed class CSharpNamespaceNameNode : List<string>, IEquatable<CSharpNamespaceNameNode> {
-        public TextSpan TextSpan;
-        public bool Equals(CSharpNamespaceNameNode other) {
-            if (object.ReferenceEquals(this, other)) return true;
-            if (object.ReferenceEquals(other, null)) return false;
-            var count = Count;
-            if (count != other.Count) {
-                return false;
-            }
-            for (var i = 0; i < count; i++) {
-                if (this[i] != other[i]) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        public override bool Equals(object obj) {
-            return Equals(obj as CSharpNamespaceNameNode);
-        }
-        public override int GetHashCode() {
-            var hash = 17;
-            var count = Math.Min(Count, 5);
-            for (var i = 0; i < count; i++) {
-                hash = Extensions.AggregateHash(hash, this[i].GetHashCode());
-            }
-            return hash;
-        }
-        public static bool operator ==(CSharpNamespaceNameNode left, CSharpNamespaceNameNode right) {
-            if (object.ReferenceEquals(left, null)) {
-                return object.ReferenceEquals(right, null);
-            }
-            return left.Equals(right);
-        }
-        public static bool operator !=(CSharpNamespaceNameNode left, CSharpNamespaceNameNode right) {
-            return !(left == right);
-        }
-    }
+
     public struct UriNode {
         public UriNode(NameNode alias, AtomicValueNode stringValue, string value) {
             Alias = alias;

@@ -138,6 +138,14 @@ namespace XData {
             }
         }
 
+        public static void CreateAndAdd<T>(ref List<T> list, T item) {
+            if (list == null) {
+                list = new List<T>();
+            }
+            list.Add(item);
+        }
+
+
         public static FullName ToFullName(this TypeKind kind) {
             return new FullName(NamespaceInfo.SystemUri, kind.ToString());
         }

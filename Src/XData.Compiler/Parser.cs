@@ -125,7 +125,7 @@ namespace XData.Compiler {
                 result = new CodeNamespaceNode(parent);
                 result.UriNode = UriExpected(result);
                 TokenExpected('=');
-                if (!CSharpNamespaceName(out result.Name)) {
+                if (!CSharpNamespaceName(out result.CSharpNamespaceName)) {
                     ErrorDiagnosticAndThrow("C# namespace name expected.");
                 }
                 return true;
