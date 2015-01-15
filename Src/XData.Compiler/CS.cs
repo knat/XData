@@ -109,12 +109,9 @@ namespace XData.Compiler {
         }
     }
 
-    public static class CS {
+    internal static class CS {
         internal static string EscapeId(this string text) {
-            if (SyntaxFacts.GetKeywordKind(text) != SyntaxKind.None) {
-                return "@" + text;
-            }
-            return text;
+            return SyntaxFacts.GetKeywordKind(text) == SyntaxKind.None ? text : "@" + text;
         }
         internal static string UnescapeId(this string text) {
             return text[0] == '@' ? text.Substring(1) : text;

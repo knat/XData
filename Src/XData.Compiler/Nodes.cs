@@ -65,7 +65,7 @@ namespace XData.Compiler {
                 foreach (var logicalNS in nsDict.Values) {
                     if (logicalNS.CSNamespaceName == null) {
                         ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.CSNamespaceNameNotSpecifiedForNamespace,
-                            "C# namespace name is not specified for namespace '{0}'.".InvFormat(logicalNS.Uri), nsIndicatorList[0].KeywordTextSpan);
+                            "C# namespace name is not specified for namespace '{0}'.".InvFormat(logicalNS.Uri), nsIndicatorList[0].TextSpan);
                     }
                 }
             }
@@ -113,22 +113,22 @@ namespace XData.Compiler {
             }
             return null;
         }
-        private ProgramNode _program;
-        public ProgramNode Program {
+        private ProgramNode _programAncestor;
+        public ProgramNode ProgramAncestor {
             get {
-                return _program ?? (_program = GetAncestor<ProgramNode>());
+                return _programAncestor ?? (_programAncestor = GetAncestor<ProgramNode>());
             }
         }
-        private CompilationUnitNode _compilationUnit;
-        public CompilationUnitNode CompilationUnit {
+        private CompilationUnitNode _compilationUnitAncestor;
+        public CompilationUnitNode CompilationUnitAncestor {
             get {
-                return _compilationUnit ?? (_compilationUnit = GetAncestor<CompilationUnitNode>());
+                return _compilationUnitAncestor ?? (_compilationUnitAncestor = GetAncestor<CompilationUnitNode>());
             }
         }
-        private NamespaceNode _namespace;
-        public NamespaceNode Namespace {
+        private NamespaceNode _namespaceAncestor;
+        public NamespaceNode NamespaceAncestor {
             get {
-                return _namespace ?? (_namespace = GetAncestor<NamespaceNode>());
+                return _namespaceAncestor ?? (_namespaceAncestor = GetAncestor<NamespaceNode>());
             }
         }
     }
@@ -152,6 +152,7 @@ namespace XData.Compiler {
         }
         public CSNamespaceNameNode CSNamespaceName;
         public bool IsCSNamespaceRef;
+        public NamespaceSymbol NamespaceSymbol;
         public void CheckDuplicateMembers() {
             var count = Count;
             for (var i = 0; i < count - 1; ++i) {
@@ -294,7 +295,7 @@ namespace XData.Compiler {
     }
     public sealed class CSNSIndicatorNode : NamespaceNode {
         public CSNSIndicatorNode(Node parent) : base(parent) { }
-        public TextSpan KeywordTextSpan;
+        public TextSpan TextSpan;
         public bool IsRef;
         public CSNamespaceNameNode CSNamespaceName;
     }
@@ -340,20 +341,47 @@ namespace XData.Compiler {
         public readonly NameNode Alias;//opt
         public LogicalNamespaceNode LogicalNamespace;
     }
-    public abstract class NamespaceMemberNode : Node {
+    public abstract class ObjectNode : Node {
+        protected ObjectNode(Node parent) : base(parent) {
+        }
+        //public abstract TextSpan TextSpan { get; }
+        //protected abstract ObjectSymbol CreateSymbolCore(ObjectBaseSymbol parent);
+    }
+    public abstract class NamespaceMemberNode : ObjectNode {
         protected NamespaceMemberNode(Node parent) : base(parent) {
         }
         public NameNode Name;
+        private string _csName;
+        public string CSName {
+            get {
+                return _csName ?? (_csName = Name.Value.EscapeId());
+            }
+        }
         private FullName? _fullName;
         public FullName FullName {
             get {
                 if (_fullName == null) {
-                    _fullName = new FullName(Namespace.Uri, Name.Value);
+                    _fullName = new FullName(NamespaceAncestor.Uri, Name.Value);
                 }
                 return _fullName.Value;
             }
         }
         public abstract void Resolve();
+        //
+        private NamedObjectSymbol _objectSymbol;
+        private bool _isProcessing;
+        public NamedObjectSymbol CreateSymbol() {
+            if (_objectSymbol == null) {
+                if (_isProcessing) {
+                    ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.CircularReferenceDetected, "Circular reference detected.", Name.TextSpan);
+                }
+                _isProcessing = true;
+                _objectSymbol = CreateSymbolCore(NamespaceAncestor.LogicalNamespace.NamespaceSymbol, CSName, FullName);
+                _isProcessing = false;
+            }
+            return _objectSymbol;
+        }
+        protected abstract NamedObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName);
     }
     public sealed class SystemTypeNode : TypeNode {
         private SystemTypeNode() : base(null) {
@@ -371,6 +399,9 @@ namespace XData.Compiler {
             SystemTypeNode result;
             Dict.TryGetValue(name, out result);
             return result;
+        }
+        protected override NamedObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName) {
+            return base.CreateSymbolCore(parent, csName, fullName);
         }
     }
     public class TypeNode : NamespaceMemberNode {
@@ -391,17 +422,28 @@ namespace XData.Compiler {
         public override void Resolve() {
             Body.Resolve();
         }
+        protected override NamedObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName) {
+            return Body.CreateSymbolCore(parent, csName, fullName, IsAbstract, IsSealed);
+        }
     }
     public abstract class TypeBodyNode : Node {
         protected TypeBodyNode(Node parent) : base(parent) { }
         public abstract void Resolve();
+        public abstract TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed);
     }
     public sealed class TypeListNode : TypeBodyNode {
         public TypeListNode(Node parent) : base(parent) { }
         public QualifiableNameNode ItemQName;
         public TypeNode ItemType;
         public override void Resolve() {
-            ItemType = Namespace.ResolveAsType(ItemQName);
+            ItemType = NamespaceAncestor.ResolveAsType(ItemQName);
+        }
+        public override TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
+            var itemSymbol = ItemType.CreateSymbol() as SimpleTypeSymbol;
+            if (itemSymbol == null) {
+
+            }
+            return new ListTypeSymbol(parent, csName, isAbstract, isSealed, fullName, itemSymbol);
         }
     }
     public sealed class TypeDirectnessNode : TypeBodyNode {
@@ -416,6 +458,10 @@ namespace XData.Compiler {
                 StructuralChildren.Resolve();
             }
         }
+        public override TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
+
+            throw new NotImplementedException();
+        }
     }
     public abstract class TypeDerivation : TypeBodyNode {
         public TypeDerivation(Node parent) : base(parent) { }
@@ -424,7 +470,7 @@ namespace XData.Compiler {
         public RootStructuralChildrenNode StructuralChildren;
         public TypeNode BaseType;
         public override void Resolve() {
-            BaseType = Namespace.ResolveAsType(BaseQName);
+            BaseType = NamespaceAncestor.ResolveAsType(BaseQName);
             if (Attributes != null) {
                 Attributes.Resolve();
             }
@@ -435,10 +481,16 @@ namespace XData.Compiler {
     }
     public sealed class TypeExtension : TypeDerivation {
         public TypeExtension(Node parent) : base(parent) { }
+        public override TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
+            throw new NotImplementedException();
+        }
     }
     public sealed class TypeRestriction : TypeDerivation {
         public TypeRestriction(Node parent) : base(parent) { }
         public SimpleValueRestrictionsNode SimpleValueRestrictions;
+        public override TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
+            throw new NotImplementedException();
+        }
     }
 
     public sealed class SimpleValueRestrictionsNode : Node {
@@ -521,7 +573,10 @@ namespace XData.Compiler {
             }
         }
         public override void Resolve() {
-            Type = Namespace.ResolveAsType(TypeQName);
+            Type = NamespaceAncestor.ResolveAsType(TypeQName);
+        }
+        protected override NamedObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName) {
+            throw new NotImplementedException();
         }
     }
     public sealed class AttributesNode : Node {
@@ -575,8 +630,8 @@ namespace XData.Compiler {
             }
         }
         public override void Resolve() {
-            Type = Namespace.ResolveAsType(TypeQName);
-            FullName = new FullName(IsQualified ? Namespace.Uri : null, Name.Value);
+            Type = NamespaceAncestor.ResolveAsType(TypeQName);
+            FullName = new FullName(IsQualified ? NamespaceAncestor.Uri : null, Name.Value);
         }
     }
     public sealed class GlobalAttributeRefNode : MemberAttributeNode {
@@ -584,7 +639,7 @@ namespace XData.Compiler {
         public QualifiableNameNode GlobalAttributeQName;
         public GlobalAttributeNode GlobalAttribute;
         public override void Resolve() {
-            GlobalAttribute = Namespace.ResolveAsAttribute(GlobalAttributeQName);
+            GlobalAttribute = NamespaceAncestor.ResolveAsAttribute(GlobalAttributeQName);
             FullName = GlobalAttribute.FullName;
         }
     }
@@ -614,9 +669,12 @@ namespace XData.Compiler {
         }
         public override void Resolve() {
             if (SubstitutedGlobalElementQName.IsValid) {
-                SubstitutedGlobalElement = Namespace.ResolveAsElement(SubstitutedGlobalElementQName);
+                SubstitutedGlobalElement = NamespaceAncestor.ResolveAsElement(SubstitutedGlobalElementQName);
             }
-            Type = Namespace.ResolveAsType(TypeQName);
+            Type = NamespaceAncestor.ResolveAsType(TypeQName);
+        }
+        protected override NamedObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName) {
+            throw new NotImplementedException();
         }
     }
     public sealed class RootStructuralChildrenNode : Node {
@@ -654,8 +712,8 @@ namespace XData.Compiler {
             }
         }
         public override void Resolve() {
-            Type = Namespace.ResolveAsType(TypeQName);
-            FullName = new FullName(Namespace.Uri, Name.Value);
+            Type = NamespaceAncestor.ResolveAsType(TypeQName);
+            FullName = new FullName(NamespaceAncestor.Uri, Name.Value);
         }
     }
     public sealed class GlobalElementRefNode : MemberElementNode {
@@ -663,7 +721,7 @@ namespace XData.Compiler {
         public QualifiableNameNode GlobalElementQName;
         public GlobalElementNode GlobalElement;
         public override void Resolve() {
-            GlobalElement = Namespace.ResolveAsElement(GlobalElementQName);
+            GlobalElement = NamespaceAncestor.ResolveAsElement(GlobalElementQName);
             FullName = GlobalElement.FullName;
         }
     }

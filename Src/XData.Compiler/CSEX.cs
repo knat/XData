@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 
 namespace XData.Compiler {
-    public static class CSEX {
-        public static readonly CSNamespaceNameNode XDataCSNamespaceName = new CSNamespaceNameNode { "XData" };
+    internal static class CSEX {
+        internal static readonly CSNamespaceNameNode XDataCSNamespaceName = new CSNamespaceNameNode { "XData" };
 
     }
 }

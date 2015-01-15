@@ -123,7 +123,7 @@ namespace XData.Compiler {
         private bool CSNSIndicator(Node parent, out CSNSIndicatorNode result) {
             TextSpan textSpan;
             if (Keyword(NamespaceKeyword, out textSpan)) {
-                result = new CSNSIndicatorNode(parent) { KeywordTextSpan = textSpan };
+                result = new CSNSIndicatorNode(parent) { TextSpan = textSpan };
                 result.UriNode = UriExpected(result);
                 if (Token('=')) {
                     result.IsRef = false;
@@ -195,7 +195,7 @@ namespace XData.Compiler {
             NameNode alias;
             var stringValue = default(AtomicValueNode);
             if (Name(out alias)) {
-                var uaList = parent.CompilationUnit.UriAliasingList;
+                var uaList = parent.CompilationUnitAncestor.UriAliasingList;
                 if (uaList != null) {
                     foreach (var ua in uaList) {
                         if (ua.Alias == alias) {

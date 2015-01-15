@@ -75,11 +75,14 @@ namespace XData {
             ClrType = clrType;
             IsAbstract = isAbstract;
             //IsAbstract = clrType.IsAbstract;
-            //var ttt = typeof(object);
-            //ttt.FullName
         }
         public readonly Type ClrType;
         public readonly bool IsAbstract;
+        public string ClrTypeName {
+            get {
+                return ClrType.Name;
+            }
+        }
         public XObject CreateInstance(bool @try = false) {
             if (IsAbstract) {
                 if (@try) {
@@ -162,18 +165,12 @@ namespace XData {
     public class TypeInfo : NamedObjectInfo {
         public TypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeKind kind, TypeInfo baseType)
             : base(clrType, isAbstract, fullName) {
-            _kind = kind;
-
+            Kind = kind;
             BaseType = baseType;
         }
-        private readonly TypeKind _kind;
-        public TypeKind Kind {
-            get {
-                return _kind;
-            }
-        }
+        public TypeKind Kind { get; private set; }
+        public readonly TypeInfo BaseType;//null for root
 
-        public readonly TypeInfo BaseType;//opt
         public bool IsEqualToOrDeriveFrom(TypeInfo other) {
             if (other == null) throw new ArgumentNullException("other");
             for (var info = this; info != null; info = info.BaseType) {
@@ -188,11 +185,11 @@ namespace XData {
     public interface ISimpleTypeInfo {
         TypeKind Kind { get; }
         Type ValueClrType { get; }
-        FacetSetInfo? FacetSet { get; }
+        SimpleTypeRestrictionSetInfo? RestrictionSet { get; }
         ISimpleTypeInfo ItemType { get; }//for listed simple type
     }
-    public struct FacetSetInfo {
-        public FacetSetInfo(
+    public struct SimpleTypeRestrictionSetInfo {
+        public SimpleTypeRestrictionSetInfo(
             ulong? minLength = null,
             ulong? maxLength = null,
             byte? totalDigits = null,
@@ -270,36 +267,44 @@ namespace XData {
         //public Regex Regex { get { return _regexDict.GetOrAdd(Pattern, p => new Regex(p)); } }
     }
     public class SimpleTypeInfo : TypeInfo, ISimpleTypeInfo {
-        public SimpleTypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeKind kind, TypeInfo baseType, Type valueClrType, FacetSetInfo? facetSet = null)
+        public SimpleTypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeKind kind, TypeInfo baseType,
+            Type valueClrType, SimpleTypeRestrictionSetInfo? restrictionSet)
             : base(clrType, isAbstract, fullName, kind, baseType) {
             if (baseType == null) throw new ArgumentNullException("baseType");
             if (valueClrType == null) throw new ArgumentNullException("valueClrType");
-            _valueClrType = valueClrType;
-            _facetSet = facetSet;
+            ValueClrType = valueClrType;
+            RestrictionSet = restrictionSet;
         }
-        private readonly Type _valueClrType;
-        public Type ValueClrType { get { return _valueClrType; } }
-        private readonly FacetSetInfo? _facetSet;
-        public FacetSetInfo? FacetSet { get { return _facetSet; } }
+        public Type ValueClrType { get; private set; }
+        public SimpleTypeRestrictionSetInfo? RestrictionSet { get; private set; }
         public virtual SimpleTypeInfo ItemType { get { return null; } }
         ISimpleTypeInfo ISimpleTypeInfo.ItemType { get { return ItemType; } }
     }
     public sealed class AtomicTypeInfo : SimpleTypeInfo {
-        public AtomicTypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeKind kind, SimpleTypeInfo baseType, Type valueClrType, FacetSetInfo? facetSet = null)
-            : base(clrType, isAbstract, fullName, kind, baseType, valueClrType, facetSet) { }
+        public AtomicTypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeKind kind, SimpleTypeInfo baseType,
+            Type valueClrType, SimpleTypeRestrictionSetInfo? restrictionSet)
+            : base(clrType, isAbstract, fullName, kind, baseType, valueClrType, restrictionSet) { }
         new public SimpleTypeInfo BaseType { get { return (SimpleTypeInfo)base.BaseType; } }
     }
     public sealed class ListTypeInfo : SimpleTypeInfo {
         public ListTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo itemType)
-            : base(clrType, isAbstract, fullName, TypeKind.ListType, XSimpleType.ThisInfo, typeof(XListTypeValue<>)) {
+            : base(clrType, isAbstract, fullName, TypeKind.ListType, XSimpleType.ThisInfo, typeof(XListTypeValue<>), null) {
             if (itemType == null) throw new ArgumentNullException("itemType");
             _itemType = itemType;
         }
-        public ListTypeInfo(Type clrType, bool isAbstract, FullName fullName, ListTypeInfo baseType, FacetSetInfo facetSet)
-            : base(clrType, isAbstract, fullName, TypeKind.ListType, baseType, typeof(XListTypeValue<>), facetSet) { }
-        new public SimpleTypeInfo BaseType { get { return (SimpleTypeInfo)base.BaseType; } }
+        public ListTypeInfo(Type clrType, bool isAbstract, FullName fullName, ListTypeInfo baseType, SimpleTypeRestrictionSetInfo restrictionSet)
+            : base(clrType, isAbstract, fullName, TypeKind.ListType, baseType, typeof(XListTypeValue<>), restrictionSet) { }
+        new public SimpleTypeInfo BaseType {
+            get {
+                return (SimpleTypeInfo)base.BaseType;
+            }
+        }
         private readonly SimpleTypeInfo _itemType;//opt
-        public override SimpleTypeInfo ItemType { get { return _itemType ?? BaseType.ItemType; } }
+        public override SimpleTypeInfo ItemType {
+            get {
+                return _itemType ?? BaseType.ItemType;
+            }
+        }
     }
     public sealed class ComplexTypeInfo : TypeInfo {
         public ComplexTypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeInfo baseType,

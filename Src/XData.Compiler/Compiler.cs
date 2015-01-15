@@ -42,6 +42,7 @@ namespace XData.Compiler {
         InvalidIndicatorNamespaceName,
         InconsistentCSharpNamespaceName,
         CSNamespaceNameNotSpecifiedForNamespace,
+        CircularReferenceDetected,
     }
 
     public sealed class ContextEx : Context {
