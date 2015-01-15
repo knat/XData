@@ -8,9 +8,9 @@ using System.Collections.Immutable;
 using XData.IO.Text;
 
 namespace XData.Compiler {
-    public sealed class CSharpNamespaceNameNode : List<string>, IEquatable<CSharpNamespaceNameNode> {
+    public sealed class CSNamespaceNameNode : List<string>, IEquatable<CSNamespaceNameNode> {
         public TextSpan TextSpan;
-        public bool Equals(CSharpNamespaceNameNode other) {
+        public bool Equals(CSNamespaceNameNode other) {
             if (object.ReferenceEquals(this, other)) return true;
             if (object.ReferenceEquals(other, null)) return false;
             var count = Count;
@@ -25,7 +25,7 @@ namespace XData.Compiler {
             return true;
         }
         public override bool Equals(object obj) {
-            return Equals(obj as CSharpNamespaceNameNode);
+            return Equals(obj as CSNamespaceNameNode);
         }
         public override int GetHashCode() {
             var hash = 17;
@@ -35,13 +35,13 @@ namespace XData.Compiler {
             }
             return hash;
         }
-        public static bool operator ==(CSharpNamespaceNameNode left, CSharpNamespaceNameNode right) {
+        public static bool operator ==(CSNamespaceNameNode left, CSNamespaceNameNode right) {
             if (object.ReferenceEquals(left, null)) {
                 return object.ReferenceEquals(right, null);
             }
             return left.Equals(right);
         }
-        public static bool operator !=(CSharpNamespaceNameNode left, CSharpNamespaceNameNode right) {
+        public static bool operator !=(CSNamespaceNameNode left, CSNamespaceNameNode right) {
             return !(left == right);
         }
         private string _string;
@@ -58,16 +58,33 @@ namespace XData.Compiler {
             }
             return _string;
         }
+        //
+        private NameSyntax _csNonGlobalFullName;//@NS1.NS2
+        internal NameSyntax CSNonGlobalFullName {
+            get {
+                if (_csNonGlobalFullName == null) {
+                    foreach (var item in this) {
+                        if (_csNonGlobalFullName == null) {
+                            _csNonGlobalFullName = CS.IdName(item.EscapeId());
+                        }
+                        else {
+                            _csNonGlobalFullName = CS.QualifiedName(_csNonGlobalFullName, item.EscapeId());
+                        }
+                    }
+                }
+                return _csNonGlobalFullName;
+            }
+        }
         private NameSyntax _csFullName;//global::@NS1.NS2
         internal NameSyntax CSFullName {
             get {
                 if (_csFullName == null) {
                     foreach (var item in this) {
                         if (_csFullName == null) {
-                            _csFullName = CS.GlobalAliasQualifiedName(item.EscapeIdentifier());
+                            _csFullName = CS.GlobalAliasQualifiedName(item.EscapeId());
                         }
                         else {
-                            _csFullName = CS.QualifiedName(_csFullName, item.EscapeIdentifier());
+                            _csFullName = CS.QualifiedName(_csFullName, item.EscapeId());
                         }
                     }
                 }
@@ -80,10 +97,10 @@ namespace XData.Compiler {
                 if (_csFullExp == null) {
                     foreach (var item in this) {
                         if (_csFullExp == null) {
-                            _csFullExp = CS.GlobalAliasQualifiedName(item.EscapeIdentifier());
+                            _csFullExp = CS.GlobalAliasQualifiedName(item.EscapeId());
                         }
                         else {
-                            _csFullExp = CS.MemberAccessExpr(_csFullExp, item.EscapeIdentifier());
+                            _csFullExp = CS.MemberAccessExpr(_csFullExp, item.EscapeId());
                         }
                     }
                 }
@@ -93,30 +110,17 @@ namespace XData.Compiler {
     }
 
     public static class CS {
-        internal static T SetAnn<T>(this T node, out SyntaxAnnotation ann) where T : SyntaxNode {
-            ann = new SyntaxAnnotation();
-            return node.WithAdditionalAnnotations(ann);
-        }
-        internal static SyntaxNode TryGetAnnedNode(this SyntaxNode ancestor, SyntaxAnnotation ann) {
-            return ancestor.GetAnnotatedNodes(ann).FirstOrDefault();
-        }
-        internal static T TryGetAnnedNode<T>(this SyntaxNode ancestor, SyntaxAnnotation ann) where T : SyntaxNode {
-            return ancestor.GetAnnotatedNodes(ann).FirstOrDefault() as T;
-        }
-        //
-        //
-        //
-        internal static string EscapeIdentifier(this string identifier) {
-            if (SyntaxFacts.GetKeywordKind(identifier) != SyntaxKind.None) {
-                return "@" + identifier;
+        internal static string EscapeId(this string text) {
+            if (SyntaxFacts.GetKeywordKind(text) != SyntaxKind.None) {
+                return "@" + text;
             }
-            return identifier;
+            return text;
         }
-        internal static string UnescapeIdentifier(this string identifier) {
-            return identifier[0] == '@' ? identifier.Substring(1) : identifier;
+        internal static string UnescapeId(this string text) {
+            return text[0] == '@' ? text.Substring(1) : text;
         }
-        internal static SyntaxToken Id(string text) {
-            return SyntaxFactory.Identifier(default(SyntaxTriviaList), SyntaxKind.IdentifierToken, text, text.UnescapeIdentifier(), default(SyntaxTriviaList));
+        internal static SyntaxToken Id(string escapedId) {
+            return SyntaxFactory.Identifier(default(SyntaxTriviaList), SyntaxKind.IdentifierToken, escapedId, escapedId.UnescapeId(), default(SyntaxTriviaList));
         }
         internal static IdentifierNameSyntax IdName(string name) {
             return SyntaxFactory.IdentifierName(Id(name));
@@ -359,12 +363,13 @@ namespace XData.Compiler {
             if (value is DateTimeOffset) {
                 return Literal((DateTimeOffset)value);
             }
-            //if (value is DateTimeOffset) return Literal((DateTimeOffset)value);
+            if (value is Guid) {
+                return Literal((Guid)value);
+            }
             //var xNs = value as System.Xml.Linq.XNamespace;
             //if (xNs != null) return Literal(xNs);
             //var xName = value as System.Xml.Linq.XName;
             //if (xName != null) return Literal(xName);
-            //if (value is Guid) return Literal((Guid)value);
             //var uri = value as Uri;
             //if (uri != null) return Literal(uri);
             return null;
@@ -1545,7 +1550,7 @@ namespace XData.Compiler {
             if (symbols.Length > 0) {
                 parameterList = new List<TypeParameterSyntax>();
                 foreach (var symbol in symbols) {
-                    var identifier = Id(symbol.Name.EscapeIdentifier());
+                    var identifier = Id(symbol.Name.EscapeId());
                     SyntaxToken varianceKeyword = default(SyntaxToken);
                     //switch (symbol.Variance) {
                     //    case VarianceKind.In:
@@ -1656,6 +1661,19 @@ namespace XData.Compiler {
             }
             return false;
         }
+        //
+        //
+        internal static T SetAnn<T>(this T node, out SyntaxAnnotation ann) where T : SyntaxNode {
+            ann = new SyntaxAnnotation();
+            return node.WithAdditionalAnnotations(ann);
+        }
+        internal static SyntaxNode TryGetAnnedNode(this SyntaxNode ancestor, SyntaxAnnotation ann) {
+            return ancestor.GetAnnotatedNodes(ann).FirstOrDefault();
+        }
+        internal static T TryGetAnnedNode<T>(this SyntaxNode ancestor, SyntaxAnnotation ann) where T : SyntaxNode {
+            return ancestor.GetAnnotatedNodes(ann).FirstOrDefault() as T;
+        }
+
         //
         //
         //

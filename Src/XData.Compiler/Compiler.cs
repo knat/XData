@@ -7,12 +7,16 @@ namespace XData.Compiler {
 
     public struct CompilationInput {
         public readonly List<string> SchemaFilePathList;
-        public readonly List<string> CodeFilePathList;
+        public readonly List<string> CSNSIndicatorFilePathList;
     }
     public struct CompilationOutput {
         public readonly Context Context;
         public readonly string Code;
-        public readonly bool IsValid;
+        public bool IsValid {
+            get {
+                return Context != null;
+            }
+        }
     }
     public enum DiagnosticCodeEx {
         None = 0,
@@ -35,9 +39,9 @@ namespace XData.Compiler {
         MaxValueMustBeGreaterThanZero,
         DuplicateMemberName,
         DuplicateAttributeFullName,
-        InvalidNamespaceName,
+        InvalidIndicatorNamespaceName,
         InconsistentCSharpNamespaceName,
-        CSharpNamespaceNameNotSpecifiedForNamespace,
+        CSNamespaceNameNotSpecifiedForNamespace,
     }
 
     public sealed class ContextEx : Context {
@@ -65,14 +69,21 @@ namespace XData.Compiler {
     public static class Compiler {
         public static CompilationOutput Compile(CompilationInput input) {
             var schemaFilePathList = input.SchemaFilePathList;
-            if (schemaFilePathList != null && schemaFilePathList.Count > 0) {
-                var context = new ContextEx();
-                var programNode = new ProgramNode();
-                try {
-                    foreach (var schemaFilePath in schemaFilePathList) {
-                        using (var reader = new StreamReader(schemaFilePath)) {
+            var csNSIndicatorFilePathList = input.CSNSIndicatorFilePathList;
+            var hasSchemaFile = schemaFilePathList != null && schemaFilePathList.Count > 0;
+            var hasCSNSIndicatorFile = csNSIndicatorFilePathList != null && csNSIndicatorFilePathList.Count > 0;
+            if (!hasSchemaFile && !hasCSNSIndicatorFile) {
+                return default(CompilationOutput);
+            }
+            var context = new ContextEx();
+            var programNode = new ProgramNode();
+            try {
+                if (hasSchemaFile) {
+                    programNode.CompilationUnitList = new List<CompilationUnitNode>();
+                    foreach (var filePath in schemaFilePathList) {
+                        using (var reader = new StreamReader(filePath)) {
                             CompilationUnitNode cuNode;
-                            if (Parser.Parse(schemaFilePath, reader, context, programNode, out cuNode)) {
+                            if (Parser.Parse(filePath, reader, context, programNode, out cuNode)) {
                                 programNode.CompilationUnitList.Add(cuNode);
                             }
                             else {
@@ -80,33 +91,32 @@ namespace XData.Compiler {
                             }
                         }
                     }
-                    var codeFilePathList = input.CodeFilePathList;
-                    if (codeFilePathList != null && codeFilePathList.Count>0) {
-                        programNode.CodeCompilationUnitList = new List<CodeCompilationUnitNode>();
-                        foreach (var codeFilePath in codeFilePathList) {
-                            using (var reader = new StreamReader(codeFilePath)) {
-                                CodeCompilationUnitNode cuNode;
-                                if (Parser.Parse(codeFilePath, reader, context, programNode, out cuNode)) {
-                                    programNode.CodeCompilationUnitList.Add(cuNode);
-                                }
-                                else {
-                                    goto Error;
-                                }
+                }
+                if (hasCSNSIndicatorFile) {
+                    programNode.CSNSIndicatorCompilationUnitList = new List<CSNSIndicatorCompilationUnitNode>();
+                    foreach (var filePath in csNSIndicatorFilePathList) {
+                        using (var reader = new StreamReader(filePath)) {
+                            CSNSIndicatorCompilationUnitNode cuNode;
+                            if (Parser.Parse(filePath, reader, context, programNode, out cuNode)) {
+                                programNode.CSNSIndicatorCompilationUnitList.Add(cuNode);
+                            }
+                            else {
+                                goto Error;
                             }
                         }
                     }
-                    //
-                    ContextEx.Current = context;
-                    try {
-                        programNode.Analyze();
-                    }
-                    catch (ContextEx.ContextException) { }
                 }
-                catch (Exception ) {
-
+                //
+                ContextEx.Current = context;
+                try {
+                    programNode.Analyze();
                 }
+                catch (ContextEx.ContextException) { }
             Error:
                 ;
+            }
+            catch (Exception) {
+
             }
 
             return default(CompilationOutput);

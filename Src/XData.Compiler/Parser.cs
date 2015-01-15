@@ -36,13 +36,13 @@ namespace XData.Compiler {
             return (_instance ?? (_instance = new Parser())).CompilationUnit(filePath, reader, context, parent, out result);
         }
         public static bool Parse(string filePath, TextReader reader, Context context,
-            Node parent, out CodeCompilationUnitNode result) {
-            return (_instance ?? (_instance = new Parser())).CodeCompilationUnit(filePath, reader, context, parent, out result);
+            Node parent, out CSNSIndicatorCompilationUnitNode result) {
+            return (_instance ?? (_instance = new Parser())).CSNSIndicatorCompilationUnit(filePath, reader, context, parent, out result);
         }
         private Parser() {
             _uriAliasingGetter = UriAliasing;
             _namespaceGetter = Namespace;
-            _codeNamespaceGetter = CodeNamespace;
+            _csNSIndicatorGetter = CSNSIndicator;
             _importGetter = Import;
             _namespaceMemberGetter = NamespaceMember;
             _memberAttributeGetter = MemberAttribute;
@@ -59,7 +59,7 @@ namespace XData.Compiler {
         private delegate bool NodeGetterWithParentList<T>(Node parent, List<T> list, out T node);
         private readonly NodeGetterWithList<UriAliasingNode> _uriAliasingGetter;
         private readonly NodeGetterWithParent<NamespaceNode> _namespaceGetter;
-        private readonly NodeGetterWithParent<CodeNamespaceNode> _codeNamespaceGetter;
+        private readonly NodeGetterWithParent<CSNSIndicatorNode> _csNSIndicatorGetter;
         private readonly NodeGetterWithParentList<ImportNode> _importGetter;
         private readonly NodeGetterWithParentList<NamespaceMemberNode> _namespaceMemberGetter;
         private readonly NodeGetterWithParentList<MemberAttributeNode> _memberAttributeGetter;
@@ -89,13 +89,13 @@ namespace XData.Compiler {
             result = null;
             return false;
         }
-        private bool CodeCompilationUnit(string filePath, TextReader reader, Context context,
-            Node parent, out CodeCompilationUnitNode result) {
+        private bool CSNSIndicatorCompilationUnit(string filePath, TextReader reader, Context context,
+            Node parent, out CSNSIndicatorCompilationUnitNode result) {
             Set(filePath, reader, context);
             try {
-                result = new CodeCompilationUnitNode(parent);
+                result = new CSNSIndicatorCompilationUnitNode(parent);
                 List(_uriAliasingGetter, out result.UriAliasingList);
-                List(result, _codeNamespaceGetter, out result.NamespaceList);
+                List(result, _csNSIndicatorGetter, out result.NamespaceList);
                 EndOfFileExpected();
                 return true;
             }
@@ -120,24 +120,31 @@ namespace XData.Compiler {
             result = default(NamespaceNode);
             return false;
         }
-        private bool CodeNamespace(Node parent, out CodeNamespaceNode result) {
-            if (Keyword(NamespaceKeyword)) {
-                result = new CodeNamespaceNode(parent);
+        private bool CSNSIndicator(Node parent, out CSNSIndicatorNode result) {
+            TextSpan textSpan;
+            if (Keyword(NamespaceKeyword, out textSpan)) {
+                result = new CSNSIndicatorNode(parent) { KeywordTextSpan = textSpan };
                 result.UriNode = UriExpected(result);
-                TokenExpected('=');
-                if (!CSharpNamespaceName(out result.CSharpNamespaceName)) {
+                if (Token('=')) {
+                    result.IsRef = false;
+                }
+                else {
+                    TokenExpected('&', "= or & expected.");
+                    result.IsRef = true;
+                }
+                if (!CSNamespaceName(out result.CSNamespaceName)) {
                     ErrorDiagnosticAndThrow("C# namespace name expected.");
                 }
                 return true;
             }
-            result = default(CodeNamespaceNode);
+            result = default(CSNSIndicatorNode);
             return false;
         }
-        private bool CSharpNamespaceName(out CSharpNamespaceNameNode result) {
+        private bool CSNamespaceName(out CSNamespaceNameNode result) {
             result = null;
             NameNode name;
             if (Name(out name)) {
-                result = new CSharpNamespaceNameNode { TextSpan = name.TextSpan };
+                result = new CSNamespaceNameNode { TextSpan = name.TextSpan };
                 result.Add(name.Value);
                 while (true) {
                     if (Token('.')) {
@@ -414,7 +421,7 @@ namespace XData.Compiler {
                         maxIsInclusive = false;
                     }
                     else {
-                        TokenExpected(']');
+                        TokenExpected(']', ") or ] expected.");
                         maxIsInclusive = true;
                     }
                 }

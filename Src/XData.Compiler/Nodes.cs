@@ -5,21 +5,30 @@ using XData.IO.Text;
 namespace XData.Compiler {
     public sealed class ProgramNode : Node {
         public ProgramNode() : base(null) {
-            CompilationUnitList = new List<CompilationUnitNode>();
         }
-        public readonly List<CompilationUnitNode> CompilationUnitList;
-        public List<CodeCompilationUnitNode> CodeCompilationUnitList;
+        public List<CompilationUnitNode> CompilationUnitList;
+        public List<CSNSIndicatorCompilationUnitNode> CSNSIndicatorCompilationUnitList;
         //
-        public List<NamespaceNode> NamespaceList;
-        public NamespaceNodeDict NamespaceDict;
+        //public List<NamespaceNode> NamespaceList;
+        //public NamespaceNodeDict NamespaceDict;
         public void Analyze() {
             var nsList = new List<NamespaceNode>();
-            foreach (var cu in CompilationUnitList) {
-                if (cu.NamespaceList != null) {
-                    nsList.AddRange(cu.NamespaceList);
+            if (CompilationUnitList != null) {
+                foreach (var cu in CompilationUnitList) {
+                    if (cu.NamespaceList != null) {
+                        nsList.AddRange(cu.NamespaceList);
+                    }
                 }
             }
-            NamespaceList = nsList;
+            //NamespaceList = nsList;
+            var nsIndicatorList = new List<CSNSIndicatorNode>();
+            if (CSNSIndicatorCompilationUnitList != null) {
+                foreach (var cu in CSNSIndicatorCompilationUnitList) {
+                    if (cu.NamespaceList != null) {
+                        nsIndicatorList.AddRange(cu.NamespaceList);
+                    }
+                }
+            }
             //
             var nsDict = new NamespaceNodeDict();
             foreach (var ns in nsList) {
@@ -32,7 +41,40 @@ namespace XData.Compiler {
                 logicalNS.Add(ns);
                 ns.LogicalNamespace = logicalNS;
             }
-            NamespaceDict = nsDict;
+            //NamespaceDict = nsDict;
+            if (nsIndicatorList.Count > 0) {
+                foreach (var nsIndicator in nsIndicatorList) {
+                    LogicalNamespaceNode logicalNS;
+                    if (!nsDict.TryGetValue(nsIndicator.Uri, out logicalNS)) {
+                        ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.InvalidIndicatorNamespaceName,
+                            "Invalid indicator namespace name '{0}'.".InvFormat(nsIndicator.Uri), nsIndicator.UriNode.TextSpan);
+                    }
+                    if (logicalNS.CSNamespaceName == null) {
+                        logicalNS.CSNamespaceName = nsIndicator.CSNamespaceName;
+                        logicalNS.IsCSNamespaceRef = nsIndicator.IsRef;
+                    }
+                    else if (logicalNS.IsCSNamespaceRef != nsIndicator.IsRef || logicalNS.CSNamespaceName != nsIndicator.CSNamespaceName) {
+                        ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.InconsistentCSharpNamespaceName,
+                            "Inconsistent C# namespace name '{0}' '{1}' and '{2}' '{3}'.".InvFormat(
+                                logicalNS.IsCSNamespaceRef ? "&" : "=", logicalNS.CSNamespaceName.ToString(),
+                                nsIndicator.IsRef ? "&" : "=", nsIndicator.CSNamespaceName.ToString()),
+                            nsIndicator.CSNamespaceName.TextSpan);
+                    }
+
+                }
+                foreach (var logicalNS in nsDict.Values) {
+                    if (logicalNS.CSNamespaceName == null) {
+                        ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.CSNamespaceNameNotSpecifiedForNamespace,
+                            "C# namespace name is not specified for namespace '{0}'.".InvFormat(logicalNS.Uri), nsIndicatorList[0].KeywordTextSpan);
+                    }
+                }
+            }
+            if (nsList.Count == 0) {
+                return;
+            }
+
+
+
             //
             foreach (var ns in nsList) {
                 ns.ResolveImports(nsDict);
@@ -44,43 +86,14 @@ namespace XData.Compiler {
                 ns.Resolve();
             }
             //
-            var needGenCode = false;
-            if (CodeCompilationUnitList != null) {
-                CodeNamespaceNode firstCodeNS = null;
-                foreach (var cu in CodeCompilationUnitList) {
-                    foreach (var ns in cu.NamespaceList) {
-                        if (firstCodeNS == null) {
-                            firstCodeNS = ns;
-                        }
-                        LogicalNamespaceNode logicalNS;
-                        if (!nsDict.TryGetValue(ns.Uri, out logicalNS)) {
-                            ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.InvalidNamespaceName,
-                                "Invalid namespace name '{0}'.".InvFormat(ns.Uri), ns.UriNode.TextSpan);
-                        }
-                        if (logicalNS.CSharpNamespaceName == null) {
-                            logicalNS.CSharpNamespaceName = ns.CSharpNamespaceName;
-                        }
-                        else if (logicalNS.CSharpNamespaceName != ns.CSharpNamespaceName) {
-                            ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.InconsistentCSharpNamespaceName,
-                                "Inconsistent C# namespace name '{0}' and '{1}'.".InvFormat(logicalNS.CSharpNamespaceName.ToString(), ns.CSharpNamespaceName.ToString()),
-                                ns.CSharpNamespaceName.TextSpan);
-                        }
-                        needGenCode = true;
-                    }
-                }
-                if (needGenCode) {
-                    foreach (var logicalNS in nsDict.Values) {
-                        if (logicalNS.CSharpNamespaceName == null) {
-                            ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.CSharpNamespaceNameNotSpecifiedForNamespace,
-                                "C# namespace name is not specified for namespace '{0}'.".InvFormat(logicalNS.Uri), firstCodeNS.UriNode.TextSpan);
-                        }
-                    }
-                }
-            }
 
-            //var programSymbol = new ProgramSymbol();
+
+            //
+            var programSymbol = new ProgramSymbol(nsIndicatorList.Count > 0);
+
 
             //return programSymbol;
+
         }
     }
     public abstract class Node {
@@ -124,9 +137,9 @@ namespace XData.Compiler {
         public List<UriAliasingNode> UriAliasingList;
         public List<NamespaceNode> NamespaceList;
     }
-    public sealed class CodeCompilationUnitNode : CompilationUnitNode {
-        public CodeCompilationUnitNode(Node parent) : base(parent) { }
-        new public List<CodeNamespaceNode> NamespaceList;
+    public sealed class CSNSIndicatorCompilationUnitNode : CompilationUnitNode {
+        public CSNSIndicatorCompilationUnitNode(Node parent) : base(parent) { }
+        new public List<CSNSIndicatorNode> NamespaceList;
     }
     public sealed class NamespaceNodeDict : Dictionary<string, LogicalNamespaceNode> {
 
@@ -137,7 +150,8 @@ namespace XData.Compiler {
                 return this[0].Uri;
             }
         }
-        public CSharpNamespaceNameNode CSharpNamespaceName;
+        public CSNamespaceNameNode CSNamespaceName;
+        public bool IsCSNamespaceRef;
         public void CheckDuplicateMembers() {
             var count = Count;
             for (var i = 0; i < count - 1; ++i) {
@@ -278,9 +292,11 @@ namespace XData.Compiler {
             return result;
         }
     }
-    public sealed class CodeNamespaceNode : NamespaceNode {
-        public CodeNamespaceNode(Node parent) : base(parent) { }
-        public CSharpNamespaceNameNode CSharpNamespaceName;
+    public sealed class CSNSIndicatorNode : NamespaceNode {
+        public CSNSIndicatorNode(Node parent) : base(parent) { }
+        public TextSpan KeywordTextSpan;
+        public bool IsRef;
+        public CSNamespaceNameNode CSNamespaceName;
     }
 
     public struct UriNode {

@@ -6,18 +6,25 @@ namespace XData.Compiler {
 
     }
     public sealed class ProgramSymbol : Symbol {
-        public ProgramSymbol() {
+        public ProgramSymbol(bool needGenCode) {
+            NeedGenCode = needGenCode;
             NamespaceList = new List<NamespaceSymbol>();
         }
+        public readonly bool NeedGenCode;
         public readonly List<NamespaceSymbol> NamespaceList;
     }
     public sealed class NamespaceSymbol : Symbol {
-        public NamespaceSymbol(string uri) {
+        public NamespaceSymbol(string uri, CSNamespaceNameNode csNamespaceName, bool isCSNamespaceRef) {
             Uri = uri;
+            CSNamespaceName = csNamespaceName;
+            IsCSNamespaceRef = isCSNamespaceRef;
             GlobalObjectList = new List<GlobalObjectSymbol>();
         }
         public readonly string Uri;
+        public readonly CSNamespaceNameNode CSNamespaceName;
+        public readonly bool IsCSNamespaceRef;
         public readonly List<GlobalObjectSymbol> GlobalObjectList;
+
     }
     public abstract class ObjectSymbol : Symbol {
 
