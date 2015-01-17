@@ -111,9 +111,9 @@ namespace XData {
         }
 
 
-        //public static object CreateInstance(Type type) {
-        //    return Activator.CreateInstance(type);//, true);
-        //}
+        public static object CreateInstance(Type type) {
+            return Activator.CreateInstance(type);//, true);
+        }
 
         public static int AggregateHash(int hash, int newValue) {
             unchecked {
