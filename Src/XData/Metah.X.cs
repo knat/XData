@@ -28,7 +28,7 @@ namespace Metah.X {
         private Object SetParent(Object parent) {
             if (parent == null) throw new ArgumentNullException("parent");
             for (var i = parent; i != null; i = i._parent)
-                if (object.ReferenceEquals(this, i)) throw new InvalidOperationException("Circular reference detected");
+                if ((object)this== i) throw new InvalidOperationException("Circular reference detected");
             Object obj;
             if (_parent == null) obj = this;
             else obj = DeepClone();

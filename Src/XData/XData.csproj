@@ -42,10 +42,11 @@
     <Compile Include="Attribute.cs" />
     <Compile Include="AttributeSet.cs" />
     <Compile Include="ChildContainer.cs" />
-    <Compile Include="Common.cs" />
+    <Compile Include="Extensions.cs" />
     <Compile Include="ComplexType.cs" />
     <Compile Include="Diagnostics.cs" />
     <Compile Include="Element.cs" />
+    <Compile Include="FullName.cs" />
     <Compile Include="Metadata.cs" />
     <Compile Include="Type.cs" />
     <None Include="Metah.X.cs" />

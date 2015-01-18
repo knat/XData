@@ -21,38 +21,38 @@ namespace XData {
             }
         }
         protected abstract FullName GetFullName();
-        private XElement _referentialElement;
-        public XElement ReferentialElement {
+        private XElement _referencedElement;
+        public XElement ReferencedElement {
             get {
-                return _referentialElement;
+                return _referencedElement;
             }
             set {
                 if (value != null) {
-                    for (var i = value; i != null; i = i._referentialElement) {
-                        if (object.ReferenceEquals(this, i)) {
+                    for (var i = value; i != null; i = i._referencedElement) {
+                        if ((object)this == i) {
                             throw new InvalidOperationException("Circular reference detected.");
                         }
                     }
                 }
-                _referentialElement = value;
+                _referencedElement = value;
             }
         }
         public XElement GenericReferentialElement {
             get {
-                return _referentialElement;
+                return _referencedElement;
             }
             set {
-                ReferentialElement = value;
+                ReferencedElement = value;
             }
         }
         public bool IsReference {
             get {
-                return _referentialElement != null;
+                return _referencedElement != null;
             }
         }
         public XElement EffectiveElement {
             get {
-                return _referentialElement == null ? this : _referentialElement.EffectiveElement;
+                return _referencedElement == null ? this : _referencedElement.EffectiveElement;
             }
         }
         private XType _type;
@@ -64,8 +64,8 @@ namespace XData {
                 return EffectiveElement._type;
             }
             set {
-                if (_referentialElement != null) {
-                    _referentialElement.Type = value;
+                if (_referencedElement != null) {
+                    _referencedElement.Type = value;
                 }
                 else {
                     SetType(value);
@@ -86,8 +86,8 @@ namespace XData {
             }
         }
         public T EnsureType<T>(bool @try = false) where T : XType {
-            if (_referentialElement != null) {
-                return _referentialElement.EnsureType<T>(@try);
+            if (_referencedElement != null) {
+                return _referencedElement.EnsureType<T>(@try);
             }
             var obj = _type as T;
             if (obj != null) return obj;
@@ -194,7 +194,7 @@ namespace XData {
             effElement.SetType(type);
             if (elementInfo.IsReference) {
                 var refElement = elementInfo.CreateInstance<XElement>();
-                refElement.ReferentialElement = effElement;
+                refElement.ReferencedElement = effElement;
                 result = refElement;
             }
             else {

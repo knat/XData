@@ -327,13 +327,13 @@ namespace XData {
     }
     public abstract class EntityInfo : NamedObjectInfo {
         public EntityInfo(Type clrType, bool isAbstract, FullName fullName, string displayName, TypeInfo type,
-            EntityDeclarationKind declarationKind, EntityInfo referentialEntity, bool isNullable)
+            EntityDeclarationKind declarationKind, EntityInfo referencedEntity, bool isNullable)
             : base(clrType, isAbstract, fullName) {
             _displayName = displayName;
             Type = type;
             DeclarationKind = declarationKind;
             IsNullable = isNullable;
-            ReferentialEntity = referentialEntity;
+            ReferencedEntity = referencedEntity;
         }
         private readonly string _displayName;
         public string DisplayName {
@@ -343,7 +343,7 @@ namespace XData {
         }
         public readonly TypeInfo Type;
         public readonly EntityDeclarationKind DeclarationKind;
-        public readonly EntityInfo ReferentialEntity;
+        public readonly EntityInfo ReferencedEntity;
         public readonly bool IsNullable;
         public bool IsLocal {
             get {
@@ -363,17 +363,17 @@ namespace XData {
     }
     public sealed class AttributeInfo : EntityInfo {
         public AttributeInfo(Type clrType, FullName fullName, string displayName, SimpleTypeInfo type,
-            EntityDeclarationKind declarationKind, AttributeInfo referentialAttribute, bool isNullable)
-            : base(clrType, false, fullName, displayName, type, declarationKind, referentialAttribute, isNullable) {
+            EntityDeclarationKind declarationKind, AttributeInfo referencedAttribute, bool isNullable)
+            : base(clrType, false, fullName, displayName, type, declarationKind, referencedAttribute, isNullable) {
         }
         new public SimpleTypeInfo Type {
             get {
                 return (SimpleTypeInfo)base.Type;
             }
         }
-        public AttributeInfo ReferentialAttribute {
+        public AttributeInfo ReferencedAttribute {
             get {
-                return (AttributeInfo)ReferentialEntity;
+                return (AttributeInfo)ReferencedEntity;
             }
         }
         public readonly bool IsOptional;
@@ -388,20 +388,20 @@ namespace XData {
 
     public sealed class ElementInfo : EntityInfo, IChildInfo {
         public ElementInfo(Type clrType, bool isAbstract, FullName fullName, string displayName, TypeInfo type,
-            EntityDeclarationKind declarationKind, ElementInfo referentialElement, bool isNullable,
+            EntityDeclarationKind declarationKind, ElementInfo referencedElement, bool isNullable,
             int order, bool isEffectiveOptional,
             ElementInfo substitutedElement, FullName[] directSubstitutingElementFullNames,
             ProgramInfo program)
-            : base(clrType, isAbstract, fullName, displayName, type, declarationKind, referentialElement, isNullable) {
+            : base(clrType, isAbstract, fullName, displayName, type, declarationKind, referencedElement, isNullable) {
             _order = order;
             _isEffectiveOptional = isEffectiveOptional;
             SubstitutedElement = substitutedElement;
             _directSubstitutingElementFullNames = directSubstitutingElementFullNames;
             Program = program;
         }
-        public ElementInfo ReferentialElement {
+        public ElementInfo ReferencedElement {
             get {
-                return (ElementInfo)ReferentialEntity;
+                return (ElementInfo)ReferencedEntity;
             }
         }
         private readonly int _order;
@@ -437,7 +437,7 @@ namespace XData {
         }
         public bool IsMatch(FullName fullName, out ElementInfo globalElement) {
             if (FullName == fullName) {
-                globalElement = ReferentialElement;
+                globalElement = ReferencedElement;
                 return true;
             }
             if (!IsLocal) {
@@ -449,7 +449,7 @@ namespace XData {
         }
         private ElementInfo TryGet(FullName fullName) {
             if (IsReference) {
-                return ReferentialElement.TryGet(fullName);
+                return ReferencedElement.TryGet(fullName);
             }
             if (FullName == fullName) {
                 return this;

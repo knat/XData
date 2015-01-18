@@ -11,8 +11,8 @@ namespace XData.Compiler {
     public sealed class CSNamespaceNameNode : List<string>, IEquatable<CSNamespaceNameNode> {
         public TextSpan TextSpan;
         public bool Equals(CSNamespaceNameNode other) {
-            if (object.ReferenceEquals(this, other)) return true;
-            if (object.ReferenceEquals(other, null)) return false;
+            if ((object)this == other) return true;
+            if ((object)other == null) return false;
             var count = Count;
             if (count != other.Count) {
                 return false;
@@ -36,8 +36,8 @@ namespace XData.Compiler {
             return hash;
         }
         public static bool operator ==(CSNamespaceNameNode left, CSNamespaceNameNode right) {
-            if (object.ReferenceEquals(left, null)) {
-                return object.ReferenceEquals(right, null);
+            if ((object)left == null) {
+                return (object)right == null;
             }
             return left.Equals(right);
         }

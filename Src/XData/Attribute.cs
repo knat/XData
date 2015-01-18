@@ -18,42 +18,42 @@ namespace XData {
             }
         }
         protected abstract FullName GetFullName();
-        private XAttribute _referentialAttribute;
-        public XAttribute ReferentialAttribute {
+        private XAttribute _referencedAttribute;
+        public XAttribute ReferencedAttribute {
             get {
-                return _referentialAttribute;
+                return _referencedAttribute;
             }
             set {
                 if (value != null) {
                     if (value._fullName != _fullName) {
-                        throw new InvalidOperationException("Referential attribute full name '{0}' not equal to '{1}'.".InvFormat(
+                        throw new InvalidOperationException("Referenced attribute full name '{0}' not equal to '{1}'.".InvFormat(
                             value._fullName.ToString(), _fullName.ToString()));
                     }
-                    for (var i = value; i != null; i = i._referentialAttribute) {
-                        if (object.ReferenceEquals(this, i)) {
+                    for (var i = value; i != null; i = i._referencedAttribute) {
+                        if ((object)this == i) {
                             throw new InvalidOperationException("Circular reference detected.");
                         }
                     }
                 }
-                _referentialAttribute = value;
+                _referencedAttribute = value;
             }
         }
-        public XAttribute GenericReferentialAttribute {
+        public XAttribute GenericReferencedAttribute {
             get {
-                return _referentialAttribute;
+                return _referencedAttribute;
             }
             set {
-                ReferentialAttribute = value;
+                ReferencedAttribute = value;
             }
         }
         public bool IsReference {
             get {
-                return _referentialAttribute != null;
+                return _referencedAttribute != null;
             }
         }
         public XAttribute EffectiveAttribute {
             get {
-                return _referentialAttribute == null ? this : _referentialAttribute.EffectiveAttribute;
+                return _referencedAttribute == null ? this : _referencedAttribute.EffectiveAttribute;
             }
         }
         private XSimpleType _type;
@@ -65,8 +65,8 @@ namespace XData {
                 return EffectiveAttribute._type;
             }
             set {
-                if (_referentialAttribute != null) {
-                    _referentialAttribute.Type = value;
+                if (_referencedAttribute != null) {
+                    _referencedAttribute.Type = value;
                 }
                 else {
                     SetType(value);
@@ -92,8 +92,8 @@ namespace XData {
             }
         }
         public T EnsureType<T>(bool @try = false) where T : XSimpleType {
-            if (_referentialAttribute != null) {
-                return _referentialAttribute.EnsureType<T>(@try);
+            if (_referencedAttribute != null) {
+                return _referencedAttribute.EnsureType<T>(@try);
             }
             var obj = _type as T;
             if (obj != null) return obj;
