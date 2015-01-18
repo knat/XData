@@ -201,9 +201,9 @@ namespace XData.IO.Text {
                 case TokenKind.VerbatimStringValue:
                     kind = AtomicValueKind.String;
                     break;
-                case TokenKind.CharValue:
-                    kind = AtomicValueKind.Char;
-                    break;
+                //case TokenKind.CharValue:
+                //    kind = AtomicValueKind.Char;
+                //    break;
                 case TokenKind.Name:
                     if (token.Value == "true" || token.Value == "false") {
                         kind = AtomicValueKind.Boolean;

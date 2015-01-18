@@ -47,7 +47,7 @@ namespace XData.IO.Text {
         VerbatimName,
         StringValue,
         VerbatimStringValue,
-        CharValue,
+        //CharValue,
         IntegerValue,
         DecimalValue,
         RealValue,
@@ -142,7 +142,7 @@ namespace XData.IO.Text {
             InVerbatimName,
             InStringValue,
             InVerbatimStringValue,
-            InCharValue,
+            //InCharValue,
             InNumericValueInteger,
             InNumericValueFraction,
             InNumericValueExponent,
@@ -264,36 +264,36 @@ namespace XData.IO.Text {
                         AdvanceChar();
                     }
                 }
-                else if (stateKind == StateKind.InCharValue) {
-                    if (ch == '\\') {
-                        AdvanceChar();
-                        Token errToken;
-                        if (!ProcessCharEscSeq(sb, out errToken)) {
-                            return errToken;
-                        }
-                    }
-                    else if (ch == '\'') {
-                        if (sb.Length == 1) {
-                            AdvanceChar();
-                            return CreateToken(TokenKind.CharValue, state, sb.ToStringAndRelease());
-                        }
-                        else {
-                            return CreateErrorToken("Character expected.");
-                        }
-                    }
-                    else if (IsNewLine(ch) || ch == char.MaxValue) {
-                        return CreateErrorToken("' expected.");
-                    }
-                    else {
-                        if (sb.Length == 0) {
-                            sb.Append(ch);
-                            AdvanceChar();
-                        }
-                        else {
-                            return CreateErrorToken("' expected.");
-                        }
-                    }
-                }
+                //else if (stateKind == StateKind.InCharValue) {
+                //    if (ch == '\\') {
+                //        AdvanceChar();
+                //        Token errToken;
+                //        if (!ProcessCharEscSeq(sb, out errToken)) {
+                //            return errToken;
+                //        }
+                //    }
+                //    else if (ch == '\'') {
+                //        if (sb.Length == 1) {
+                //            AdvanceChar();
+                //            return CreateToken(TokenKind.CharValue, state, sb.ToStringAndRelease());
+                //        }
+                //        else {
+                //            return CreateErrorToken("Character expected.");
+                //        }
+                //    }
+                //    else if (IsNewLine(ch) || ch == char.MaxValue) {
+                //        return CreateErrorToken("' expected.");
+                //    }
+                //    else {
+                //        if (sb.Length == 0) {
+                //            sb.Append(ch);
+                //            AdvanceChar();
+                //        }
+                //        else {
+                //            return CreateErrorToken("' expected.");
+                //        }
+                //    }
+                //}
                 else if (stateKind == StateKind.InNumericValueInteger) {
                     if (IsDecDigit(ch)) {
                         sb.Append(ch);
@@ -429,11 +429,11 @@ namespace XData.IO.Text {
                     AdvanceChar();
                     sb = Extensions.AcquireStringBuilder();
                 }
-                else if (ch == '\'') {
-                    state = CreateState(StateKind.InCharValue);
-                    AdvanceChar();
-                    sb = Extensions.AcquireStringBuilder();
-                }
+                //else if (ch == '\'') {
+                //    state = CreateState(StateKind.InCharValue);
+                //    AdvanceChar();
+                //    sb = Extensions.AcquireStringBuilder();
+                //}
                 else if (IsDecDigit(ch)) {
                     state = CreateState(StateKind.InNumericValueInteger);
                     AdvanceChar();

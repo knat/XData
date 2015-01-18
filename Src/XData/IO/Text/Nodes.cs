@@ -168,7 +168,7 @@ namespace XData.IO.Text {
     public enum AtomicValueKind : byte {
         None = 0,
         String,
-        Char,
+        //Char,
         Boolean,
         Integer,
         Decimal,

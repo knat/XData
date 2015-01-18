@@ -38,20 +38,35 @@
     <Content Include="IO\Text\Grammars.txt" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AtomicType.cs" />
+    <Compile Include="Attribute.cs" />
+    <Compile Include="AttributeSet.cs" />
+    <Compile Include="ChildContainer.cs" />
     <Compile Include="Common.cs" />
+    <Compile Include="ComplexType.cs" />
     <Compile Include="Diagnostics.cs" />
+    <Compile Include="Element.cs" />
     <Compile Include="Metadata.cs" />
+    <Compile Include="Type.cs" />
     <None Include="Metah.X.cs" />
-    <Compile Include="Objects.cs" />
+    <Compile Include="Object.cs" />
+    <Compile Include="Binary.cs" />
+    <Compile Include="Boolean.cs" />
+    <Compile Include="DateTimeOffset.cs" />
+    <Compile Include="Duration.cs" />
+    <Compile Include="Guid.cs" />
+    <Compile Include="ListType.cs" />
+    <Compile Include="Numerics.cs" />
+    <Compile Include="Reals.cs" />
+    <Compile Include="SimpleType.cs" />
+    <Compile Include="Strings.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="IO\Text\Lexer.cs" />
     <Compile Include="IO\Text\Nodes.cs" />
     <Compile Include="IO\Text\Parser.cs" />
     <Compile Include="IO\Text\TextSpan.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Objects\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

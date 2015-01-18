@@ -390,7 +390,7 @@ namespace XData.Compiler {
         private static readonly Dictionary<string, SystemTypeNode> Dict;
         static SystemTypeNode() {
             Dict = new Dictionary<string, SystemTypeNode>();
-            for (var kind = AtomicTypeKind.StringBase; kind <= AtomicTypeKind.DateTime; ++kind) {
+            for (var kind = AtomicTypeKind.StringBase; kind <= AtomicTypeKind.DateTimeOffset; ++kind) {
                 var name = kind.ToString();
                 Dict.Add(name, new SystemTypeNode() { Name = new NameNode(name, default(TextSpan)) });
             }

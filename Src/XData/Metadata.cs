@@ -260,7 +260,7 @@ namespace XData {
         Binary,
         Guid,
         Duration,
-        DateTime,
+        DateTimeOffset,
         //Date,
         //Time,
     }
