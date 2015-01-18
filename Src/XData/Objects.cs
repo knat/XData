@@ -66,9 +66,9 @@ namespace XData {
             obj._parent = null;
             return obj;
         }
-        public T DeepClone<T>() where T : XObject {
-            return (T)DeepClone();
-        }
+        //public T DeepClone<T>() where T : XObject {
+        //    return (T)DeepClone();
+        //}
         public abstract ObjectInfo ObjectInfo { get; }
         //public static readonly ObjectInfo ThisInfo = new ObjectInfo(typeof(XObject));
         //public bool IsSpecific {
@@ -87,12 +87,10 @@ namespace XData {
             //}
             //return TryValidated(context, success);
         }
+        protected abstract bool TryValidateCore(Context context);
         //protected virtual bool TryValidating(Context context, bool fromValidate) {
         //    return true;
         //}
-        protected virtual bool TryValidateCore(Context context) {
-            return true;
-        }
         //protected virtual bool TryValidated(Context context, bool success) {
         //    return success;
         //}
@@ -108,7 +106,7 @@ namespace XData {
                 return (TypeInfo)ObjectInfo;
             }
         }
-        public static readonly TypeInfo ThisInfo = new TypeInfo(typeof(XType), TypeKind.Type.ToFullName(), TypeKind.Type, null);
+        //public static readonly TypeInfo ThisInfo = new TypeInfo(typeof(XType), AtomicTypeKind.Type.ToFullName(), AtomicTypeKind.Type, null);
         //
         internal static TypeInfo GetTypeInfo(Context context, ProgramInfo programInfo, QualifiableNameNode typeQName,
             TypeInfo declTypeInfo, TextSpan declTypeTextSpan) {
@@ -139,7 +137,7 @@ namespace XData {
 
     }
 
-    public abstract class XSimpleType : XType, IEquatable<XSimpleType>  {
+    public abstract class XSimpleType : XType, IEquatable<XSimpleType> {
         protected XSimpleType() { }
         //private object _value;
         //public object Value {
@@ -218,6 +216,7 @@ namespace XData {
         //    return ValueEqualityComparer.GetHashCode(_value);
         //}
         public abstract bool Equals(XSimpleType other);
+        public abstract bool ValueEquals(object other);
         public override sealed bool Equals(object obj) {
             return Equals(obj as XSimpleType);
         }
@@ -233,14 +232,47 @@ namespace XData {
         public static bool operator !=(XSimpleType left, XSimpleType right) {
             return !(left == right);
         }
-
-        public SimpleTypeInfo SimpleTypeInfo {
-            get {
-                return (SimpleTypeInfo)ObjectInfo;
-            }
+        public virtual bool TryGetValueLength(out ulong result) {
+            result = 0;
+            return false;
         }
-        new public static readonly SimpleTypeInfo ThisInfo = new SimpleTypeInfo(typeof(XSimpleType), TypeKind.SimpleType.ToFullName(), TypeKind.SimpleType,
-            XType.ThisInfo, null);
+        protected override bool TryValidateCore(Context context) {
+            var simpleTypeInfo = (SimpleTypeInfo)ObjectInfo;
+            var restrictionSet = simpleTypeInfo.RestrictionSet;
+            if (restrictionSet != null) {
+                var minLength = restrictionSet.MinLength;
+                var maxLength = restrictionSet.MaxLength;
+                if (minLength != null || maxLength != null) {
+                    ulong length;
+                    if (!TryGetValueLength(out length)) {
+                        throw new InvalidOperationException("!TryGetValueLength()");
+                    }
+
+                }
+                var n_enumerations = restrictionSet.Enumerations;
+                if (n_enumerations != null) {
+                    var enumerations = n_enumerations.Value;
+                    var found = false;
+                    foreach (var item in enumerations.Items) {
+                        if (ValueEquals(item.Value)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+
+                    }
+                }
+            }
+            return true;
+        }
+
+        //public SimpleTypeInfo SimpleTypeInfo {
+        //    get {
+        //        return (SimpleTypeInfo)ObjectInfo;
+        //    }
+        //}
+        public static readonly SimpleTypeInfo ThisInfo = new SimpleTypeInfo(typeof(XSimpleType), true, Extensions.SimpleTypeFullName, null, null);
         //
         internal static bool TryCreate(Context context, ProgramInfo programInfo, SimpleTypeInfo simpleTypeInfo,
             SimpleValueNode simpleValueNode, out XSimpleType result) {
@@ -632,6 +664,9 @@ namespace XData {
             return true;
         }
         internal abstract void InternalAdd(XSimpleType item);
+
+        new public static readonly ListTypeInfo ThisInfo = new ListTypeInfo(typeof(XListType), true, Extensions.ListTypeFullName,
+            XSimpleType.ThisInfo, null, null);
     }
     public abstract class XListType<T> : XListType, IList<T>, IReadOnlyList<T> where T : XSimpleType {
         protected XListType() {
@@ -641,6 +676,13 @@ namespace XData {
             AddRange(items);
         }
         private List<T> _itemList;
+        internal override sealed void InternalAdd(XSimpleType item) {
+            Add((T)item);
+        }
+        public override sealed bool TryGetValueLength(out ulong result) {
+            result = (ulong)_itemList.Count;
+            return true;
+        }
         public override XObject DeepClone() {
             var obj = (XListType<T>)base.DeepClone();
             obj._itemList = new List<T>();
@@ -650,6 +692,7 @@ namespace XData {
             return obj;
         }
         public override bool Equals(XSimpleType other) {
+            if ((object)this == other) return true;
             var otherType = other as XListType<T>;
             if ((object)otherType == null) return false;
             var count = _itemList.Count;
@@ -663,6 +706,22 @@ namespace XData {
             }
             return true;
         }
+        public override bool ValueEquals(object other) {
+            var otherArr = other as object[];
+            if (otherArr == null) {
+                return false;
+            }
+            var count = _itemList.Count;
+            if (count != otherArr.Length) {
+                return false;
+            }
+            for (var i = 0; i < count; ++i) {
+                if (!_itemList[i].ValueEquals(otherArr[i])) {
+                    return false;
+                }
+            }
+            return true;
+        }
         public override int GetHashCode() {
             var hash = 17;
             var count = Math.Min(_itemList.Count, 5);
@@ -671,8 +730,24 @@ namespace XData {
             }
             return hash;
         }
-        internal override sealed void InternalAdd(XSimpleType item) {
-            Add((T)item);
+        public override string ToString() {
+            var count = _itemList.Count;
+            if (count == 0) {
+                return "#[]";
+            }
+            if (count == 1) {
+                return "[#" + _itemList[0].ToString() + "]";
+            }
+            var sb = Extensions.AcquireStringBuilder();
+            sb.Append("#[");
+            for (var i = 0; i < count; ++i) {
+                if (i > 0) {
+                    sb.Append(' ');
+                }
+                sb.Append(_itemList[i].ToString());
+            }
+            sb.Append(']');
+            return sb.ToStringAndRelease();
         }
         public int Count {
             get {
@@ -732,89 +807,6 @@ namespace XData {
                 return false;
             }
         }
-
-
-
-        //protected XListType() { }
-        //protected XListType(XListTypeValue value) {
-        //    ObjectValue = value;
-        //}
-        //protected XListType(IEnumerable<T> items) {
-        //    AddRange(items);
-        //}
-        //public static implicit operator XListTypeValue(XListType<T> obj) {
-        //    if (obj == null) return null;
-        //    return obj.Value;
-        //}
-        //new public XListTypeValue Value {
-        //    get {
-        //        return ObjectValue as XListTypeValue;
-        //    }
-        //    set {
-        //        ObjectValue = value;
-        //    }
-        //}
-        //public XListTypeValue EnsureValue() {
-        //    return Value ?? (Value = new XListTypeValue());
-        //}
-        //protected abstract T TryGetTypedItem(object value);
-        //public int Count {
-        //    get {
-        //        return EnsureValue().Count;
-        //    }
-        //}
-        //public T this[int index] {
-        //    get {
-        //        return TryGetTypedItem(EnsureValue()[index]);
-        //    }
-        //    set {
-        //        EnsureValue()[index] = value;
-        //    }
-        //}
-        //public void Add(T item) {
-        //    EnsureValue().Add(item);
-        //}
-        //public void AddRange(IEnumerable<T> items) {
-        //    if (items != null) {
-        //        var value = EnsureValue();
-        //        foreach (var item in items) {
-        //            value.Add(item);
-        //        }
-        //    }
-        //}
-        //public void Insert(int index, T item) {
-        //    EnsureValue().Insert(index, item);
-        //}
-        //public bool Remove(T item) {
-        //    return EnsureValue().Remove(item);
-        //}
-        //public void RemoveAt(int index) {
-        //    EnsureValue().RemoveAt(index);
-        //}
-        //public void Clear() {
-        //    EnsureValue().Clear();
-        //}
-        //public int IndexOf(T item) {
-        //    return EnsureValue().IndexOf(item);
-        //}
-        //public bool Contains(T item) {
-        //    return EnsureValue().Contains(item);
-        //}
-        //public void CopyTo(T[] array, int arrayIndex) {
-        //    EnsureValue().CopyTo(array, arrayIndex);
-        //}
-        //public List<T>.Enumerator GetEnumerator() {
-        //    return EnsureValue().GetEnumerator();
-        //}
-        //IEnumerator<T> IEnumerable<T>.GetEnumerator() {
-        //    return GetEnumerator();
-        //}
-        //IEnumerator IEnumerable.GetEnumerator() {
-        //    return GetEnumerator();
-        //}
-        //bool ICollection<T>.IsReadOnly {
-        //    get { return false; }
-        //}
     }
     #endregion List type
     #region Atomic types
@@ -825,7 +817,6 @@ namespace XData {
     public abstract class XAtomicType : XSimpleType, ITryComparable<XAtomicType> {
         protected XAtomicType() { }
         public abstract bool TryParseAndSet(string literal);
-        public abstract bool ValueEquals(object other);
         public virtual bool TryCompareTo(XAtomicType other, out int result) {
             result = 0;
             return false;
@@ -835,8 +826,14 @@ namespace XData {
             return false;
         }
         protected override sealed bool TryValidateCore(Context context) {
+            if (!base.TryValidateCore(context)) {
+                return false;
+            }
+            var atomicTypeInfo = (AtomicTypeInfo)ObjectInfo;
+            var restrictionSet = atomicTypeInfo.RestrictionSet;
+            if (restrictionSet != null) {
 
-
+            }
             return true;
         }
         internal static bool TryCreate(Context context, AtomicTypeInfo atomicTypeInfo,
@@ -853,18 +850,21 @@ namespace XData {
             result = atomicType;
             return true;
         }
+
+        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XAtomicType), true, Extensions.AtomicTypeFullName,
+            XSimpleType.ThisInfo, null, AtomicTypeKind.None);
+
     }
-    public class XString : XAtomicType {
-        public XString() { }
-        public XString(string value) {
-            _value = value;
+    public abstract class XStringBase : XAtomicType {
+        protected XStringBase() {
+            _value = "";
         }
-        public static implicit operator XString(string value) {
-            return new XString(value);
+        protected XStringBase(string value) {
+            Value = value;
         }
-        public static implicit operator string (XString obj) {
-            if ((object)obj == null) return null;
-            return obj.Value;
+        public static implicit operator string (XStringBase obj) {
+            if ((object)obj == null) return "";
+            return obj._value;
         }
         private string _value;
         public string Value {
@@ -872,67 +872,112 @@ namespace XData {
                 return _value;
             }
             set {
-                _value = value;
+                _value = value ?? "";
             }
         }
-        public override object ObjectValue {
-            get {
-                return _value;
-            }
-        }
-        public override bool TrySetValue(object value) {
-            throw new NotImplementedException();
-        }
+        protected abstract bool ValueEquals(string a, string b);
+        protected abstract int GetValueHashCode(string s);
+        protected abstract int CompareValue(string a, string b);
         public override bool Equals(XSimpleType other) {
-            var otherType = other as XString;
+            if ((object)this == other) return true;
+            var otherType = other as XStringBase;
             if ((object)otherType == null) return false;
-            return _value == otherType._value;
+            return ValueEquals(_value, otherType._value);
         }
         public override int GetHashCode() {
-            return _value == null ? 0 : _value.GetHashCode();
+            return GetValueHashCode(_value);
+        }
+        public override bool ValueEquals(object other) {
+            return ValueEquals(_value, other as string);
+        }
+        public override bool TryCompareTo(XAtomicType other, out int result) {
+            result = 0;
+            if ((object)this == other) return true;
+            var otherType = other as XStringBase;
+            if ((object)otherType == null) return false;
+            result = CompareValue(_value, otherType._value);
+            return true;
+        }
+        public override bool TryCompareValueTo(object other, out int result) {
+            result = 0;
+            var otherValue = other as string;
+            if (otherValue == null) {
+                return false;
+            }
+            result = CompareValue(_value, otherValue);
+            return true;
+        }
+        public override bool TryParseAndSet(string literal) {
+            Value = literal;
+            return true;
         }
         public override string ToString() {
             return _value;
         }
-        protected override bool TryValidateCore(Context context) {
-
+        public override bool TryGetValueLength(out ulong result) {
+            result = (ulong)_value.Length;
             return true;
         }
-        public static bool TryCreate(Type type, string literal, out XString result) {
-            result = (XString)Extensions.CreateInstance(type);
-            result._value = literal;
-            return true;
+        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.StringBase.ToAtomicTypeInfo(typeof(XStringBase), XAtomicType.ThisInfo, true);
+    }
+    public class XString : XStringBase {
+        public XString() { }
+        public XString(string value) : base(value) { }
+        public static implicit operator XString(string value) {
+            return new XString(value);
+        }
+        protected override sealed bool ValueEquals(string a, string b) {
+            return a == b;
+        }
+        protected override sealed int GetValueHashCode(string s) {
+            return s.GetHashCode();
+        }
+        protected override sealed int CompareValue(string a, string b) {
+            return string.CompareOrdinal(a, b);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XString), TypeKind.String.ToFullName(), TypeKind.String,
-             XSimpleType.ThisInfo, typeof(string), null);
+        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.String.ToAtomicTypeInfo(typeof(XString), XStringBase.ThisInfo);
+    }
+    public class XIgnoreCaseString : XStringBase {
+        public XIgnoreCaseString() { }
+        public XIgnoreCaseString(string value) : base(value) { }
+        public static implicit operator XIgnoreCaseString(string value) {
+            return new XIgnoreCaseString(value);
+        }
+        protected override sealed bool ValueEquals(string a, string b) {
+            return string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
+        }
+        protected override sealed int GetValueHashCode(string s) {
+            return StringComparer.OrdinalIgnoreCase.GetHashCode(s);
+        }
+        protected override sealed int CompareValue(string a, string b) {
+            return string.Compare(a, b, StringComparison.OrdinalIgnoreCase);
+        }
+        public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
+        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.IgnoreCaseString.ToAtomicTypeInfo(typeof(XIgnoreCaseString), XStringBase.ThisInfo);
     }
 
     public class XDecimal : XAtomicType {
         public XDecimal() { }
-        public XDecimal(decimal? value) {
+        public XDecimal(decimal value) {
             Value = value;
         }
-        public static implicit operator XDecimal(decimal? value) {
+        public static implicit operator XDecimal(decimal value) {
             return new XDecimal(value);
         }
-        public static implicit operator decimal? (XDecimal obj) {
-            if ((object)obj == null) return null;
+        public static implicit operator decimal (XDecimal obj) {
+            if ((object)obj == null) return 0;
             return obj.Value;
         }
-        public static explicit operator decimal (XDecimal obj) {
-            if ((object)obj == null) throw new ArgumentNullException("obj");
-            return obj.Value.Value;
-        }
-        private decimal? _value;
-        public virtual decimal? GetDecimalValue() {
+        private decimal _value;
+        protected virtual decimal GetDecimalValue() {
             return _value;
         }
-        public virtual bool SetDecimalValue(decimal? value, bool @try = false) {
+        protected virtual bool SetDecimalValue(decimal value, bool @try = false) {
             _value = value;
             return true;
         }
-        public decimal? Value {
+        public decimal Value {
             get {
                 return GetDecimalValue();
             }
@@ -941,6 +986,7 @@ namespace XData {
             }
         }
         public override bool Equals(XSimpleType other) {
+            if ((object)this == other) return true;
             var otherType = other as XDecimal;
             if ((object)otherType == null) return false;
             return Value == otherType.Value;
@@ -949,40 +995,26 @@ namespace XData {
             return Value.GetHashCode();
         }
         public override bool ValueEquals(object other) {
-            var value = Value;
-            var otherValue = other as decimal?;
-            if (value == null) {
-                return other == null;
+            if (other is decimal) {
+                return Value == (decimal)other;
             }
-            return value == otherValue;
+            return false;
         }
         public override bool TryCompareTo(XAtomicType other, out int result) {
             result = 0;
+            if ((object)this == other) return true;
             var otherType = other as XDecimal;
             if ((object)otherType == null) return false;
-            var value = Value;
-            var otherValue = otherType.Value;
-            if (value == null) {
-                return otherValue == null;
-            }
-            if (otherValue == null) {
-                return false;
-            }
-            result = value.Value.CompareTo(otherValue.Value);
+            result = Value.CompareTo(otherType.Value);
             return true;
         }
         public override bool TryCompareValueTo(object other, out int result) {
+            if (other is decimal) {
+                result = Value.CompareTo((decimal)other);
+                return true;
+            }
             result = 0;
-            var value = Value;
-            var otherValue = other as decimal?;
-            if (value == null) {
-                return other == null;
-            }
-            if (otherValue == null) {
-                return false;
-            }
-            result = value.Value.CompareTo(otherValue.Value);
-            return true;
+            return false;
         }
         public override bool TryParseAndSet(string literal) {
             decimal r;
@@ -992,457 +1024,32 @@ namespace XData {
             return SetDecimalValue(r, true);
         }
         public override string ToString() {
-            var value = Value;
-            if (value == null) {
-                return null;
-            }
-            return value.Value.ToString(NumberFormatInfo.InvariantInfo);
+            return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XDecimal), TypeKind.Decimal.ToFullName(), TypeKind.Decimal,
-            XSimpleType.ThisInfo, null);
-        //
-        //
-        #region
-        public static bool TryGetTypedValue(object value, out decimal? result) {
-            result = value as decimal?;
-            if (value == null) {
-                return true;
-            }
-            if (result == null) {
-                if (value is long) {
-                    result = (long)value;
-                }
-                else if (value is int) {
-                    result = (int)value;
-                }
-                else if (value is short) {
-                    result = (short)value;
-                }
-                else if (value is sbyte) {
-                    result = (sbyte)value;
-                }
-                else if (value is ulong) {
-                    result = (ulong)value;
-                }
-                else if (value is uint) {
-                    result = (uint)value;
-                }
-                else if (value is ushort) {
-                    result = (ushort)value;
-                }
-                else if (value is byte) {
-                    result = (byte)value;
-                }
-            }
-            return result != null;
-        }
-        public static bool TryGetTypedValue(object value, out long? result) {
-            result = value as long?;
-            if (result == null && value != null) {
-                if (value is decimal) {
-                    var decimalValue = (decimal)value;
-                    if (decimalValue >= long.MinValue && decimalValue <= long.MaxValue) {
-                        result = (long)decimalValue;
-                    }
-                }
-                else if (value is int) {
-                    result = (int)value;
-                }
-                else if (value is short) {
-                    result = (short)value;
-                }
-                else if (value is sbyte) {
-                    result = (sbyte)value;
-                }
-                else if (value is ulong) {
-                    var ulongValue = (ulong)value;
-                    if (ulongValue <= long.MaxValue) {
-                        result = (long)ulongValue;
-                    }
-                }
-                else if (value is uint) {
-                    result = (uint)value;
-                }
-                else if (value is ushort) {
-                    result = (ushort)value;
-                }
-                else if (value is byte) {
-                    result = (byte)value;
-                }
-            }
-            return result != null;
-        }
-        public static bool TryGetTypedValue(object value, out ulong? result) {
-            result = value as ulong?;
-            if (result == null && value != null) {
-                if (value is decimal) {
-                    var decimalValue = (decimal)value;
-                    if (decimalValue >= 0 && decimalValue <= ulong.MaxValue) {
-                        result = (ulong)decimalValue;
-                    }
-                }
-                else if (value is long) {
-                    var longValue = (long)value;
-                    if (longValue >= 0) {
-                        result = (ulong)longValue;
-                    }
-                }
-                else if (value is int) {
-                    var intValue = (int)value;
-                    if (intValue >= 0) {
-                        result = (ulong)intValue;
-                    }
-                }
-                else if (value is short) {
-                    var shortValue = (short)value;
-                    if (shortValue >= 0) {
-                        result = (ulong)shortValue;
-                    }
-                }
-                else if (value is sbyte) {
-                    var sbyteValue = (sbyte)value;
-                    if (sbyteValue >= 0) {
-                        result = (ulong)sbyteValue;
-                    }
-                }
-                else if (value is uint) {
-                    result = (uint)value;
-                }
-                else if (value is ushort) {
-                    result = (ushort)value;
-                }
-                else if (value is byte) {
-                    result = (byte)value;
-                }
-            }
-            return result != null;
-        }
-        public static bool TryGetTypedValue(object value, out int? result) {
-            result = value as int?;
-            if (result == null && value != null) {
-                if (value is decimal) {
-                    var decimalValue = (decimal)value;
-                    if (decimalValue >= int.MinValue && decimalValue <= int.MaxValue) {
-                        result = (int)decimalValue;
-                    }
-                }
-                else if (value is long) {
-                    var longValue = (long)value;
-                    if (longValue >= int.MinValue && longValue <= int.MaxValue) {
-                        result = (int)longValue;
-                    }
-                }
-                else if (value is short) {
-                    result = (short)value;
-                }
-                else if (value is sbyte) {
-                    result = (sbyte)value;
-                }
-                else if (value is ulong) {
-                    var ulongValue = (ulong)value;
-                    if (ulongValue <= int.MaxValue) {
-                        result = (int)ulongValue;
-                    }
-                }
-                else if (value is uint) {
-                    var uintValue = (uint)value;
-                    if (uintValue <= int.MaxValue) {
-                        result = (int)uintValue;
-                    }
-                }
-                else if (value is ushort) {
-                    result = (ushort)value;
-                }
-                else if (value is byte) {
-                    result = (byte)value;
-                }
-            }
-            return result != null;
-        }
-        public static bool TryGetTypedValue(object value, out uint? result) {
-            result = value as uint?;
-            if (result == null && value != null) {
-                if (value is decimal) {
-                    var decimalValue = (decimal)value;
-                    if (decimalValue >= 0 && decimalValue <= uint.MaxValue) {
-                        result = (uint)decimalValue;
-                    }
-                }
-                else if (value is long) {
-                    var longValue = (long)value;
-                    if (longValue >= 0 && longValue <= uint.MaxValue) {
-                        result = (uint)longValue;
-                    }
-                }
-                else if (value is int) {
-                    var intValue = (int)value;
-                    if (intValue >= 0) {
-                        result = (uint)intValue;
-                    }
-                }
-                else if (value is short) {
-                    var shortValue = (short)value;
-                    if (shortValue >= 0) {
-                        result = (uint)shortValue;
-                    }
-                }
-                else if (value is sbyte) {
-                    var sbyteValue = (sbyte)value;
-                    if (sbyteValue >= 0) {
-                        result = (uint)sbyteValue;
-                    }
-                }
-                else if (value is ulong) {
-                    var ulongValue = (ulong)value;
-                    if (ulongValue <= uint.MaxValue) {
-                        result = (uint)ulongValue;
-                    }
-                }
-                else if (value is ushort) {
-                    result = (ushort)value;
-                }
-                else if (value is byte) {
-                    result = (byte)value;
-                }
-            }
-            return result != null;
-        }
-        public static bool TryGetTypedValue(object value, out short? result) {
-            result = value as short?;
-            if (result == null && value != null) {
-                if (value is decimal) {
-                    var decimalValue = (decimal)value;
-                    if (decimalValue >= short.MinValue && decimalValue <= short.MaxValue) {
-                        result = (short)decimalValue;
-                    }
-                }
-                else if (value is long) {
-                    var longValue = (long)value;
-                    if (longValue >= short.MinValue && longValue <= short.MaxValue) {
-                        result = (short)longValue;
-                    }
-                }
-                else if (value is int) {
-                    var intValue = (int)value;
-                    if (intValue >= short.MinValue && intValue <= short.MaxValue) {
-                        result = (short)intValue;
-                    }
-                }
-                else if (value is sbyte) {
-                    result = (sbyte)value;
-                }
-                else if (value is long) {
-                    var ulongValue = (ulong)value;
-                    if (ulongValue <= (ulong)short.MaxValue) {
-                        result = (short)ulongValue;
-                    }
-                }
-                else if (value is uint) {
-                    var uintValue = (uint)value;
-                    if (uintValue <= short.MaxValue) {
-                        result = (short)uintValue;
-                    }
-                }
-                else if (value is ushort) {
-                    var ushortValue = (ushort)value;
-                    if (ushortValue <= short.MaxValue) {
-                        result = (short)ushortValue;
-                    }
-                }
-                else if (value is byte) {
-                    result = (byte)value;
-                }
-            }
-            return result != null;
-        }
-        public static bool TryGetTypedValue(object value, out ushort? result) {
-            result = value as ushort?;
-            if (result == null && value != null) {
-                if (value is decimal) {
-                    var decimalValue = (decimal)value;
-                    if (decimalValue >= 0 && decimalValue <= ushort.MaxValue) {
-                        result = (ushort)decimalValue;
-                    }
-                }
-                else if (value is long) {
-                    var longValue = (long)value;
-                    if (longValue >= 0 && longValue <= ushort.MaxValue) {
-                        result = (ushort)longValue;
-                    }
-                }
-                else if (value is int) {
-                    var intValue = (int)value;
-                    if (intValue >= 0 && intValue <= ushort.MaxValue) {
-                        result = (ushort)intValue;
-                    }
-                }
-                else if (value is short) {
-                    var shortValue = (short)value;
-                    if (shortValue >= 0) {
-                        result = (ushort)shortValue;
-                    }
-                }
-                else if (value is sbyte) {
-                    var sbyteValue = (sbyte)value;
-                    if (sbyteValue >= 0) {
-                        result = (ushort)sbyteValue;
-                    }
-                }
-                else if (value is ulong) {
-                    var ulongValue = (ulong)value;
-                    if (ulongValue <= ushort.MaxValue) {
-                        result = (ushort)ulongValue;
-                    }
-                }
-                else if (value is uint) {
-                    var uintValue = (uint)value;
-                    if (uintValue <= ushort.MaxValue) {
-                        result = (ushort)uintValue;
-                    }
-                }
-                else if (value is byte) {
-                    result = (byte)value;
-                }
-            }
-            return result != null;
-        }
-        public static bool TryGetTypedValue(object value, out sbyte? result) {
-            result = value as sbyte?;
-            if (result == null && value != null) {
-                if (value is decimal) {
-                    var decimalValue = (decimal)value;
-                    if (decimalValue >= sbyte.MinValue && decimalValue <= sbyte.MaxValue) {
-                        result = (sbyte)decimalValue;
-                    }
-                }
-                else if (value is long) {
-                    var longValue = (long)value;
-                    if (longValue >= sbyte.MinValue && longValue <= sbyte.MaxValue) {
-                        result = (sbyte)longValue;
-                    }
-                }
-                else if (value is int) {
-                    var intValue = (int)value;
-                    if (intValue >= sbyte.MinValue && intValue <= sbyte.MaxValue) {
-                        result = (sbyte)intValue;
-                    }
-                }
-                else if (value is short) {
-                    var shortValue = (short)value;
-                    if (shortValue >= sbyte.MinValue && shortValue <= sbyte.MaxValue) {
-                        result = (sbyte)shortValue;
-                    }
-                }
-                else if (value is ulong) {
-                    var ulongValue = (ulong)value;
-                    if (ulongValue <= (ulong)sbyte.MaxValue) {
-                        result = (sbyte)ulongValue;
-                    }
-                }
-                else if (value is uint) {
-                    var uintValue = (uint)value;
-                    if (uintValue <= sbyte.MaxValue) {
-                        result = (sbyte)uintValue;
-                    }
-                }
-                else if (value is ushort) {
-                    var ushortValue = (ushort)value;
-                    if (ushortValue <= sbyte.MaxValue) {
-                        result = (sbyte)ushortValue;
-                    }
-                }
-                else if (value is byte) {
-                    var byteValue = (byte)value;
-                    if (byteValue <= sbyte.MaxValue) {
-                        result = (sbyte)byteValue;
-                    }
-                }
-            }
-            return result != null;
-        }
-        public static bool TryGetTypedValue(object value, out byte? result) {
-            result = value as byte?;
-            if (result == null && value != null) {
-                if (value is decimal) {
-                    var decimalValue = (decimal)value;
-                    if (decimalValue >= 0 && decimalValue <= byte.MaxValue) {
-                        result = (byte)decimalValue;
-                    }
-                }
-                else if (value is long) {
-                    var longValue = (long)value;
-                    if (longValue >= 0 && longValue <= byte.MaxValue) {
-                        result = (byte)longValue;
-                    }
-                }
-                else if (value is int) {
-                    var intValue = (int)value;
-                    if (intValue >= 0 && intValue <= byte.MaxValue) {
-                        result = (byte)intValue;
-                    }
-                }
-                else if (value is short) {
-                    var shortValue = (short)value;
-                    if (shortValue >= 0 && shortValue <= byte.MaxValue) {
-                        result = (byte)shortValue;
-                    }
-                }
-                else if (value is sbyte) {
-                    var sbyteValue = (sbyte)value;
-                    if (sbyteValue >= 0) {
-                        result = (byte)sbyteValue;
-                    }
-                }
-                else if (value is ulong) {
-                    var ulongValue = (ulong)value;
-                    if (ulongValue <= byte.MaxValue) {
-                        result = (byte)ulongValue;
-                    }
-                }
-                else if (value is uint) {
-                    var uintValue = (uint)value;
-                    if (uintValue <= byte.MaxValue) {
-                        result = (byte)uintValue;
-                    }
-                }
-                else if (value is ushort) {
-                    var ushortValue = (ushort)value;
-                    if (ushortValue <= byte.MaxValue) {
-                        result = (byte)ushortValue;
-                    }
-                }
-            }
-            return result != null;
-        }
-
-        #endregion
+        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.Decimal.ToAtomicTypeInfo(typeof(XDecimal), XAtomicType.ThisInfo);
     }
     public class XInt64 : XDecimal {
         public XInt64() { }
-        public XInt64(long? value) {
+        public XInt64(long value) {
             Value = value;
         }
-        public static implicit operator XInt64(long? value) {
+        public static implicit operator XInt64(long value) {
             return new XInt64(value);
         }
-        public static implicit operator long? (XInt64 obj) {
-            if ((object)obj == null) return null;
+        public static implicit operator long (XInt64 obj) {
+            if ((object)obj == null) return 0;
             return obj.Value;
         }
-        public static explicit operator long (XInt64 obj) {
-            if ((object)obj == null) throw new ArgumentNullException("obj");
-            return obj.Value.Value;
-        }
-        private long? _value;
-        public virtual long? GetInt64Value() {
+        private long _value;
+        protected virtual long GetInt64Value() {
             return _value;
         }
-        public virtual bool SetInt64Value(long? value, bool @try = false) {
+        protected virtual bool SetInt64Value(long value, bool @try = false) {
             _value = value;
             return true;
         }
-        new public long? Value {
+        new public long Value {
             get {
                 return GetInt64Value();
             }
@@ -1450,24 +1057,20 @@ namespace XData {
                 SetInt64Value(value);
             }
         }
-        public override decimal? GetDecimalValue() {
+        protected override decimal GetDecimalValue() {
             return Value;
         }
-        public override bool SetDecimalValue(decimal? value, bool @try = false) {
-            long? r = null;
-            if (value != null) {
-                var value2 = value.Value;
-                if (value2 >= long.MinValue && value2 <= long.MaxValue) {
-                    r = (long)value2;
-                }
-                else if (@try) {
-                    return false;
-                }
-                throw new ArgumentOutOfRangeException("value");
+        protected override bool SetDecimalValue(decimal value, bool @try = false) {
+            if (value >= long.MinValue && value <= long.MaxValue) {
+                return SetInt64Value((long)value, @try);
             }
-            return SetInt64Value(r, @try);
+            else if (@try) {
+                return false;
+            }
+            throw new ArgumentOutOfRangeException("value");
         }
         public override bool Equals(XSimpleType other) {
+            if ((object)this == other) return true;
             var otherType = other as XInt64;
             if ((object)otherType == null) return false;
             return Value == otherType.Value;
@@ -1475,20 +1078,27 @@ namespace XData {
         public override int GetHashCode() {
             return Value.GetHashCode();
         }
+        public override bool ValueEquals(object other) {
+            if (other is long) {
+                return Value == (long)other;
+            }
+            return false;
+        }
         public override bool TryCompareTo(XAtomicType other, out int result) {
             result = 0;
+            if ((object)this == other) return true;
             var otherType = other as XInt64;
             if ((object)otherType == null) return false;
-            var value = Value;
-            var otherValue = otherType.Value;
-            if (value == null) {
-                return otherValue == null;
-            }
-            if (otherValue == null) {
-                return false;
-            }
-            result = value.Value.CompareTo(otherValue.Value);
+            result = Value.CompareTo(otherType.Value);
             return true;
+        }
+        public override bool TryCompareValueTo(object other, out int result) {
+            if (other is long) {
+                result = Value.CompareTo((long)other);
+                return true;
+            }
+            result = 0;
+            return false;
         }
         public override bool TryParseAndSet(string literal) {
             long r;
@@ -1498,42 +1108,32 @@ namespace XData {
             return SetInt64Value(r, true);
         }
         public override string ToString() {
-            var value = Value;
-            if (value == null) {
-                return null;
-            }
-            return value.Value.ToString(NumberFormatInfo.InvariantInfo);
+            return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
-
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XInt64), TypeKind.Int64.ToFullName(), TypeKind.Int64,
-            XDecimal.ThisInfo, null);
+        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.Int64.ToAtomicTypeInfo(typeof(XInt64), XDecimal.ThisInfo);
     }
     public class XInt32 : XInt64 {
         public XInt32() { }
-        public XInt32(int? value) {
+        public XInt32(int value) {
             Value = value;
         }
-        public static implicit operator XInt32(int? value) {
+        public static implicit operator XInt32(int value) {
             return new XInt32(value);
         }
-        public static implicit operator int? (XInt32 obj) {
-            if ((object)obj == null) return null;
+        public static implicit operator int (XInt32 obj) {
+            if ((object)obj == null) return 0;
             return obj.Value;
         }
-        public static explicit operator int (XInt32 obj) {
-            if ((object)obj == null) throw new ArgumentNullException("obj");
-            return obj.Value.Value;
-        }
-        private int? _value;
-        public virtual int? GetInt32Value() {
+        private int _value;
+        protected virtual int GetInt32Value() {
             return _value;
         }
-        public virtual bool SetInt32Value(int? value, bool @try = false) {
+        protected virtual bool SetInt32Value(int value, bool @try = false) {
             _value = value;
             return true;
         }
-        new public int? Value {
+        new public int Value {
             get {
                 return GetInt32Value();
             }
@@ -1541,41 +1141,32 @@ namespace XData {
                 SetInt32Value(value);
             }
         }
-        public override long? GetInt64Value() {
+        protected override long GetInt64Value() {
             return Value;
         }
-        public override bool SetInt64Value(long? value, bool @try = false) {
-            int? r = null;
-            if (value != null) {
-                var value2 = value.Value;
-                if (value2 >= int.MinValue && value2 <= int.MaxValue) {
-                    r = (int)value2;
-                }
-                else if (@try) {
-                    return false;
-                }
-                throw new ArgumentOutOfRangeException("value");
+        protected override bool SetInt64Value(long value, bool @try = false) {
+            if (value >= int.MinValue && value <= int.MaxValue) {
+                return SetInt32Value((int)value, @try);
             }
-            return SetInt32Value(r, @try);
+            else if (@try) {
+                return false;
+            }
+            throw new ArgumentOutOfRangeException("value");
         }
-        public override decimal? GetDecimalValue() {
+        protected override decimal GetDecimalValue() {
             return Value;
         }
-        public override bool SetDecimalValue(decimal? value, bool @try = false) {
-            int? r = null;
-            if (value != null) {
-                var value2 = value.Value;
-                if (value2 >= int.MinValue && value2 <= int.MaxValue) {
-                    r = (int)value2;
-                }
-                else if (@try) {
-                    return false;
-                }
-                throw new ArgumentOutOfRangeException("value");
+        protected override bool SetDecimalValue(decimal value, bool @try = false) {
+            if (value >= int.MinValue && value <= int.MaxValue) {
+                return SetInt32Value((int)value, @try);
             }
-            return SetInt32Value(r, @try);
+            else if (@try) {
+                return false;
+            }
+            throw new ArgumentOutOfRangeException("value");
         }
         public override bool Equals(XSimpleType other) {
+            if ((object)this == other) return true;
             var otherType = other as XInt32;
             if ((object)otherType == null) return false;
             return Value == otherType.Value;
@@ -1583,20 +1174,27 @@ namespace XData {
         public override int GetHashCode() {
             return Value.GetHashCode();
         }
-        public override bool TryCompareTo(XSimpleType other, out int result) {
+        public override bool ValueEquals(object other) {
+            if (other is int) {
+                return Value == (int)other;
+            }
+            return false;
+        }
+        public override bool TryCompareTo(XAtomicType other, out int result) {
             result = 0;
+            if ((object)this == other) return true;
             var otherType = other as XInt32;
             if ((object)otherType == null) return false;
-            var value = Value;
-            var otherValue = otherType.Value;
-            if (value == null) {
-                return otherValue == null;
-            }
-            if (otherValue == null) {
-                return false;
-            }
-            result = value.Value.CompareTo(otherValue.Value);
+            result = Value.CompareTo(otherType.Value);
             return true;
+        }
+        public override bool TryCompareValueTo(object other, out int result) {
+            if (other is int) {
+                result = Value.CompareTo((int)other);
+                return true;
+            }
+            result = 0;
+            return false;
         }
         public override bool TryParseAndSet(string literal) {
             int r;
@@ -1606,42 +1204,32 @@ namespace XData {
             return SetInt32Value(r, true);
         }
         public override string ToString() {
-            if (_value == null) {
-                return null;
-            }
-            return _value.Value.ToString(NumberFormatInfo.InvariantInfo);
+            return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
-
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XInt32), TypeKind.Int32.ToFullName(), TypeKind.Int32,
-            XInt64.ThisInfo, null);
+        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.Int32.ToAtomicTypeInfo(typeof(XInt32), XInt64.ThisInfo);
     }
-
     public class XInt16 : XInt32 {
         public XInt16() { }
-        public XInt16(short? value) {
+        public XInt16(short value) {
             Value = value;
         }
-        public static implicit operator XInt16(short? value) {
+        public static implicit operator XInt16(short value) {
             return new XInt16(value);
         }
-        public static implicit operator short? (XInt16 obj) {
-            if ((object)obj == null) return null;
+        public static implicit operator short (XInt16 obj) {
+            if ((object)obj == null) return 0;
             return obj.Value;
         }
-        public static explicit operator short (XInt16 obj) {
-            if ((object)obj == null) throw new ArgumentNullException("obj");
-            return obj.Value.Value;
-        }
-        private short? _value;
-        public virtual short? GetInt16Value() {
+        private short _value;
+        protected virtual short GetInt16Value() {
             return _value;
         }
-        public virtual bool SetInt16Value(short? value, bool @try = false) {
+        protected virtual bool SetInt16Value(short value, bool @try = false) {
             _value = value;
             return true;
         }
-        new public short? Value {
+        new public short Value {
             get {
                 return GetInt16Value();
             }
@@ -1649,58 +1237,44 @@ namespace XData {
                 SetInt16Value(value);
             }
         }
-        public override int? GetInt32Value() {
+        protected override int GetInt32Value() {
             return Value;
         }
-        public override bool SetInt32Value(int? value, bool @try = false) {
-            short? r = null;
-            if (value != null) {
-                var value2 = value.Value;
-                if (value2 >= short.MinValue && value2 <= short.MaxValue) {
-                    r = (short)value2;
-                }
-                else if (@try) {
-                    return false;
-                }
-                throw new ArgumentOutOfRangeException("value");
+        protected override bool SetInt32Value(int value, bool @try = false) {
+            if (value >= short.MinValue && value <= short.MaxValue) {
+                return SetInt16Value((short)value, @try);
             }
-            return SetInt16Value(r, @try);
+            else if (@try) {
+                return false;
+            }
+            throw new ArgumentOutOfRangeException("value");
         }
-        public override long? GetInt64Value() {
+        protected override long GetInt64Value() {
             return Value;
         }
-        public override bool SetInt64Value(long? value, bool @try = false) {
-            short? r = null;
-            if (value != null) {
-                var value2 = value.Value;
-                if (value2 >= short.MinValue && value2 <= short.MaxValue) {
-                    r = (short)value2;
-                }
-                else if (@try) {
-                    return false;
-                }
-                throw new ArgumentOutOfRangeException("value");
+        protected override bool SetInt64Value(long value, bool @try = false) {
+            if (value >= short.MinValue && value <= short.MaxValue) {
+                return SetInt16Value((short)value, @try);
             }
-            return SetInt16Value(r, @try);
+            else if (@try) {
+                return false;
+            }
+            throw new ArgumentOutOfRangeException("value");
         }
-        public override decimal? GetDecimalValue() {
+        protected override decimal GetDecimalValue() {
             return Value;
         }
-        public override bool SetDecimalValue(decimal? value, bool @try = false) {
-            short? r = null;
-            if (value != null) {
-                var value2 = value.Value;
-                if (value2 >= short.MinValue && value2 <= short.MaxValue) {
-                    r = (short)value2;
-                }
-                else if (@try) {
-                    return false;
-                }
-                throw new ArgumentOutOfRangeException("value");
+        protected override bool SetDecimalValue(decimal value, bool @try = false) {
+            if (value >= short.MinValue && value <= short.MaxValue) {
+                return SetInt16Value((short)value, @try);
             }
-            return SetInt16Value(r, @try);
+            else if (@try) {
+                return false;
+            }
+            throw new ArgumentOutOfRangeException("value");
         }
         public override bool Equals(XSimpleType other) {
+            if ((object)this == other) return true;
             var otherType = other as XInt16;
             if ((object)otherType == null) return false;
             return Value == otherType.Value;
@@ -1708,20 +1282,27 @@ namespace XData {
         public override int GetHashCode() {
             return Value.GetHashCode();
         }
-        public override bool TryCompareTo(XSimpleType other, out int result) {
+        public override bool ValueEquals(object other) {
+            if (other is short) {
+                return Value == (short)other;
+            }
+            return false;
+        }
+        public override bool TryCompareTo(XAtomicType other, out int result) {
             result = 0;
+            if ((object)this == other) return true;
             var otherType = other as XInt16;
             if ((object)otherType == null) return false;
-            var value = Value;
-            var otherValue = otherType.Value;
-            if (value == null) {
-                return otherValue == null;
-            }
-            if (otherValue == null) {
-                return false;
-            }
-            result = value.Value.CompareTo(otherValue.Value);
+            result = Value.CompareTo(otherType.Value);
             return true;
+        }
+        public override bool TryCompareValueTo(object other, out int result) {
+            if (other is short) {
+                result = Value.CompareTo((short)other);
+                return true;
+            }
+            result = 0;
+            return false;
         }
         public override bool TryParseAndSet(string literal) {
             short r;
@@ -1731,41 +1312,32 @@ namespace XData {
             return SetInt16Value(r, true);
         }
         public override string ToString() {
-            if (_value == null) {
-                return null;
-            }
-            return _value.Value.ToString(NumberFormatInfo.InvariantInfo);
+            return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
-
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XInt16), TypeKind.Int16.ToFullName(), TypeKind.Int16,
-            XInt32.ThisInfo, null);
+        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.Int16.ToAtomicTypeInfo(typeof(XInt16), XInt32.ThisInfo);
     }
     public class XSByte : XInt16 {
         public XSByte() { }
-        public XSByte(sbyte? value) {
+        public XSByte(sbyte value) {
             Value = value;
         }
-        public static implicit operator XSByte(sbyte? value) {
+        public static implicit operator XSByte(sbyte value) {
             return new XSByte(value);
         }
-        public static implicit operator sbyte? (XSByte obj) {
-            if ((object)obj == null) return null;
+        public static implicit operator sbyte (XSByte obj) {
+            if ((object)obj == null) return 0;
             return obj.Value;
         }
-        public static explicit operator sbyte (XSByte obj) {
-            if ((object)obj == null) throw new ArgumentNullException("obj");
-            return obj.Value.Value;
-        }
-        private sbyte? _value;
-        public virtual sbyte? GetSByteValue() {
+        private sbyte _value;
+        protected virtual sbyte GetSByteValue() {
             return _value;
         }
-        public virtual bool SetSByteValue(sbyte? value, bool @try = false) {
+        protected virtual bool SetSByteValue(sbyte value, bool @try = false) {
             _value = value;
             return true;
         }
-        new public sbyte? Value {
+        new public sbyte Value {
             get {
                 return GetSByteValue();
             }
@@ -1773,75 +1345,56 @@ namespace XData {
                 SetSByteValue(value);
             }
         }
-        public override short? GetInt16Value() {
+        protected override short GetInt16Value() {
             return Value;
         }
-        public override bool SetInt16Value(short? value, bool @try = false) {
-            sbyte? r = null;
-            if (value != null) {
-                var value2 = value.Value;
-                if (value2 >= sbyte.MinValue && value2 <= sbyte.MaxValue) {
-                    r = (sbyte)value2;
-                }
-                else if (@try) {
-                    return false;
-                }
-                throw new ArgumentOutOfRangeException("value");
+        protected override bool SetInt16Value(short value, bool @try = false) {
+            if (value >= sbyte.MinValue && value <= sbyte.MaxValue) {
+                return SetSByteValue((sbyte)value, @try);
             }
-            return SetSByteValue(r, @try);
+            else if (@try) {
+                return false;
+            }
+            throw new ArgumentOutOfRangeException("value");
         }
-        public override int? GetInt32Value() {
+        protected override int GetInt32Value() {
             return Value;
         }
-        public override bool SetInt32Value(int? value, bool @try = false) {
-            sbyte? r = null;
-            if (value != null) {
-                var value2 = value.Value;
-                if (value2 >= sbyte.MinValue && value2 <= sbyte.MaxValue) {
-                    r = (sbyte)value2;
-                }
-                else if (@try) {
-                    return false;
-                }
-                throw new ArgumentOutOfRangeException("value");
+        protected override bool SetInt32Value(int value, bool @try = false) {
+            if (value >= sbyte.MinValue && value <= sbyte.MaxValue) {
+                return SetSByteValue((sbyte)value, @try);
             }
-            return SetSByteValue(r, @try);
+            else if (@try) {
+                return false;
+            }
+            throw new ArgumentOutOfRangeException("value");
         }
-        public override long? GetInt64Value() {
+        protected override long GetInt64Value() {
             return Value;
         }
-        public override bool SetInt64Value(long? value, bool @try = false) {
-            sbyte? r = null;
-            if (value != null) {
-                var value2 = value.Value;
-                if (value2 >= sbyte.MinValue && value2 <= sbyte.MaxValue) {
-                    r = (sbyte)value2;
-                }
-                else if (@try) {
-                    return false;
-                }
-                throw new ArgumentOutOfRangeException("value");
+        protected override bool SetInt64Value(long value, bool @try = false) {
+            if (value >= sbyte.MinValue && value <= sbyte.MaxValue) {
+                return SetSByteValue((sbyte)value, @try);
             }
-            return SetSByteValue(r, @try);
+            else if (@try) {
+                return false;
+            }
+            throw new ArgumentOutOfRangeException("value");
         }
-        public override decimal? GetDecimalValue() {
+        protected override decimal GetDecimalValue() {
             return Value;
         }
-        public override bool SetDecimalValue(decimal? value, bool @try = false) {
-            sbyte? r = null;
-            if (value != null) {
-                var value2 = value.Value;
-                if (value2 >= sbyte.MinValue && value2 <= sbyte.MaxValue) {
-                    r = (sbyte)value2;
-                }
-                else if (@try) {
-                    return false;
-                }
-                throw new ArgumentOutOfRangeException("value");
+        protected override bool SetDecimalValue(decimal value, bool @try = false) {
+            if (value >= sbyte.MinValue && value <= sbyte.MaxValue) {
+                return SetSByteValue((sbyte)value, @try);
             }
-            return SetSByteValue(r, @try);
+            else if (@try) {
+                return false;
+            }
+            throw new ArgumentOutOfRangeException("value");
         }
         public override bool Equals(XSimpleType other) {
+            if ((object)this == other) return true;
             var otherType = other as XSByte;
             if ((object)otherType == null) return false;
             return Value == otherType.Value;
@@ -1849,20 +1402,27 @@ namespace XData {
         public override int GetHashCode() {
             return Value.GetHashCode();
         }
-        public override bool TryCompareTo(XSimpleType other, out int result) {
+        public override bool ValueEquals(object other) {
+            if (other is sbyte) {
+                return Value == (sbyte)other;
+            }
+            return false;
+        }
+        public override bool TryCompareTo(XAtomicType other, out int result) {
             result = 0;
+            if ((object)this == other) return true;
             var otherType = other as XSByte;
             if ((object)otherType == null) return false;
-            var value = Value;
-            var otherValue = otherType.Value;
-            if (value == null) {
-                return otherValue == null;
-            }
-            if (otherValue == null) {
-                return false;
-            }
-            result = value.Value.CompareTo(otherValue.Value);
+            result = Value.CompareTo(otherType.Value);
             return true;
+        }
+        public override bool TryCompareValueTo(object other, out int result) {
+            if (other is sbyte) {
+                result = Value.CompareTo((sbyte)other);
+                return true;
+            }
+            result = 0;
+            return false;
         }
         public override bool TryParseAndSet(string literal) {
             sbyte r;
@@ -1872,825 +1432,1066 @@ namespace XData {
             return SetSByteValue(r, true);
         }
         public override string ToString() {
-            if (_value == null) {
-                return null;
-            }
-            return _value.Value.ToString(NumberFormatInfo.InvariantInfo);
+            return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
-
-
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XSByte), TypeKind.SByte.ToFullName(), TypeKind.SByte,
-            XInt16.ThisInfo, null);
+        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.SByte.ToAtomicTypeInfo(typeof(XSByte), XInt16.ThisInfo);
     }
 
     public class XUInt64 : XDecimal {
         public XUInt64() { }
-        public XUInt64(ulong? value) { ObjectValue = value; }
-        public XUInt64(ulong value) { ObjectValue = value; }
-        public static implicit operator XUInt64(ulong? value) {
-            if (value == null) return null;
-            return new XUInt64(value);
+        public XUInt64(ulong value) {
+            Value = value;
         }
         public static implicit operator XUInt64(ulong value) {
             return new XUInt64(value);
         }
-        public static implicit operator ulong? (XUInt64 obj) {
-            if (obj == null) return null;
-            return obj.NullableValue;
-        }
-        public static explicit operator ulong (XUInt64 obj) {
+        public static implicit operator ulong (XUInt64 obj) {
+            if ((object)obj == null) return 0;
             return obj.Value;
         }
-        new public ulong? NullableValue {
-            get {
-                ulong? r;
-                TryGetTypedValue(ObjectValue, out r);
-                return r;
-            }
-            set { ObjectValue = value; }
+        private ulong _value;
+        protected virtual ulong GetUInt64Value() {
+            return _value;
+        }
+        protected virtual bool SetUInt64Value(ulong value, bool @try = false) {
+            _value = value;
+            return true;
         }
         new public ulong Value {
             get {
-                return NullableValue.Value;
+                return GetUInt64Value();
             }
             set {
-                ObjectValue = value;
+                SetUInt64Value(value);
             }
         }
-        public static bool TryParseValue(string literal, out ulong result) {
-            return ulong.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
+        protected override decimal GetDecimalValue() {
+            return Value;
+        }
+        protected override bool SetDecimalValue(decimal value, bool @try = false) {
+            if (value >= ulong.MinValue && value <= ulong.MaxValue) {
+                return SetUInt64Value((ulong)value, @try);
+            }
+            else if (@try) {
+                return false;
+            }
+            throw new ArgumentOutOfRangeException("value");
+        }
+        public override bool Equals(XSimpleType other) {
+            if ((object)this == other) return true;
+            var otherType = other as XUInt64;
+            if ((object)otherType == null) return false;
+            return Value == otherType.Value;
+        }
+        public override int GetHashCode() {
+            return Value.GetHashCode();
+        }
+        public override bool ValueEquals(object other) {
+            if (other is ulong) {
+                return Value == (ulong)other;
+            }
+            return false;
+        }
+        public override bool TryCompareTo(XAtomicType other, out int result) {
+            result = 0;
+            if ((object)this == other) return true;
+            var otherType = other as XUInt64;
+            if ((object)otherType == null) return false;
+            result = Value.CompareTo(otherType.Value);
+            return true;
+        }
+        public override bool TryCompareValueTo(object other, out int result) {
+            if (other is ulong) {
+                result = Value.CompareTo((ulong)other);
+                return true;
+            }
+            result = 0;
+            return false;
+        }
+        public override bool TryParseAndSet(string literal) {
+            ulong r;
+            if (!ulong.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out r)) {
+                return false;
+            }
+            return SetUInt64Value(r, true);
+        }
+        public override string ToString() {
+            return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XUInt64), TypeKind.UInt64.ToFullName(), TypeKind.UInt64,
-            XDecimal.ThisInfo, typeof(long), null);
+        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.UInt64.ToAtomicTypeInfo(typeof(XUInt64), XDecimal.ThisInfo);
     }
-
     public class XUInt32 : XUInt64 {
         public XUInt32() { }
-        public XUInt32(uint? value) { ObjectValue = value; }
-        public XUInt32(uint value) { ObjectValue = value; }
-        public static implicit operator XUInt32(uint? value) {
-            if (value == null) return null;
-            return new XUInt32(value);
+        public XUInt32(uint value) {
+            Value = value;
         }
         public static implicit operator XUInt32(uint value) {
             return new XUInt32(value);
         }
-        public static implicit operator uint? (XUInt32 obj) {
-            if (obj == null) return null;
-            return obj.NullableValue;
-        }
-        public static explicit operator uint (XUInt32 obj) {
+        public static implicit operator uint (XUInt32 obj) {
+            if ((object)obj == null) return 0;
             return obj.Value;
         }
-        new public uint? NullableValue {
-            get {
-                uint? r;
-                TryGetTypedValue(ObjectValue, out r);
-                return r;
-            }
-            set { ObjectValue = value; }
+        private uint _value;
+        protected virtual uint GetUInt32Value() {
+            return _value;
+        }
+        protected virtual bool SetUInt32Value(uint value, bool @try = false) {
+            _value = value;
+            return true;
         }
         new public uint Value {
             get {
-                return NullableValue.Value;
+                return GetUInt32Value();
             }
             set {
-                ObjectValue = value;
+                SetUInt32Value(value);
             }
         }
-        public static bool TryParseValue(string literal, out uint result) {
-            return uint.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
+        protected override ulong GetUInt64Value() {
+            return Value;
+        }
+        protected override bool SetUInt64Value(ulong value, bool @try = false) {
+            if (value >= uint.MinValue && value <= uint.MaxValue) {
+                return SetUInt32Value((uint)value, @try);
+            }
+            else if (@try) {
+                return false;
+            }
+            throw new ArgumentOutOfRangeException("value");
+        }
+        protected override decimal GetDecimalValue() {
+            return Value;
+        }
+        protected override bool SetDecimalValue(decimal value, bool @try = false) {
+            if (value >= uint.MinValue && value <= uint.MaxValue) {
+                return SetUInt32Value((uint)value, @try);
+            }
+            else if (@try) {
+                return false;
+            }
+            throw new ArgumentOutOfRangeException("value");
+        }
+        public override bool Equals(XSimpleType other) {
+            if ((object)this == other) return true;
+            var otherType = other as XInt32;
+            if ((object)otherType == null) return false;
+            return Value == otherType.Value;
+        }
+        public override int GetHashCode() {
+            return Value.GetHashCode();
+        }
+        public override bool ValueEquals(object other) {
+            if (other is int) {
+                return Value == (int)other;
+            }
+            return false;
+        }
+        public override bool TryCompareTo(XAtomicType other, out int result) {
+            result = 0;
+            if ((object)this == other) return true;
+            var otherType = other as XUInt32;
+            if ((object)otherType == null) return false;
+            result = Value.CompareTo(otherType.Value);
+            return true;
+        }
+        public override bool TryCompareValueTo(object other, out int result) {
+            if (other is uint) {
+                result = Value.CompareTo((uint)other);
+                return true;
+            }
+            result = 0;
+            return false;
+        }
+        public override bool TryParseAndSet(string literal) {
+            uint r;
+            if (!uint.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out r)) {
+                return false;
+            }
+            return SetUInt32Value(r, true);
+        }
+        public override string ToString() {
+            return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XUInt32), TypeKind.UInt32.ToFullName(), TypeKind.UInt32,
-            XUInt64.ThisInfo, typeof(uint), null);
+        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.UInt32.ToAtomicTypeInfo(typeof(XUInt32), XUInt64.ThisInfo);
     }
-
-
     public class XUInt16 : XUInt32 {
         public XUInt16() { }
-        public XUInt16(ushort? value) { ObjectValue = value; }
-        public XUInt16(ushort value) { ObjectValue = value; }
-        public static implicit operator XUInt16(ushort? value) {
-            if (value == null) return null;
-            return new XUInt16(value);
+        public XUInt16(ushort value) {
+            Value = value;
         }
         public static implicit operator XUInt16(ushort value) {
             return new XUInt16(value);
         }
-        public static implicit operator ushort? (XUInt16 obj) {
-            if (obj == null) return null;
-            return obj.NullableValue;
-        }
-        public static explicit operator ushort (XUInt16 obj) {
+        public static implicit operator ushort (XUInt16 obj) {
+            if ((object)obj == null) return 0;
             return obj.Value;
         }
-        new public ushort? NullableValue {
-            get {
-                ushort? r;
-                TryGetTypedValue(ObjectValue, out r);
-                return r;
-            }
-            set { ObjectValue = value; }
+        private ushort _value;
+        protected virtual ushort GetUInt16Value() {
+            return _value;
+        }
+        protected virtual bool SetUInt16Value(ushort value, bool @try = false) {
+            _value = value;
+            return true;
         }
         new public ushort Value {
             get {
-                return NullableValue.Value;
+                return GetUInt16Value();
             }
             set {
-                ObjectValue = value;
+                SetUInt16Value(value);
             }
         }
-        public static bool TryParseValue(string literal, out ushort result) {
-            return ushort.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
+        protected override uint GetUInt32Value() {
+            return Value;
+        }
+        protected override bool SetUInt32Value(uint value, bool @try = false) {
+            if (value >= ushort.MinValue && value <= ushort.MaxValue) {
+                return SetUInt16Value((ushort)value, @try);
+            }
+            else if (@try) {
+                return false;
+            }
+            throw new ArgumentOutOfRangeException("value");
+        }
+        protected override ulong GetUInt64Value() {
+            return Value;
+        }
+        protected override bool SetUInt64Value(ulong value, bool @try = false) {
+            if (value >= ushort.MinValue && value <= ushort.MaxValue) {
+                return SetUInt16Value((ushort)value, @try);
+            }
+            else if (@try) {
+                return false;
+            }
+            throw new ArgumentOutOfRangeException("value");
+        }
+        protected override decimal GetDecimalValue() {
+            return Value;
+        }
+        protected override bool SetDecimalValue(decimal value, bool @try = false) {
+            if (value >= ushort.MinValue && value <= ushort.MaxValue) {
+                return SetUInt16Value((ushort)value, @try);
+            }
+            else if (@try) {
+                return false;
+            }
+            throw new ArgumentOutOfRangeException("value");
+        }
+        public override bool Equals(XSimpleType other) {
+            if ((object)this == other) return true;
+            var otherType = other as XUInt16;
+            if ((object)otherType == null) return false;
+            return Value == otherType.Value;
+        }
+        public override int GetHashCode() {
+            return Value.GetHashCode();
+        }
+        public override bool ValueEquals(object other) {
+            if (other is ushort) {
+                return Value == (ushort)other;
+            }
+            return false;
+        }
+        public override bool TryCompareTo(XAtomicType other, out int result) {
+            result = 0;
+            if ((object)this == other) return true;
+            var otherType = other as XUInt16;
+            if ((object)otherType == null) return false;
+            result = Value.CompareTo(otherType.Value);
+            return true;
+        }
+        public override bool TryCompareValueTo(object other, out int result) {
+            if (other is ushort) {
+                result = Value.CompareTo((ushort)other);
+                return true;
+            }
+            result = 0;
+            return false;
+        }
+        public override bool TryParseAndSet(string literal) {
+            ushort r;
+            if (!ushort.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out r)) {
+                return false;
+            }
+            return SetUInt16Value(r, true);
+        }
+        public override string ToString() {
+            return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XUInt16), TypeKind.UInt16.ToFullName(), TypeKind.UInt16,
-            XUInt32.ThisInfo, typeof(short), null);
+        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.UInt16.ToAtomicTypeInfo(typeof(XUInt16), XUInt32.ThisInfo);
     }
-
     public class XByte : XUInt16 {
         public XByte() { }
-        public XByte(byte? value) { ObjectValue = value; }
-        public XByte(byte value) { ObjectValue = value; }
-        public static implicit operator XByte(byte? value) {
-            if (value == null) return null;
-            return new XByte(value);
+        public XByte(byte value) {
+            Value = value;
         }
         public static implicit operator XByte(byte value) {
             return new XByte(value);
         }
-        public static implicit operator byte? (XByte obj) {
-            if (obj == null) return null;
-            return obj.NullableValue;
-        }
-        public static explicit operator byte (XByte obj) {
+        public static implicit operator byte (XByte obj) {
+            if ((object)obj == null) return 0;
             return obj.Value;
         }
-        new public byte? NullableValue {
-            get {
-                byte? r;
-                TryGetTypedValue(ObjectValue, out r);
-                return r;
-            }
-            set { ObjectValue = value; }
+        private byte _value;
+        protected virtual byte GetByteValue() {
+            return _value;
+        }
+        protected virtual bool SetByteValue(byte value, bool @try = false) {
+            _value = value;
+            return true;
         }
         new public byte Value {
             get {
-                return NullableValue.Value;
+                return GetByteValue();
             }
             set {
-                ObjectValue = value;
+                SetByteValue(value);
             }
         }
-        public static bool TryParseValue(string literal, out byte result) {
-            return byte.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
+        protected override ushort GetUInt16Value() {
+            return Value;
+        }
+        protected override bool SetUInt16Value(ushort value, bool @try = false) {
+            if (value >= byte.MinValue && value <= byte.MaxValue) {
+                return SetByteValue((byte)value, @try);
+            }
+            else if (@try) {
+                return false;
+            }
+            throw new ArgumentOutOfRangeException("value");
+        }
+        protected override uint GetUInt32Value() {
+            return Value;
+        }
+        protected override bool SetUInt32Value(uint value, bool @try = false) {
+            if (value >= byte.MinValue && value <= byte.MaxValue) {
+                return SetByteValue((byte)value, @try);
+            }
+            else if (@try) {
+                return false;
+            }
+            throw new ArgumentOutOfRangeException("value");
+        }
+        protected override ulong GetUInt64Value() {
+            return Value;
+        }
+        protected override bool SetUInt64Value(ulong value, bool @try = false) {
+            if (value >= byte.MinValue && value <= byte.MaxValue) {
+                return SetByteValue((byte)value, @try);
+            }
+            else if (@try) {
+                return false;
+            }
+            throw new ArgumentOutOfRangeException("value");
+        }
+        protected override decimal GetDecimalValue() {
+            return Value;
+        }
+        protected override bool SetDecimalValue(decimal value, bool @try = false) {
+            if (value >= byte.MinValue && value <= byte.MaxValue) {
+                return SetByteValue((byte)value, @try);
+            }
+            else if (@try) {
+                return false;
+            }
+            throw new ArgumentOutOfRangeException("value");
+        }
+        public override bool Equals(XSimpleType other) {
+            if ((object)this == other) return true;
+            var otherType = other as XByte;
+            if ((object)otherType == null) return false;
+            return Value == otherType.Value;
+        }
+        public override int GetHashCode() {
+            return Value.GetHashCode();
+        }
+        public override bool ValueEquals(object other) {
+            if (other is byte) {
+                return Value == (byte)other;
+            }
+            return false;
+        }
+        public override bool TryCompareTo(XAtomicType other, out int result) {
+            result = 0;
+            if ((object)this == other) return true;
+            var otherType = other as XByte;
+            if ((object)otherType == null) return false;
+            result = Value.CompareTo(otherType.Value);
+            return true;
+        }
+        public override bool TryCompareValueTo(object other, out int result) {
+            if (other is byte) {
+                result = Value.CompareTo((byte)other);
+                return true;
+            }
+            result = 0;
+            return false;
+        }
+        public override bool TryParseAndSet(string literal) {
+            byte r;
+            if (!byte.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out r)) {
+                return false;
+            }
+            return SetByteValue(r, true);
+        }
+        public override string ToString() {
+            return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XByte), TypeKind.Byte.ToFullName(), TypeKind.Byte,
-            XUInt16.ThisInfo, typeof(byte), null);
+        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.Byte.ToAtomicTypeInfo(typeof(XByte), XUInt16.ThisInfo);
     }
 
 
     public class XDouble : XAtomicType {
         public XDouble() { }
-        public XDouble(double? value) { ObjectValue = value; }
-        public XDouble(double value) { ObjectValue = value; }
-        public static implicit operator XDouble(double? value) {
-            if (value == null) return null;
-            return new XDouble(value);
+        public XDouble(double value) {
+            Value = value;
         }
         public static implicit operator XDouble(double value) {
             return new XDouble(value);
         }
-        public static implicit operator double? (XDouble obj) {
-            if (obj == null) return null;
-            return obj.NullableValue;
-        }
-        public static explicit operator double (XDouble obj) {
+        public static implicit operator double (XDouble obj) {
+            if ((object)obj == null) return 0;
             return obj.Value;
         }
-        public double? NullableValue {
-            get {
-                double? r;
-                TryGetTypedValue(ObjectValue, out r);
-                return r;
-            }
-            set {
-                ObjectValue = value;
-            }
+        private double _value;
+        public virtual double GetDoubleValue() {
+            return _value;
         }
-        new public double Value {
-            get {
-                return NullableValue.Value;
-            }
-            set {
-                ObjectValue = value;
-            }
-        }
-        public static bool TryGetTypedValue(object value, out double? result) {
-            result = value as double?;
-            if (result != null) {
-                return true;
-            }
-            if (value is float) {
-                result = (float)value;
-                return true;
-            }
-            return false;
-        }
-        public static bool TryGetTypedValue(object value, out float? result) {
-            result = value as float?;
-            if (result != null) {
-                return true;
-            }
-            if (value is double) {
-                var doubleValue = (double)value;
-                if (double.IsNegativeInfinity(doubleValue)) {
-                    result = float.NegativeInfinity;
-                    return true;
-                }
-                else if (double.IsPositiveInfinity(doubleValue)) {
-                    result = float.PositiveInfinity;
-                    return true;
-                }
-                else if (double.IsNaN(doubleValue)) {
-                    result = float.NaN;
-                    return true;
-                }
-                else if (doubleValue >= float.MinValue && doubleValue <= float.MaxValue) {
-                    result = (float)doubleValue;
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public static string ToString(double value) {
-            if (double.IsNegativeInfinity(value)) return NegativeInfinityLexicalValue;
-            else if (double.IsPositiveInfinity(value)) return PositiveInfinityLexicalValue;
-            else if (double.IsNaN(value)) return NaNLexicalValue;
-            return value.ToString("0.0###############E0", NumberFormatInfo.InvariantInfo);
-        }
-        public static bool TryParseValue(string literal, out double result) {
-            if (TryParseLexicalValue(literal, out result)) {
-                return true;
-            }
-            return double.TryParse(literal, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo, out result);
-        }
-        private static bool TryParseLexicalValue(string literal, out double result) {
-            if (literal == NegativeInfinityLexicalValue) {
-                result = double.NegativeInfinity;
-            }
-            else if (literal == PositiveInfinityLexicalValue) {
-                result = double.PositiveInfinity;
-            }
-            else if (literal == NaNLexicalValue) {
-                result = double.NaN;
-            }
-            else {
-                result = default(double);
-                return false;
-            }
+        public virtual bool SetDoubleValue(double value, bool @try = false) {
+            _value = value;
             return true;
         }
-        public const string NegativeInfinityLexicalValue = "-INF";
-        public const string PositiveInfinityLexicalValue = "INF";
-        public const string NaNLexicalValue = "NaN";
+        public double Value {
+            get {
+                return GetDoubleValue();
+            }
+            set {
+                SetDoubleValue(value);
+            }
+        }
+        public override bool Equals(XSimpleType other) {
+            if ((object)this == other) return true;
+            var otherType = other as XDouble;
+            if ((object)otherType == null) return false;
+            return Value == otherType.Value;
+        }
+        public override int GetHashCode() {
+            return Value.GetHashCode();
+        }
+        public override bool ValueEquals(object other) {
+            if (other is double) {
+                return Value == (double)other;
+            }
+            return false;
+        }
+        public override bool TryCompareTo(XAtomicType other, out int result) {
+            result = 0;
+            if ((object)this == other) return true;
+            var otherType = other as XDouble;
+            if ((object)otherType == null) return false;
+            result = Value.CompareTo(otherType.Value);
+            return true;
+        }
+        public override bool TryCompareValueTo(object other, out int result) {
+            if (other is double) {
+                result = Value.CompareTo((double)other);
+                return true;
+            }
+            result = 0;
+            return false;
+        }
+        public override bool TryParseAndSet(string literal) {
+            double r;
+            if (literal == "INF") {
+                r = double.PositiveInfinity;
+            }
+            else if (literal == "-INF") {
+                r = double.NegativeInfinity;
+            }
+            else if (!double.TryParse(literal, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo, out r)) {
+                return false;
+            }
+            return SetDoubleValue(r);
+        }
+        public override string ToString() {
+            var value = Value;
+            if (double.IsPositiveInfinity(value)) {
+                return "INF";
+            }
+            if (double.IsNegativeInfinity(value)) {
+                return "-INF";
+            }
+            return value.ToString(NumberFormatInfo.InvariantInfo);
+        }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XDouble), TypeKind.Double.ToFullName(), TypeKind.Double,
-            XSimpleType.ThisInfo, typeof(double), null);
+        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.Double.ToAtomicTypeInfo(typeof(XDouble), XAtomicType.ThisInfo);
     }
-
     public class XSingle : XDouble {
         public XSingle() { }
-        public XSingle(float? value) { ObjectValue = value; }
-        public XSingle(float value) { ObjectValue = value; }
-        public static implicit operator XSingle(float? value) {
-            if (value == null) return null;
-            return new XSingle(value);
+        public XSingle(float value) {
+            Value = value;
         }
         public static implicit operator XSingle(float value) {
             return new XSingle(value);
         }
-        public static implicit operator float? (XSingle obj) {
-            if (obj == null) return null;
-            return obj.NullableValue;
-        }
-        public static explicit operator float (XSingle obj) {
+        public static implicit operator float (XSingle obj) {
+            if ((object)obj == null) return 0;
             return obj.Value;
         }
-        new public float? NullableValue {
-            get {
-                float? r;
-                TryGetTypedValue(ObjectValue, out r);
-                return r;
-            }
-            set {
-                ObjectValue = value;
-            }
+        private float _value;
+        public virtual float GetSingleValue() {
+            return _value;
+        }
+        public virtual bool SetSingleValue(float value, bool @try = false) {
+            _value = value;
+            return true;
         }
         new public float Value {
             get {
-                return NullableValue.Value;
+                return GetSingleValue();
             }
             set {
-                ObjectValue = value;
+                SetSingleValue(value);
             }
         }
-        public static bool TryParseValue(string literal, out float result) {
-            if (TryParseLexicalValue(literal, out result)) {
-                return true;
-            }
-            return float.TryParse(literal, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo, out result);
+        public override double GetDoubleValue() {
+            return Value;
         }
-        private static bool TryParseLexicalValue(string literal, out float result) {
-            if (literal == NegativeInfinityLexicalValue) {
-                result = float.NegativeInfinity;
+        public override bool SetDoubleValue(double value, bool @try = false) {
+            float f;
+            if (double.IsPositiveInfinity(value)) {
+                f = float.PositiveInfinity;
             }
-            else if (literal == PositiveInfinityLexicalValue) {
-                result = float.PositiveInfinity;
-            }
-            else if (literal == NaNLexicalValue) {
-                result = float.NaN;
+            else if (double.IsNegativeInfinity(value)) {
+                f = float.NegativeInfinity;
             }
             else {
-                result = default(float);
-                return false;
+                f = (float)value;
+                if (float.IsPositiveInfinity(f) || float.IsNegativeInfinity(f)) {
+                    if (@try) {
+                        return false;
+                    }
+                    throw new ArgumentOutOfRangeException("value");
+                }
             }
+            return SetSingleValue(f);
+        }
+        public override bool Equals(XSimpleType other) {
+            if ((object)this == other) return true;
+            var otherType = other as XSingle;
+            if ((object)otherType == null) return false;
+            return Value == otherType.Value;
+        }
+        public override int GetHashCode() {
+            return Value.GetHashCode();
+        }
+        public override bool ValueEquals(object other) {
+            if (other is float) {
+                return Value == (float)other;
+            }
+            return false;
+        }
+        public override bool TryCompareTo(XAtomicType other, out int result) {
+            result = 0;
+            if ((object)this == other) return true;
+            var otherType = other as XSingle;
+            if ((object)otherType == null) return false;
+            result = Value.CompareTo(otherType.Value);
             return true;
         }
-
+        public override bool TryCompareValueTo(object other, out int result) {
+            if (other is float) {
+                result = Value.CompareTo((float)other);
+                return true;
+            }
+            result = 0;
+            return false;
+        }
+        public override bool TryParseAndSet(string literal) {
+            float r;
+            if (literal == "INF") {
+                r = float.PositiveInfinity;
+            }
+            else if (literal == "-INF") {
+                r = float.NegativeInfinity;
+            }
+            else if (!float.TryParse(literal, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo, out r)) {
+                return false;
+            }
+            return SetSingleValue(r);
+        }
+        public override string ToString() {
+            var value = Value;
+            if (float.IsPositiveInfinity(value)) {
+                return "INF";
+            }
+            if (float.IsNegativeInfinity(value)) {
+                return "-INF";
+            }
+            return value.ToString(NumberFormatInfo.InvariantInfo);
+        }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XSingle), TypeKind.Single.ToFullName(), TypeKind.Single,
-            XDouble.ThisInfo, typeof(float), null);
-
+        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.Single.ToAtomicTypeInfo(typeof(XSingle), XDouble.ThisInfo);
     }
 
     public class XBoolean : XAtomicType {
         public XBoolean() { }
-        public XBoolean(bool? value) { ObjectValue = value; }
-        public XBoolean(bool value) { ObjectValue = value; }
-        public static implicit operator XBoolean(bool? value) {
-            if (value == null) return null;
-            return new XBoolean(value);
+        public XBoolean(bool value) {
+            _value = value;
         }
         public static implicit operator XBoolean(bool value) {
             return new XBoolean(value);
         }
-        public static implicit operator bool? (XBoolean obj) {
-            if (obj == null) return null;
-            return obj.NullableValue;
+        public static implicit operator bool (XBoolean obj) {
+            if ((object)obj == null) return false;
+            return obj._value;
         }
-        public static explicit operator bool (XBoolean obj) {
-            return obj.Value;
-        }
-        public bool? NullableValue {
+        private bool _value;
+        public bool Value {
             get {
-                return ObjectValue as bool?;
+                return _value;
             }
             set {
-                ObjectValue = value;
+                _value = value;
             }
         }
-        new public bool Value {
-            get {
-                return NullableValue.Value;
-            }
-            set {
-                ObjectValue = value;
-            }
+        public override bool Equals(XSimpleType other) {
+            if ((object)this == other) return true;
+            var otherType = other as XBoolean;
+            if ((object)otherType == null) return false;
+            return _value == otherType._value;
         }
-        public static string ToString(bool value) { return value ? "true" : "false"; }
-        public static bool TryParseValue(string literal, out bool result) {
-            if (literal == "true") {
-                result = true;
+        public override int GetHashCode() {
+            return _value.GetHashCode();
+        }
+        public override bool ValueEquals(object other) {
+            if (other is bool) {
+                return _value == (bool)other;
             }
-            else if (literal == "false") {
-                result = false;
-            }
-            else {
-                result = default(bool);
-                return false;
-            }
+            return false;
+        }
+        public override bool TryCompareTo(XAtomicType other, out int result) {
+            result = 0;
+            if ((object)this == other) return true;
+            var otherType = other as XBoolean;
+            if ((object)otherType == null) return false;
+            result = _value.CompareTo(otherType._value);
             return true;
         }
+        public override bool TryCompareValueTo(object other, out int result) {
+            if (other is bool) {
+                result = _value.CompareTo((bool)other);
+                return true;
+            }
+            result = 0;
+            return false;
+        }
+        public override bool TryParseAndSet(string literal) {
+            bool r;
+            if (literal == "true") {
+                r = true;
+            }
+            else if (literal == "false") {
+                r = false;
+            }
+            else {
+                return false;
+            }
+            _value = r;
+            return true;
+        }
+        public override string ToString() {
+            return _value ? "true" : "false";
+        }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XBoolean), TypeKind.Boolean.ToFullName(), TypeKind.Boolean,
-            XSimpleType.ThisInfo, typeof(bool), null);
+        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.Boolean.ToAtomicTypeInfo(typeof(XBoolean), XAtomicType.ThisInfo);
     }
 
 
-    public sealed class XBinaryValue : XObject, IEquatable<XBinaryValue> {
-        public XBinaryValue() { }
-        public XBinaryValue(byte[] array) {
-            _array = array;
+    public class XBinary : XAtomicType {
+        public XBinary() {
+            _value = _emptyValue;
         }
-        private byte[] _array;
-        public byte[] Array {
-            get { return _array; }
-            set { _array = value; }
+        public XBinary(byte[] value) {
+            Value = value;
+        }
+        public static implicit operator XBinary(byte[] value) {
+            return new XBinary(value);
+        }
+        public static implicit operator byte[] (XBinary obj) {
+            if ((object)obj == null) return _emptyValue;
+            return obj._value;
+        }
+        private static readonly byte[] _emptyValue = new byte[0];
+        private byte[] _value;
+        public byte[] Value {
+            get {
+                return _value;
+            }
+            set {
+                _value = value ?? _emptyValue;
+            }
         }
         public override XObject DeepClone() {
-            var obj = (XBinaryValue)base.DeepClone();
-            if (_array != null) {
-                obj._array = (byte[])_array.Clone();
+            var obj = (XBinary)base.DeepClone();
+            if (_value.Length > 0) {
+                obj._value = (byte[])_value.Clone();
             }
             return obj;
         }
-        public bool Equals(XBinaryValue other) {
-            if (object.ReferenceEquals(this, other)) return true;
-            if (object.ReferenceEquals(other, null)) return false;
-            if (_array == null) {
-                return other._array == null;
+        private static bool ValueEquals(byte[] x, byte[] y) {
+            if (x == y) {
+                return true;
             }
-            if (other._array == null) {
+            var xLength = x.Length;
+            if (xLength != y.Length) {
                 return false;
             }
-            var length = _array.Length;
-            if (length != other._array.Length) {
-                return false;
-            }
-            for (var i = 0; i < length; i++) {
-                if (_array[i] != other._array[i]) {
+            for (var i = 0; i < xLength; ++i) {
+                if (x[i] != y[i]) {
                     return false;
                 }
             }
             return true;
         }
-        public override bool Equals(object obj) {
-            return Equals(obj as XBinaryValue);
+        public override bool Equals(XSimpleType other) {
+            if ((object)this == other) return true;
+            var otherType = other as XBinary;
+            if ((object)otherType == null) return false;
+            return ValueEquals(_value, otherType._value);
         }
         public override int GetHashCode() {
-            if (_array == null) {
-                return 0;
-            }
             var hash = 17;
-            var count = Math.Min(_array.Length, 11);
-            for (var i = 0; i < count; i++) {
-                hash = Extensions.AggregateHash(hash, _array[i]);
+            var count = Math.Min(_value.Length, 7);
+            for (var i = 0; i < count; ++i) {
+                hash = Extensions.AggregateHash(hash, _value[i]);
             }
             return hash;
         }
-        public static bool operator ==(XBinaryValue left, XBinaryValue right) {
-            if (object.ReferenceEquals(left, null)) {
-                return object.ReferenceEquals(right, null);
+        public override bool ValueEquals(object other) {
+            var otherValue = other as byte[];
+            if (otherValue == null) {
+                return false;
             }
-            return left.Equals(right);
+            return ValueEquals(_value, otherValue);
         }
-        public static bool operator !=(XBinaryValue left, XBinaryValue right) {
-            return !(left == right);
-        }
-        public override ObjectInfo ObjectInfo {
-            get { throw new NotSupportedException(); }
-        }
-    }
 
-
-    public class XBinary : XAtomicType {
-        public XBinary() { }
-        public XBinary(XBinaryValue value) {
-            ObjectValue = value;
-        }
-        public static implicit operator XBinary(XBinaryValue value) {
-            if (value == null) return null;
-            return new XBinary(value);
-        }
-        public static implicit operator XBinaryValue(XBinary obj) {
-            if (obj == null) return null;
-            return obj.Value;
-        }
-        new public XBinaryValue Value {
-            get {
-                return ObjectValue as XBinaryValue;
-            }
-            set {
-                ObjectValue = value;
-            }
-        }
-        public static string ToString(byte[] value) {
-            if (value == null) return null;
-            return Convert.ToBase64String(value);
-        }
-        public static bool TryParseValue(string literal, out XBinaryValue result) {
+        public override bool TryParseAndSet(string literal) {
             try {
-                result = new XBinaryValue(Convert.FromBase64String(literal));
+                _value = Convert.FromBase64String(literal);
                 return true;
             }
             catch (FormatException) {
-                result = null;
                 return false;
             }
         }
+        public override string ToString() {
+            if (_value.Length == 0) return "";
+            return Convert.ToBase64String(_value);
+        }
+        public override bool TryGetValueLength(out ulong result) {
+            result = (ulong)_value.Length;
+            return true;
+        }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XBinary), TypeKind.Binary.ToFullName(), TypeKind.Binary,
-             XSimpleType.ThisInfo, typeof(XBinaryValue), null);
-
+        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.Binary.ToAtomicTypeInfo(typeof(XBinary), XAtomicType.ThisInfo);
     }
-
 
     public class XGuid : XAtomicType {
         public XGuid() { }
-        public XGuid(Guid? value) {
-            ObjectValue = value;
-        }
         public XGuid(Guid value) {
-            ObjectValue = value;
-        }
-        public static implicit operator XGuid(Guid? value) {
-            if (value == null) return null;
-            return new XGuid(value);
+            _value = value;
         }
         public static implicit operator XGuid(Guid value) {
             return new XGuid(value);
         }
-        public static implicit operator Guid? (XGuid obj) {
-            if (obj == null) return null;
-            return obj.NullableValue;
+        public static implicit operator Guid(XGuid obj) {
+            if ((object)obj == null) return Guid.Empty;
+            return obj._value;
         }
-        public static explicit operator Guid(XGuid obj) {
-            return obj.Value;
-        }
-        public Guid? NullableValue {
+        private Guid _value;
+        public Guid Value {
             get {
-                return ObjectValue as Guid?;
+                return _value;
             }
             set {
-                ObjectValue = value;
+                _value = value;
             }
         }
-        new public Guid Value {
-            get {
-                return NullableValue.Value;
-            }
-            set {
-                ObjectValue = value;
-            }
+        public override bool Equals(XSimpleType other) {
+            if ((object)this == other) return true;
+            var otherType = other as XGuid;
+            if ((object)otherType == null) return false;
+            return _value == otherType._value;
         }
-        public static string ToString(bool value) {
-            return value ? "true" : "false";
+        public override int GetHashCode() {
+            return _value.GetHashCode();
         }
-        public static bool TryParseValue(string literal, out bool result) {
-            if (literal == "true") {
-                result = true;
+        public override bool ValueEquals(object other) {
+            if (other is Guid) {
+                return _value == (Guid)other;
             }
-            else if (literal == "false") {
-                result = false;
-            }
-            else {
-                result = default(bool);
-                return false;
-            }
+            return false;
+        }
+        public override bool TryCompareTo(XAtomicType other, out int result) {
+            result = 0;
+            if ((object)this == other) return true;
+            var otherType = other as XGuid;
+            if ((object)otherType == null) return false;
+            result = _value.CompareTo(otherType._value);
             return true;
         }
+        public override bool TryCompareValueTo(object other, out int result) {
+            if (other is Guid) {
+                result = _value.CompareTo((Guid)other);
+                return true;
+            }
+            result = 0;
+            return false;
+        }
+        public override bool TryParseAndSet(string literal) {
+            Guid r;
+            if (Guid.TryParseExact(literal, "D", out r)) {
+                _value = r;
+                return true;
+            }
+            return false;
+        }
+        public override string ToString() {
+            return _value.ToString("D");
+        }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XGuid), TypeKind.Guid.ToFullName(), TypeKind.Guid,
-            XSimpleType.ThisInfo, typeof(Guid), null);
+        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.Guid.ToAtomicTypeInfo(typeof(XGuid), XAtomicType.ThisInfo);
     }
 
     public class XDuration : XAtomicType {
         public XDuration() { }
-        public XDuration(TimeSpan? value) {
-            ObjectValue = value;
-        }
         public XDuration(TimeSpan value) {
-            ObjectValue = value;
-        }
-        public static implicit operator XDuration(TimeSpan? value) {
-            if (value == null) return null;
-            return new XDuration(value);
+            _value = value;
         }
         public static implicit operator XDuration(TimeSpan value) {
             return new XDuration(value);
         }
-        public static implicit operator TimeSpan? (XDuration obj) {
-            if (obj == null) return null;
-            return obj.NullableValue;
+        public static implicit operator TimeSpan(XDuration obj) {
+            if ((object)obj == null) return TimeSpan.Zero;
+            return obj._value;
         }
-        public static explicit operator TimeSpan(XDuration obj) {
-            return obj.Value;
-        }
-        public TimeSpan? NullableValue {
+        private TimeSpan _value;
+        public TimeSpan Value {
             get {
-                return ObjectValue as TimeSpan?;
+                return _value;
             }
             set {
-                ObjectValue = value;
+                _value = value;
             }
         }
-        new public TimeSpan Value {
-            get {
-                return NullableValue.Value;
-            }
-            set {
-                ObjectValue = value;
-            }
+        public override bool Equals(XSimpleType other) {
+            if ((object)this == other) return true;
+            var otherType = other as XDuration;
+            if ((object)otherType == null) return false;
+            return _value == otherType._value;
         }
-        public static string ToString(bool value) {
-            return value ? "true" : "false";
+        public override int GetHashCode() {
+            return _value.GetHashCode();
         }
-        public static bool TryParseValue(string literal, out bool result) {
-            if (literal == "true") {
-                result = true;
+        public override bool ValueEquals(object other) {
+            if (other is TimeSpan) {
+                return _value == (TimeSpan)other;
             }
-            else if (literal == "false") {
-                result = false;
-            }
-            else {
-                result = default(bool);
-                return false;
-            }
+            return false;
+        }
+        public override bool TryCompareTo(XAtomicType other, out int result) {
+            result = 0;
+            if ((object)this == other) return true;
+            var otherType = other as XDuration;
+            if ((object)otherType == null) return false;
+            result = _value.CompareTo(otherType._value);
             return true;
         }
+        public override bool TryCompareValueTo(object other, out int result) {
+            if (other is TimeSpan) {
+                result = _value.CompareTo((TimeSpan)other);
+                return true;
+            }
+            result = 0;
+            return false;
+        }
+        public override bool TryParseAndSet(string literal) {
+            TimeSpan r;
+            if (TimeSpan.TryParseExact(literal, "c", DateTimeFormatInfo.InvariantInfo, out r)) {
+                _value = r;
+                return true;
+            }
+            return false;
+        }
+        public override string ToString() {
+            return _value.ToString("c");
+        }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XDuration), TypeKind.Duration.ToFullName(), TypeKind.Duration,
-            XSimpleType.ThisInfo, typeof(TimeSpan), null);
+        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.Duration.ToAtomicTypeInfo(typeof(XDuration), XAtomicType.ThisInfo);
     }
-
 
     public class XDateTime : XAtomicType {
         public XDateTime() { }
-        public XDateTime(DateTimeOffset? value) { ObjectValue = value; }
-        public XDateTime(DateTimeOffset value) { ObjectValue = value; }
-        public static implicit operator XDateTime(DateTimeOffset? value) {
-            if (value == null) return null;
-            return new XDateTime(value);
+        public XDateTime(DateTimeOffset value) {
+            _value = value;
         }
         public static implicit operator XDateTime(DateTimeOffset value) {
             return new XDateTime(value);
         }
-        public static implicit operator DateTimeOffset? (XDateTime obj) {
-            if (obj == null) return null;
-            return obj.NullableValue;
+        public static implicit operator DateTimeOffset(XDateTime obj) {
+            if ((object)obj == null) return DateTimeOffset.MinValue;
+            return obj._value;
         }
-        public static explicit operator DateTimeOffset(XDateTime obj) {
-            return obj.Value;
-        }
-        public DateTimeOffset? NullableValue {
+        private DateTimeOffset _value;
+        public DateTimeOffset Value {
             get {
-                DateTimeOffset? r;
-                TryGetTypedValue(ObjectValue, out r);
-                return r;
+                return _value;
             }
             set {
-                ObjectValue = value;
+                _value = value;
             }
         }
-        new public DateTimeOffset Value {
-            get {
-                return NullableValue.Value;
-            }
-            set {
-                ObjectValue = value;
-            }
+        public override bool Equals(XSimpleType other) {
+            if ((object)this == other) return true;
+            var otherType = other as XDateTime;
+            if ((object)otherType == null) return false;
+            return _value == otherType._value;
         }
-        public static bool TryGetTypedValue(object value, out DateTimeOffset? result) {
-            result = value as DateTimeOffset?;
-            if (result != null) {
-                return true;
-            }
-            if (value is DateTime) {
-                result = new DateTimeOffset((DateTime)value);
-                return true;
-            }
-            else if (value is TimeSpan) {
-                result = new DateTimeOffset(DateTime.MinValue, (TimeSpan)value);
-                return true;
+        public override int GetHashCode() {
+            return _value.GetHashCode();
+        }
+        public override bool ValueEquals(object other) {
+            if (other is DateTimeOffset) {
+                return _value == (DateTimeOffset)other;
             }
             return false;
         }
-        public static bool TryGetTypedValue(object value, out DateTime? result) {
-            result = value as DateTime?;
-            if (result != null) {
-                return true;
-            }
-            if (value is DateTimeOffset) {
-                result = ((DateTimeOffset)value).Date;
-                return true;
-            }
-            return false;
-        }
-        public static bool TryGetTypedValue(object value, out TimeSpan? result) {
-            result = value as TimeSpan?;
-            if (result != null) {
-                return true;
-            }
-            if (value is DateTimeOffset) {
-                result = ((DateTimeOffset)value).TimeOfDay;
-                return true;
-            }
-            return false;
-        }
-
-        public static string ToString(bool value) {
-            return value ? "true" : "false";
-        }
-        public static bool TryParseValue(string literal, out bool result) {
-            if (literal == "true") {
-                result = true;
-            }
-            else if (literal == "false") {
-                result = false;
-            }
-            else {
-                result = default(bool);
-                return false;
-            }
+        public override bool TryCompareTo(XAtomicType other, out int result) {
+            result = 0;
+            if ((object)this == other) return true;
+            var otherType = other as XDateTime;
+            if ((object)otherType == null) return false;
+            result = _value.CompareTo(otherType._value);
             return true;
         }
+        public override bool TryCompareValueTo(object other, out int result) {
+            if (other is DateTimeOffset) {
+                result = _value.CompareTo((DateTimeOffset)other);
+                return true;
+            }
+            result = 0;
+            return false;
+        }
+        public const string FormatString = "yyyy-MM-ddTHH:mm:ss.FFFFFFFzzz";
+        public override bool TryParseAndSet(string literal) {
+            DateTimeOffset r;
+            if (DateTimeOffset.TryParseExact(literal, FormatString, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.None, out r)) {
+                _value = r;
+                return true;
+            }
+            return false;
+        }
+        public override string ToString() {
+            return _value.ToString(FormatString, DateTimeFormatInfo.InvariantInfo);
+        }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XDateTime), TypeKind.DateTime.ToFullName(), TypeKind.DateTime,
-            XSimpleType.ThisInfo, typeof(DateTimeOffset), null);
+        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.DateTime.ToAtomicTypeInfo(typeof(XDateTime), XAtomicType.ThisInfo);
     }
 
 
-    public class XDate : XDateTime {
-        public XDate() { }
-        public XDate(DateTime? value) { ObjectValue = value; }
-        public XDate(DateTime value) { ObjectValue = value; }
-        public static implicit operator XDate(DateTime? value) {
-            if (value == null) return null;
-            return new XDate(value);
-        }
-        public static implicit operator XDate(DateTime value) {
-            return new XDate(value);
-        }
-        public static implicit operator DateTime? (XDate obj) {
-            if (obj == null) return null;
-            return obj.NullableValue;
-        }
-        public static explicit operator DateTime(XDate obj) {
-            return obj.Value;
-        }
-        new public DateTime? NullableValue {
-            get {
-                DateTime? r;
-                TryGetTypedValue(ObjectValue, out r);
-                return r;
+    //public class XDate : XDateTime {
+    //    public XDate() { }
+    //    public XDate(DateTime? value) { ObjectValue = value; }
+    //    public XDate(DateTime value) { ObjectValue = value; }
+    //    public static implicit operator XDate(DateTime? value) {
+    //        if (value == null) return null;
+    //        return new XDate(value);
+    //    }
+    //    public static implicit operator XDate(DateTime value) {
+    //        return new XDate(value);
+    //    }
+    //    public static implicit operator DateTime? (XDate obj) {
+    //        if (obj == null) return null;
+    //        return obj.NullableValue;
+    //    }
+    //    public static explicit operator DateTime(XDate obj) {
+    //        return obj.Value;
+    //    }
+    //    new public DateTime? NullableValue {
+    //        get {
+    //            DateTime? r;
+    //            TryGetTypedValue(ObjectValue, out r);
+    //            return r;
 
-            }
-            set {
-                ObjectValue = value;
-            }
-        }
-        new public DateTime Value {
-            get {
-                return NullableValue.Value;
-            }
-            set {
-                ObjectValue = value;
-            }
-        }
-        public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XDate), TypeKind.Date.ToFullName(), TypeKind.Date,
-            XDateTime.ThisInfo, typeof(DateTime), null);
+    //        }
+    //        set {
+    //            ObjectValue = value;
+    //        }
+    //    }
+    //    new public DateTime Value {
+    //        get {
+    //            return NullableValue.Value;
+    //        }
+    //        set {
+    //            ObjectValue = value;
+    //        }
+    //    }
+    //    public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
+    //    new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XDate), AtomicTypeKind.Date.ToFullName(), AtomicTypeKind.Date,
+    //        XDateTime.ThisInfo, typeof(DateTime), null);
 
-    }
+    //}
 
-    public class XTime : XDateTime {
-        public XTime() { }
-        public XTime(TimeSpan? value) { ObjectValue = value; }
-        public XTime(TimeSpan value) { ObjectValue = value; }
-        public static implicit operator XTime(TimeSpan? value) {
-            if (value == null) return null;
-            return new XTime(value);
-        }
-        public static implicit operator XTime(TimeSpan value) {
-            return new XTime(value);
-        }
-        public static implicit operator TimeSpan? (XTime obj) {
-            if (obj == null) return null;
-            return obj.NullableValue;
-        }
-        public static explicit operator TimeSpan(XTime obj) {
-            return obj.Value;
-        }
-        new public TimeSpan? NullableValue {
-            get {
-                TimeSpan? r;
-                TryGetTypedValue(ObjectValue, out r);
-                return r;
+    //public class XTime : XDateTime {
+    //    public XTime() { }
+    //    public XTime(TimeSpan? value) { ObjectValue = value; }
+    //    public XTime(TimeSpan value) { ObjectValue = value; }
+    //    public static implicit operator XTime(TimeSpan? value) {
+    //        if (value == null) return null;
+    //        return new XTime(value);
+    //    }
+    //    public static implicit operator XTime(TimeSpan value) {
+    //        return new XTime(value);
+    //    }
+    //    public static implicit operator TimeSpan? (XTime obj) {
+    //        if (obj == null) return null;
+    //        return obj.NullableValue;
+    //    }
+    //    public static explicit operator TimeSpan(XTime obj) {
+    //        return obj.Value;
+    //    }
+    //    new public TimeSpan? NullableValue {
+    //        get {
+    //            TimeSpan? r;
+    //            TryGetTypedValue(ObjectValue, out r);
+    //            return r;
 
-            }
-            set {
-                ObjectValue = value;
-            }
-        }
-        new public TimeSpan Value {
-            get {
-                return NullableValue.Value;
-            }
-            set {
-                ObjectValue = value;
-            }
-        }
-        public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XTime), TypeKind.Time.ToFullName(), TypeKind.Time,
-            XDateTime.ThisInfo, typeof(TimeSpan), null);
+    //        }
+    //        set {
+    //            ObjectValue = value;
+    //        }
+    //    }
+    //    new public TimeSpan Value {
+    //        get {
+    //            return NullableValue.Value;
+    //        }
+    //        set {
+    //            ObjectValue = value;
+    //        }
+    //    }
+    //    public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
+    //    new public static readonly AtomicTypeInfo ThisInfo = new AtomicTypeInfo(typeof(XTime), AtomicTypeKind.Time.ToFullName(), AtomicTypeKind.Time,
+    //        XDateTime.ThisInfo, typeof(TimeSpan), null);
 
-    }
+    //}
     #endregion Atomic types
 
     public abstract class XComplexType : XType {
@@ -2730,7 +2531,7 @@ namespace XData {
                 }
                 throw new InvalidOperationException("Attribute set not allowed.");
             }
-            obj = (T)complexTypeInfo.Attributes.CreateInstance();
+            obj = complexTypeInfo.Attributes.CreateInstance<T>();
             Attributes = obj;
             return obj;
         }
@@ -2767,7 +2568,7 @@ namespace XData {
                 }
                 throw new InvalidOperationException("Child not allowed.");
             }
-            obj = (T)complexTypeInfo.Children.CreateInstance();
+            obj = complexTypeInfo.Children.CreateInstance<T>();
             Children = obj;
             return obj;
         }
@@ -2847,7 +2648,7 @@ namespace XData {
                     }
                 }
             }
-            result = (XComplexType)effComplexTypeInfo.CreateInstance();
+            result = effComplexTypeInfo.CreateInstance<XComplexType>();
             result.Attributes = attributeSet;
             result.Children = children;
             return true;
@@ -2949,28 +2750,28 @@ namespace XData {
             }
             var obj = _type as T;
             if (obj != null) return obj;
-            obj = (T)AttributeInfo.Type.CreateInstance(@try);
+            obj = AttributeInfo.Type.CreateInstance<T>(@try);
             SetType(obj);
             return obj;
         }
         public XSimpleType EnsureType(bool @try = false) {
             return EnsureType<XSimpleType>(@try);
         }
-        public object Value {
-            get {
-                var type = Type;
-                return type == null ? null : type.Value;
-            }
-            set { EnsureType().Value = value; }
-        }
-        public object GenericValue {
-            get {
-                return Value;
-            }
-            set {
-                Value = value;
-            }
-        }
+        //public object Value {
+        //    get {
+        //        var type = Type;
+        //        return type == null ? null : type.Value;
+        //    }
+        //    set { EnsureType().Value = value; }
+        //}
+        //public object GenericValue {
+        //    get {
+        //        return Value;
+        //    }
+        //    set {
+        //        Value = value;
+        //    }
+        //}
         public override XObject DeepClone() {
             var obj = (XAttribute)base.DeepClone();
             obj.SetType(_type);
@@ -3109,7 +2910,7 @@ namespace XData {
                 }
                 throw new InvalidOperationException("Attribute '{0}' not exists in the attribute set.".InvFormat(fullName.ToString()));
             }
-            return (T)attributeInfo.CreateInstance(@try);
+            return attributeInfo.CreateInstance<T>(@try);
         }
         //
         internal static bool TryCreate(Context context, ProgramInfo programInfo, AttributeSetInfo attributeSetInfo,
@@ -3205,7 +3006,7 @@ namespace XData {
             }
             var obj = _type as T;
             if (obj != null) return obj;
-            obj = (T)ElementInfo.Type.CreateInstance(@try);
+            obj = ElementInfo.Type.CreateInstance<T>(@try);
             SetType(obj);
             return obj;
         }
@@ -3304,10 +3105,10 @@ namespace XData {
                 }
             }
             //
-            var effElement = (XElement)effElementInfo.CreateInstance();
+            var effElement = effElementInfo.CreateInstance<XElement>();
             effElement.SetType(type);
             if (elementInfo.IsReference) {
-                var refElement = (XElement)elementInfo.CreateInstance();
+                var refElement = elementInfo.CreateInstance<XElement>();
                 refElement.ReferentialElement = effElement;
                 result = refElement;
             }
@@ -3332,14 +3133,14 @@ namespace XData {
     }
 
     public abstract class XChildContainer : XChild {
-        internal abstract void DirectAdd(XChild child);
+        internal abstract void InternalAdd(XChild child);
     }
     public abstract class XChildSet : XChildContainer, ICollection<XChild>, IReadOnlyCollection<XChild> {
         protected XChildSet() {
             _childList = new List<XChild>();
         }
         private List<XChild> _childList;
-        internal override sealed void DirectAdd(XChild child) {
+        internal override sealed void InternalAdd(XChild child) {
             _childList.Add(SetParentTo(child));
         }
         public override XObject DeepClone() {
@@ -3558,9 +3359,9 @@ namespace XData {
                             if (memberList.Count == 0) {
                                 return CreationResult.Skipped;
                             }
-                            var container = (XChildContainer)((ObjectInfo)childInfo).CreateInstance();
+                            var container = ((ObjectInfo)childInfo).CreateInstance<XChildContainer>();
                             foreach (var member in memberList) {
-                                container.DirectAdd(member);
+                                container.InternalAdd(member);
                             }
                             result = container;
                             return CreationResult.OK;
@@ -3581,8 +3382,8 @@ namespace XData {
                             if (choice == null) {
                                 return CreationResult.Skipped;
                             }
-                            var container = (XChildContainer)((ObjectInfo)childInfo).CreateInstance();
-                            container.DirectAdd(choice);
+                            var container = ((ObjectInfo)childInfo).CreateInstance<XChildContainer>();
+                            container.InternalAdd(choice);
                             result = container;
                             return CreationResult.OK;
                         }
@@ -3621,9 +3422,9 @@ namespace XData {
                         if (itemList.Count == 0) {
                             return CreationResult.Skipped;
                         }
-                        var container = (XChildContainer)((ObjectInfo)childInfo).CreateInstance();
+                        var container = ((ObjectInfo)childInfo).CreateInstance<XChildContainer>();
                         foreach (var item in itemList) {
-                            container.DirectAdd(item);
+                            container.InternalAdd(item);
                         }
                         result = container;
                         return CreationResult.OK;
@@ -3644,7 +3445,7 @@ namespace XData {
             AddRange(items);
         }
         private List<T> _childList;
-        internal override sealed void DirectAdd(XChild child) {
+        internal override sealed void InternalAdd(XChild child) {
             _childList.Add(SetParentTo((T)child));
         }
         public override XObject DeepClone() {

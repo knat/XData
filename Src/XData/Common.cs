@@ -111,9 +111,9 @@ namespace XData {
         }
 
 
-        public static object CreateInstance(Type type) {
-            return Activator.CreateInstance(type);//, true);
-        }
+        //public static object CreateInstance(Type type) {
+        //    return Activator.CreateInstance(type);//, true);
+        //}
 
         public static int AggregateHash(int hash, int newValue) {
             unchecked {
@@ -144,10 +144,26 @@ namespace XData {
             }
             list.Add(item);
         }
-
-
-        public static FullName ToFullName(this TypeKind kind) {
-            return new FullName(NamespaceInfo.SystemUri, kind.ToString());
+        //
+        //
+        //
+        public const string SystemUri = "http://xdata-lang.org";
+        public const string SimpleTypeName = "SimpleType";
+        public static readonly FullName SimpleTypeFullName = new FullName(SystemUri, SimpleTypeName);
+        public const string AtomicTypeName = "AtomicType";
+        public static readonly FullName AtomicTypeFullName = new FullName(SystemUri, AtomicTypeName);
+        public const string ListTypeName = "ListType";
+        public static readonly FullName ListTypeFullName = new FullName(SystemUri, ListTypeName);
+        public const string ComplexTypeName = "ComplexType";
+        public static readonly FullName ComplexTypeFullName = new FullName(SystemUri, ComplexTypeName);
+        public static string ToTypeName(this AtomicTypeKind kind) {
+            return kind.ToString();
+        }
+        public static FullName ToTypeFullName(this AtomicTypeKind kind) {
+            return new FullName(SystemUri, kind.ToString());
+        }
+        public static AtomicTypeInfo ToAtomicTypeInfo(this AtomicTypeKind kind, Type clrType, AtomicTypeInfo baseType, bool isAbstract = false) {
+            return new AtomicTypeInfo(clrType, isAbstract, ToTypeFullName(kind), baseType, null, kind);
         }
 
         //

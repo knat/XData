@@ -45,7 +45,7 @@ namespace XData {
         public readonly NamedObjectInfo[] GlobalObjects;
         public bool IsSystem {
             get {
-                return Uri == SystemUri;
+                return Uri == Extensions.SystemUri;
             }
         }
         public NamedObjectInfo TryGetGlobalObject(FullName fullName) {
@@ -58,30 +58,32 @@ namespace XData {
         }
 
         //
-        public const string SystemUri = "http://xdata-lang.org";
+
         private static volatile NamespaceInfo _system;
         public static NamespaceInfo System {
             get {
-                return _system ?? (_system = new NamespaceInfo(SystemUri, new TypeInfo[] {
-                    XType.ThisInfo,
+                return _system ?? (_system = new NamespaceInfo(Extensions.SystemUri, new TypeInfo[] {
+                    //XType.ThisInfo,
                 }));
             }
         }
     }
 
     public abstract class ObjectInfo {
-        protected ObjectInfo(Type clrType) {
+        protected ObjectInfo(Type clrType, bool isAbstract) {
             if (clrType == null) throw new ArgumentNullException("clrType");
             ClrType = clrType;
-            IsAbstract = ClrType.GetTypeInfo().IsAbstract;
+            IsAbstract = isAbstract;// ClrType.GetTypeInfo().IsAbstract;
+            //BaseObject = baseObject;
         }
         public readonly Type ClrType;
         public readonly bool IsAbstract;
-        public string ClrTypeName {
-            get {
-                return ClrType.Name;
-            }
-        }
+        //public readonly ObjectInfo BaseObject;
+        //public string ClrTypeName {
+        //    get {
+        //        return ClrType.Name;
+        //    }
+        //}
         public T CreateInstance<T>(bool @try = false) where T : XObject {
             if (IsAbstract) {
                 if (@try) {
@@ -89,8 +91,10 @@ namespace XData {
                 }
                 throw new InvalidOperationException("Object '{0}' is abstract.".InvFormat(ClrType.FullName));
             }
-            return (T)Extensions.CreateInstance(ClrType);
+            return (T)Activator.CreateInstance(ClrType);
         }
+
+
         //public bool IsAssignableFrom(ObjectInfo other) {
         //    return ClrType.IsAssignableFrom(other.ClrType);
         //}
@@ -126,50 +130,19 @@ namespace XData {
         //}
     }
     public abstract class NamedObjectInfo : ObjectInfo {
-        public NamedObjectInfo(Type clrType, FullName fullName)
-            : base(clrType) {
+        public NamedObjectInfo(Type clrType, bool isAbstract, FullName fullName)
+            : base(clrType, isAbstract) {
             FullName = fullName;
         }
         public readonly FullName FullName;
     }
-    //DOT NOT EDIT the order
-    public enum TypeKind : byte {
-        None = 0,
-        Type,//not allowed for use
-        SimpleType,
-        AtomicType,
-        ListType,
-        ComplexType,
-        String,
-        Decimal,
-        Int64,
-        Int32,
-        Int16,
-        SByte,
-        UInt64,
-        UInt32,
-        UInt16,
-        Byte,
-        Double,
-        Single,
-        Boolean,
-        Binary,
-        Guid,
-        Duration,
-        DateTime,
-        Date,
-        Time,
-    }
 
-    public class TypeInfo : NamedObjectInfo {
-        public TypeInfo(Type clrType, FullName fullName, TypeKind kind, TypeInfo baseType)
-            : base(clrType, fullName) {
-            Kind = kind;
+    public abstract class TypeInfo : NamedObjectInfo {
+        protected TypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeInfo baseType)
+            : base(clrType, isAbstract, fullName) {
             BaseType = baseType;
         }
-        public readonly TypeKind Kind;
-        public readonly TypeInfo BaseType;//null for root
-
+        public readonly TypeInfo BaseType;
         public bool IsEqualToOrDeriveFrom(TypeInfo other) {
             if (other == null) throw new ArgumentNullException("other");
             for (var info = this; info != null; info = info.BaseType) {
@@ -179,6 +152,7 @@ namespace XData {
             }
             return false;
         }
+
     }
 
     public sealed class SimpleTypeRestrictionSetInfo {
@@ -239,17 +213,6 @@ namespace XData {
         public readonly ValueTextInfo[] Items;
         public readonly string TotalText;
     }
-
-    //[Serializable]
-    //public struct EnumerationItemInfo {
-    //    public EnumerationItemInfo(string name, object value) {
-    //        if (value == null) throw new ArgumentNullException("value");
-    //        Name = name;
-    //        Value = value;
-    //    }
-    //    public readonly string Name;//opt
-    //    public readonly object Value;
-    //}
     public struct PatternInfo {
         public PatternInfo(string pattern) {
             if (pattern == null) throw new ArgumentNullException("pattern");
@@ -259,22 +222,10 @@ namespace XData {
         //private static readonly ConcurrentDictionary<string, Regex> _regexDict = new ConcurrentDictionary<string, Regex>();
         //public Regex Regex { get { return _regexDict.GetOrAdd(Pattern, p => new Regex(p)); } }
     }
-    //public interface ISimpleTypeInfo {
-    //    TypeKind Kind { get; }
-    //    Type ValueClrType { get; }
-    //    SimpleTypeRestrictionSetInfo? RestrictionSet { get; }
-
-    //}
-    //public interface IAtomicTypeInfo : ISimpleTypeInfo {
-
-    //}
-    //public interface IListTypeInfo : ISimpleTypeInfo {
-    //    ISimpleTypeInfo ItemType { get; }//for listed simple type
-    //}
     public class SimpleTypeInfo : TypeInfo {
-        public SimpleTypeInfo(Type clrType, FullName fullName, TypeKind kind, TypeInfo baseType,
+        public SimpleTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo baseType,
             SimpleTypeRestrictionSetInfo restrictionSet)
-            : base(clrType, fullName, kind, baseType) {
+            : base(clrType, isAbstract, fullName, baseType) {
             if (baseType == null) throw new ArgumentNullException("baseType");
             //if (valueClrType == null) throw new ArgumentNullException("valueClrType");
             //ValueClrType = valueClrType;
@@ -283,17 +234,51 @@ namespace XData {
         //public Type ValueClrType { get; private set; }
         public readonly SimpleTypeRestrictionSetInfo RestrictionSet;// { get; private set; }
     }
+    //DOT NOT EDIT the order
+    public enum AtomicTypeKind : byte {
+        None = 0,
+        //Type,//not allowed for use
+        //SimpleType,
+        //AtomicType,
+        //ListType,
+        //ComplexType,
+        StringBase,
+        String,
+        IgnoreCaseString,
+        Decimal,
+        Int64,
+        Int32,
+        Int16,
+        SByte,
+        UInt64,
+        UInt32,
+        UInt16,
+        Byte,
+        Double,
+        Single,
+        Boolean,
+        Binary,
+        Guid,
+        Duration,
+        DateTime,
+        //Date,
+        //Time,
+    }
+
     public sealed class AtomicTypeInfo : SimpleTypeInfo {
-        public AtomicTypeInfo(Type clrType, FullName fullName, TypeKind kind, SimpleTypeInfo baseType,
-            SimpleTypeRestrictionSetInfo restrictionSet)
-            : base(clrType, fullName, kind, baseType, restrictionSet) {
+        public AtomicTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo baseType,
+            SimpleTypeRestrictionSetInfo restrictionSet, AtomicTypeKind kind)
+            : base(clrType, isAbstract, fullName, baseType, restrictionSet) {
+            Kind = kind;
         }
+        public readonly AtomicTypeKind Kind;
+
         //new public SimpleTypeInfo BaseType { get { return (SimpleTypeInfo)base.BaseType; } }
     }
     public sealed class ListTypeInfo : SimpleTypeInfo {
-        public ListTypeInfo(Type clrType, FullName fullName, SimpleTypeInfo baseType, SimpleTypeInfo itemType,
+        public ListTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo baseType, SimpleTypeInfo itemType,
             SimpleTypeRestrictionSetInfo restrictionSet)
-            : base(clrType, fullName, TypeKind.ListType, baseType, restrictionSet) {
+            : base(clrType, isAbstract, fullName, baseType, restrictionSet) {
             ItemType = itemType;
         }
         //new public SimpleTypeInfo BaseType {
@@ -304,9 +289,9 @@ namespace XData {
         public readonly SimpleTypeInfo ItemType;//opt
     }
     public sealed class ComplexTypeInfo : TypeInfo {
-        public ComplexTypeInfo(Type clrType, FullName fullName, TypeInfo baseType,
+        public ComplexTypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeInfo baseType,
             AttributeSetInfo attributes, ObjectInfo children)
-            : base(clrType, fullName, TypeKind.ComplexType, baseType) {
+            : base(clrType, isAbstract, fullName, baseType) {
             Attributes = attributes;
             Children = children;
         }
@@ -318,14 +303,17 @@ namespace XData {
 
     public sealed class AttributeSetInfo : ObjectInfo {
         public AttributeSetInfo(Type clrType, AttributeInfo[] attributes)
-            : base(clrType) {
+            : base(clrType, false) {
             Attributes = attributes;
         }
+        //public readonly AttributeSetInfo BaseAttributeSet;
         public readonly AttributeInfo[] Attributes;
         public AttributeInfo TryGetAttribute(FullName fullName) {
-            foreach (var attribute in Attributes) {
-                if (attribute.FullName == fullName) {
-                    return attribute;
+            if (Attributes != null) {
+                foreach (var attribute in Attributes) {
+                    if (attribute.FullName == fullName) {
+                        return attribute;
+                    }
                 }
             }
             return null;
@@ -338,10 +326,9 @@ namespace XData {
         Reference
     }
     public abstract class EntityInfo : NamedObjectInfo {
-        public EntityInfo(Type clrType, FullName fullName, string displayName, TypeInfo type,
-            EntityDeclarationKind declarationKind, EntityInfo referentialEntity,
-            bool isNullable)
-            : base(clrType, fullName) {
+        public EntityInfo(Type clrType, bool isAbstract, FullName fullName, string displayName, TypeInfo type,
+            EntityDeclarationKind declarationKind, EntityInfo referentialEntity, bool isNullable)
+            : base(clrType, isAbstract, fullName) {
             _displayName = displayName;
             Type = type;
             DeclarationKind = declarationKind;
@@ -376,9 +363,8 @@ namespace XData {
     }
     public sealed class AttributeInfo : EntityInfo {
         public AttributeInfo(Type clrType, FullName fullName, string displayName, SimpleTypeInfo type,
-            EntityDeclarationKind declarationKind, AttributeInfo referentialAttribute,
-            bool isNullable)
-            : base(clrType, fullName, displayName, type, declarationKind, referentialAttribute, isNullable) {
+            EntityDeclarationKind declarationKind, AttributeInfo referentialAttribute, bool isNullable)
+            : base(clrType, false, fullName, displayName, type, declarationKind, referentialAttribute, isNullable) {
         }
         new public SimpleTypeInfo Type {
             get {
@@ -401,12 +387,12 @@ namespace XData {
     }
 
     public sealed class ElementInfo : EntityInfo, IChildInfo {
-        public ElementInfo(Type clrType, FullName fullName, string displayName, TypeInfo type,
+        public ElementInfo(Type clrType, bool isAbstract, FullName fullName, string displayName, TypeInfo type,
             EntityDeclarationKind declarationKind, ElementInfo referentialElement, bool isNullable,
             int order, bool isEffectiveOptional,
             ElementInfo substitutedElement, FullName[] directSubstitutingElementFullNames,
             ProgramInfo program)
-            : base(clrType, fullName, displayName, type, declarationKind, referentialElement, isNullable) {
+            : base(clrType, isAbstract, fullName, displayName, type, declarationKind, referentialElement, isNullable) {
             _order = order;
             _isEffectiveOptional = isEffectiveOptional;
             SubstitutedElement = substitutedElement;
@@ -483,7 +469,7 @@ namespace XData {
     }
     public abstract class ChildContainerInfo : ObjectInfo, IChildInfo {
         protected ChildContainerInfo(Type clrType, string displayName, int order, bool isEffectiveOptional)
-            : base(clrType) {
+            : base(clrType, false) {
             _displayName = displayName;
             _order = order;
             _isEffectiveOptional = isEffectiveOptional;

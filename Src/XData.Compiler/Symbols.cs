@@ -85,59 +85,60 @@ namespace XData.Compiler {
     }
     public class TypeSymbol : NamedObjectSymbol {
         protected TypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, NameSyntax csBaseFullName,
-            FullName fullName, TypeKind kind, TypeSymbol baseType)
+            FullName fullName, AtomicTypeKind kind, TypeSymbol baseType)
             : base(parent, csName, isAbstract, isSealed, false, csBaseFullName, fullName) {
             Kind = kind;
             BaseType = baseType;
         }
-        public TypeKind Kind { get; private set; }
+        public readonly AtomicTypeKind Kind;
         public readonly TypeSymbol BaseType;
-        public static readonly TypeSymbol Instance = new TypeSymbol(NamespaceSymbol.System, XType.ThisInfo.ClrTypeName, true, false, null, XType.ThisInfo.FullName, TypeKind.Type, null);
+        //public static readonly TypeSymbol Instance = new TypeSymbol(NamespaceSymbol.System, XType.ThisInfo.ClrTypeName, true, false, null,
+        //    XType.ThisInfo.FullName, AtomicTypeKind.Type, null);
 
     }
     public class SimpleTypeSymbol : TypeSymbol {
-        protected SimpleTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, NameSyntax csBaseFullName,
-            FullName fullName, TypeKind kind, TypeSymbol baseType,
-            TypeSyntax valueCSFullName, TypeSyntax nullableValueCSFullName, Type valueClrType, bool isValueClrTypeRef, SimpleTypeRestrictionSetInfo? restrictionSet)
-            : base(parent, csName, isAbstract, isSealed, csBaseFullName, fullName, kind, baseType) {
+        protected SimpleTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
+            FullName fullName, AtomicTypeKind kind, TypeSymbol baseType,
+            TypeSyntax valueCSFullName, SimpleTypeRestrictionSetInfo restrictionSet)
+            : base(parent, csName, isAbstract, isSealed, baseType.CSBaseFullName, fullName, kind, baseType) {
             ValueCSFullName = valueCSFullName;
-            NullableValueCSFullName = nullableValueCSFullName ?? valueCSFullName;
-            ValueClrType = valueClrType;
-            IsValueClrTypeRef = isValueClrTypeRef;
+            //NullableValueCSFullName = nullableValueCSFullName ?? valueCSFullName;
+            //ValueClrType = valueClrType;
+            //IsValueClrTypeRef = isValueClrTypeRef;
             RestrictionSet = restrictionSet;
         }
         public readonly TypeSyntax ValueCSFullName;
-        public readonly TypeSyntax NullableValueCSFullName;//if value is ref type, same as ValueCSFullName
-        public Type ValueClrType { get; private set; }
-        public readonly bool IsValueClrTypeRef;
-        public SimpleTypeRestrictionSetInfo? RestrictionSet { get; private set; }
+        //public Type ValueClrType { get; private set; }
+        //public readonly bool IsValueClrTypeRef;
+        public readonly SimpleTypeRestrictionSetInfo RestrictionSet;
         //
-        new public static readonly SimpleTypeSymbol Instance = new SimpleTypeSymbol(NamespaceSymbol.System, XSimpleType.ThisInfo.ClrTypeName, true, false, TypeSymbol.Instance.CSFullName, XSimpleType.ThisInfo.FullName, TypeKind.SimpleType, TypeSymbol.Instance,
-            CS.ObjectType, null, typeof(object), true, null);
+        //new public static readonly SimpleTypeSymbol Instance = new SimpleTypeSymbol(NamespaceSymbol.System, XSimpleType.ThisInfo.ClrTypeName, true, false,
+        //    XSimpleType.ThisInfo.FullName, AtomicTypeKind.SimpleType, TypeSymbol.Instance,
+        //    CS.ObjectType, null);
     }
     public sealed class AtomicTypeSymbol : SimpleTypeSymbol {
-        public AtomicTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, NameSyntax csBaseFullName,
-            FullName fullName, TypeKind kind, TypeSymbol baseType,
-            TypeSyntax valueCSFullName, TypeSyntax nullableValueCSFullName, Type valueClrType, bool isValueClrTypeRef, SimpleTypeRestrictionSetInfo? restrictionSet)
-            : base(parent, csName, isAbstract, isSealed, csBaseFullName, fullName, kind, baseType,
-                  valueCSFullName, nullableValueCSFullName, valueClrType, isValueClrTypeRef, restrictionSet) {
+        public AtomicTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
+            FullName fullName, AtomicTypeKind kind, TypeSymbol baseType,
+            TypeSyntax valueCSFullName, SimpleTypeRestrictionSetInfo restrictionSet)
+            : base(parent, csName, isAbstract, isSealed, fullName, kind, baseType,
+                  valueCSFullName, restrictionSet) {
         }
     }
-    public sealed class ListTypeSymbol : SimpleTypeSymbol {
-        public ListTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
-            FullName fullName, SimpleTypeSymbol itemType)
-            : base(parent, csName, isAbstract, isSealed, SimpleTypeSymbol.Instance.CSFullName, fullName, TypeKind.ListType, SimpleTypeSymbol.Instance,
-                 null, null, null, true, null) {
+    //public sealed class ListTypeSymbol : SimpleTypeSymbol {
+    //    //public ListTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
+    //    //    FullName fullName, SimpleTypeSymbol itemType)
+    //    //    : base(parent, csName, isAbstract, isSealed, SimpleTypeSymbol.Instance.CSFullName, fullName, AtomicTypeKind.ListType, SimpleTypeSymbol.Instance,
+    //    //         null, null, null, true, null) {
 
-            ItemType = itemType;
-        }
-        public readonly SimpleTypeSymbol ItemType;
-    }
-    public sealed class ComplexTypeSymbol : TypeSymbol {
-        public ComplexTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, NameSyntax csBaseFullName,
-            FullName fullName, TypeSymbol baseType)
-            : base(parent, csName, isAbstract, isSealed, csBaseFullName, fullName, TypeKind.ComplexType, baseType) {
+    //    //    ItemType = itemType;
+    //    //}
+    //    public readonly SimpleTypeSymbol ItemType;
+    //}
+    //public sealed class ComplexTypeSymbol : TypeSymbol {
+    //    //public ComplexTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, NameSyntax csBaseFullName,
+    //    //    FullName fullName, TypeSymbol baseType)
+    //    //    : base(parent, csName, isAbstract, isSealed, csBaseFullName, fullName, AtomicTypeKind.ComplexType, baseType) {
 
-        }
-    }
+    //    //}
+    //}
 }

@@ -386,13 +386,13 @@ namespace XData.Compiler {
     public sealed class SystemTypeNode : TypeNode {
         private SystemTypeNode() : base(null) {
         }
-        public TypeKind Kind;
+        //public AtomicTypeKind Kind;
         private static readonly Dictionary<string, SystemTypeNode> Dict;
         static SystemTypeNode() {
             Dict = new Dictionary<string, SystemTypeNode>();
-            for (var kind = TypeKind.SimpleType; kind <= TypeKind.Time; ++kind) {
+            for (var kind = AtomicTypeKind.StringBase; kind <= AtomicTypeKind.DateTime; ++kind) {
                 var name = kind.ToString();
-                Dict.Add(name, new SystemTypeNode() { Name = new NameNode(name, default(TextSpan)), Kind = kind });
+                Dict.Add(name, new SystemTypeNode() { Name = new NameNode(name, default(TextSpan)) });
             }
         }
         public static SystemTypeNode TryGet(string name) {
@@ -443,7 +443,7 @@ namespace XData.Compiler {
             if (itemSymbol == null) {
 
             }
-            return new ListTypeSymbol(parent, csName, isAbstract, isSealed, fullName, itemSymbol);
+            return null;// new ListTypeSymbol(parent, csName, isAbstract, isSealed, fullName, itemSymbol);
         }
     }
     public sealed class TypeDirectnessNode : TypeBodyNode {

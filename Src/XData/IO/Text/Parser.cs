@@ -537,7 +537,7 @@ namespace XData.IO.Text {
         }
         private string GetUri(NameNode alias) {
             if (alias.Value == "sys") {
-                return NamespaceInfo.SystemUri;
+                return Extensions.SystemUri;
             }
             var isNull = !alias.IsValid;
             foreach (var uaList in _uriAliasingListStack) {
