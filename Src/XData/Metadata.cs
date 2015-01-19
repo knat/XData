@@ -56,34 +56,21 @@ namespace XData {
             }
             return null;
         }
-
         //
+        public static readonly NamespaceInfo System = new NamespaceInfo(InfoExtensions.SystemUri, new NamedObjectInfo[] {
 
-        private static volatile NamespaceInfo _system;
-        public static NamespaceInfo System {
-            get {
-                return _system ?? (_system = new NamespaceInfo(InfoExtensions.SystemUri, new TypeInfo[] {
-                    //XType.ThisInfo,
-                }));
-            }
-        }
+
+        });
     }
 
     public abstract class ObjectInfo {
         protected ObjectInfo(Type clrType, bool isAbstract) {
             if (clrType == null) throw new ArgumentNullException("clrType");
             ClrType = clrType;
-            IsAbstract = isAbstract;// ClrType.GetTypeInfo().IsAbstract;
-            //BaseObject = baseObject;
+            IsAbstract = isAbstract;
         }
         public readonly Type ClrType;
         public readonly bool IsAbstract;
-        //public readonly ObjectInfo BaseObject;
-        //public string ClrTypeName {
-        //    get {
-        //        return ClrType.Name;
-        //    }
-        //}
         public T CreateInstance<T>(bool @try = false) where T : XObject {
             if (IsAbstract) {
                 if (@try) {
@@ -241,8 +228,6 @@ namespace XData {
         AtomType,
         ListType,
         ComplexType,
-        //SimpleChildComplexType,
-        //ComplexChildrenComplexType,
         StringBase,
         String,
         IgnoreCaseString,
@@ -301,7 +286,7 @@ namespace XData {
         //        return (SimpleTypeInfo)base.BaseType;
         //    }
         //}
-        public readonly SimpleTypeInfo ItemType;//opt
+        public readonly SimpleTypeInfo ItemType;
     }
     public sealed class ComplexTypeInfo : TypeInfo {
         public ComplexTypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeInfo baseType,

@@ -80,7 +80,7 @@ namespace XData {
         }
 
         new public static readonly AtomTypeInfo ThisInfo = new AtomTypeInfo(typeof(XAtomType), true, TypeKind.AtomType.ToFullName(),
-            XSimpleType.ThisInfo, null, TypeKind.None);
+            XSimpleType.ThisInfo, null, TypeKind.AtomType);
 
     }
 

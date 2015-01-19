@@ -294,6 +294,7 @@ namespace XData.Compiler {
                 var list = new TypeListNode(parent);
                 list.ItemQName = QualifiableNameExpected();
                 SimpleTypeRestrictions(list, out list.SimpleTypeRestrictions);
+
                 result = list;
                 return true;
             }

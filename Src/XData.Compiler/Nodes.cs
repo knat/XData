@@ -69,12 +69,16 @@ namespace XData.Compiler {
                     }
                 }
             }
+            else {
+                var idx = 0;
+                foreach (var logicalNS in nsDict.Values) {
+                    logicalNS.CSNamespaceName = new CSNamespaceNameNode() { "__fake_ns__" + (idx++).ToInvString() };
+                    logicalNS.IsCSNamespaceRef = true;
+                }
+            }
             if (nsList.Count == 0) {
                 return;
             }
-
-
-
             //
             foreach (var ns in nsList) {
                 ns.ResolveImports(nsDict);
@@ -86,11 +90,14 @@ namespace XData.Compiler {
                 ns.Resolve();
             }
             //
-
-
-            //
             var programSymbol = new ProgramSymbol(nsIndicatorList.Count > 0);
-
+            foreach (var logicalNS in nsDict.Values) {
+                logicalNS.NamespaceSymbol = new NamespaceSymbol(logicalNS.Uri, logicalNS.CSNamespaceName, logicalNS.IsCSNamespaceRef);
+                programSymbol.NamespaceList.Add(logicalNS.NamespaceSymbol);
+            }
+            foreach (var ns in nsList) {
+                ns.CreateSymbols();
+            }
 
             //return programSymbol;
 
@@ -219,6 +226,14 @@ namespace XData.Compiler {
                 }
             }
         }
+        public void CreateSymbols() {
+            if (MemberList != null) {
+                foreach (var member in MemberList) {
+                    member.CreateSymbol();
+                }
+            }
+        }
+
         public NamespaceMemberNode Resolve(QualifiableNameNode qName) {
             NamespaceMemberNode result = null;
             var name = qName.Name;
@@ -342,8 +357,7 @@ namespace XData.Compiler {
         public LogicalNamespaceNode LogicalNamespace;
     }
     public abstract class ObjectNode : Node {
-        protected ObjectNode(Node parent) : base(parent) {
-        }
+        protected ObjectNode(Node parent) : base(parent) { }
         //public abstract TextSpan TextSpan { get; }
         //protected abstract ObjectSymbol CreateSymbolCore(ObjectBaseSymbol parent);
     }
@@ -357,7 +371,7 @@ namespace XData.Compiler {
                 return _csName ?? (_csName = Name.Value.EscapeId());
             }
         }
-        private FullName? _fullName;
+        protected FullName? _fullName;
         public FullName FullName {
             get {
                 if (_fullName == null) {
@@ -376,15 +390,20 @@ namespace XData.Compiler {
                     ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.CircularReferenceDetected, "Circular reference detected.", Name.TextSpan);
                 }
                 _isProcessing = true;
-                _objectSymbol = CreateSymbolCore(NamespaceAncestor.LogicalNamespace.NamespaceSymbol, CSName, FullName);
+                _objectSymbol = CreateSymbolCore();
+                if (_objectSymbol.FullName.Uri != InfoExtensions.SystemUri) {
+                    NamespaceAncestor.LogicalNamespace.NamespaceSymbol.GlobalObjectList.Add(_objectSymbol);
+                }
                 _isProcessing = false;
             }
             return _objectSymbol;
         }
-        protected abstract NamedObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName);
+        protected abstract NamedObjectSymbol CreateSymbolCore();
     }
     public sealed class SystemTypeNode : TypeNode {
         private SystemTypeNode(TypeKind kind) : base(null) {
+            //Name = new NameNode(kind.ToString(), default(TextSpan));
+            _fullName = kind.ToFullName();
             Kind = kind;
         }
         public readonly TypeKind Kind;
@@ -400,13 +419,12 @@ namespace XData.Compiler {
             Dict.TryGetValue(name, out result);
             return result;
         }
-        protected override NamedObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName) {
-            return base.CreateSymbolCore(parent, csName, fullName);
+        protected override NamedObjectSymbol CreateSymbolCore() {
+            return NamespaceSymbol.System.TryGetGlobalObject(_fullName.Value);
         }
     }
     public class TypeNode : NamespaceMemberNode {
-        public TypeNode(Node parent) : base(parent) {
-        }
+        public TypeNode(Node parent) : base(parent) { }
         public NameNode AbstractOrSealed;
         public TypeBodyNode Body;
         public bool IsAbstract {
@@ -422,8 +440,8 @@ namespace XData.Compiler {
         public override void Resolve() {
             Body.Resolve();
         }
-        protected override NamedObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName) {
-            return Body.CreateSymbolCore(parent, csName, fullName, IsAbstract, IsSealed);
+        protected override NamedObjectSymbol CreateSymbolCore() {
+            return Body.CreateSymbolCore(NamespaceAncestor.LogicalNamespace.NamespaceSymbol, CSName, FullName, IsAbstract, IsSealed);
         }
     }
     public abstract class TypeBodyNode : Node {
@@ -438,12 +456,25 @@ namespace XData.Compiler {
         public SimpleTypeRestrictionsNode SimpleTypeRestrictions;//opt
         public override void Resolve() {
             ItemType = NamespaceAncestor.ResolveAsType(ItemQName);
+            if (SimpleTypeRestrictions != null) {
+                SimpleTypeRestrictions.CheckApplicabilities(TypeKind.ListType);
+                if (SimpleTypeRestrictions.ListItemTypeQName.IsValid) {
+                    ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.ListItemTypeNotAllowed, "List item type not allowed.",
+                        SimpleTypeRestrictions.ListItemTypeQName.TextSpan);
+                }
+            }
         }
         public override TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
             var itemSymbol = ItemType.CreateSymbol() as SimpleTypeSymbol;
             if (itemSymbol == null) {
-
+                ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.SimpleTypeRequired, "Simple type required.", ItemQName.TextSpan);
             }
+            if (SimpleTypeRestrictions != null) {
+                if (SimpleTypeRestrictions.ListItemTypeQName.IsValid) {
+
+                }
+            }
+
             return null;// new ListTypeSymbol(parent, csName, isAbstract, isSealed, fullName, itemSymbol);
         }
     }
@@ -536,6 +567,14 @@ namespace XData.Compiler {
                 ListItemType = NamespaceAncestor.ResolveAsType(ListItemTypeQName);
             }
         }
+        public void CheckApplicabilities(TypeKind kind) {
+            switch (kind) {
+                case TypeKind.ListType:
+
+                    break;
+            }
+            ContextEx.ThrowIfHasErrors();
+        }
     }
 
     public struct IntegerRangeNode<T> where T : struct {
@@ -611,7 +650,7 @@ namespace XData.Compiler {
         public override void Resolve() {
             Type = NamespaceAncestor.ResolveAsType(TypeQName);
         }
-        protected override NamedObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName) {
+        protected override NamedObjectSymbol CreateSymbolCore() {
             throw new NotImplementedException();
         }
     }
@@ -709,7 +748,7 @@ namespace XData.Compiler {
             }
             Type = NamespaceAncestor.ResolveAsType(TypeQName);
         }
-        protected override NamedObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName) {
+        protected override NamedObjectSymbol CreateSymbolCore() {
             throw new NotImplementedException();
         }
     }
