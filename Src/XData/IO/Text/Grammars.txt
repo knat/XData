@@ -106,12 +106,12 @@ attribute-value:
 simple-value
 ;
 children:
-simple-value-child | element-children
+simple-child | complex-children
 ;
-simple-value-child:
+simple-child:
 '{' simple-value '}'
 ;
-element-children:
+complex-children:
 '{' element* '}'
 ;
 

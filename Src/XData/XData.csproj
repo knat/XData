@@ -41,7 +41,7 @@
     <Compile Include="AtomType.cs" />
     <Compile Include="Attribute.cs" />
     <Compile Include="AttributeSet.cs" />
-    <Compile Include="ChildSetAndList.cs" />
+    <Compile Include="ChildContainer.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="ComplexType.cs" />
     <Compile Include="Diagnostics.cs" />

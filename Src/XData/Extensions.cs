@@ -4,7 +4,6 @@ using System.Globalization;
 using System.Text;
 
 namespace XData {
-
     public static class Extensions {
         private const int _stringBuilderCount = 4;
         private const int _stringBuilderCapacity = 64;

@@ -74,7 +74,7 @@ namespace XData {
                 if (@try) {
                     return null;
                 }
-                throw new InvalidOperationException("Child not allowed.");
+                throw new InvalidOperationException("Children not allowed.");
             }
             obj = complexTypeInfo.Children.CreateInstance<T>();
             Children = obj;
@@ -162,4 +162,44 @@ namespace XData {
             return true;
         }
     }
+    //public abstract class XSimpleChildComplexType : XComplexType {
+    //    protected XSimpleChildComplexType() { }
+    //    public XSimpleType Child {
+    //        get {
+    //            return Children as XSimpleType;
+    //        }
+    //        set {
+    //            Children = value;
+    //        }
+    //    }
+    //    public XSimpleType GenericChild {
+    //        get {
+    //            return Child;
+    //        }
+    //        set {
+    //            Children = value;
+    //        }
+    //    }
+
+    //}
+    //public abstract class XComplexChildrenComplexType : XComplexType {
+    //    protected XComplexChildrenComplexType() { }
+    //    new public XChildSet Children {
+    //        get {
+    //            return base.Children as XChildSet;
+    //        }
+    //        set {
+    //            base.Children = value;
+    //        }
+    //    }
+    //    public XChildSet GenericChildren {
+    //        get {
+    //            return Children;
+    //        }
+    //        set {
+    //            base.Children = value;
+    //        }
+    //    }
+    //}
+
 }

@@ -45,27 +45,41 @@ type-body:
 type-list | type-directness | type-extension | type-restriction
 ;
 type-list:
-'lists qualifiable-name
+list-item-type simple-type-restrictions?
 ;
+list-item-type:
+'lists' qualifiable-name
+;
+
 type-directness:
-attributes structural-children? | structural-children | ';'
+attributes children? | children | ';'
 ;
 type-extension:
-'extends' qualifiable-name attributes? root-structural-children?
+'extends' qualifiable-name attributes? children?
 ;
 type-restriction:
-'restricts' qualifiable-name attributes? (root-structural-children | simple-value-restrictions)?
+'restricts' qualifiable-name attributes? (root-structural-children | simple-type-restrictions)?
 ;
-
-simple-value-restrictions:
-'${' '}'
-;
-
-
 
 attributes:
 '[' (local-attribute | global-attribute-ref)* ']'
 ;
+children:
+root-structural-children | simple-type-child
+;
+simple-type-child:
+'${' qualifiable-name '}''
+;
+root-structural-children:
+'{' '}'
+;
+simple-type-restrictions:
+'${' (lengths | ?? | list-item-type)* '}'
+;
+
+
+//
+//
 
 global-attribute:
 'attribute' name global-attribute-annotations? 'as' qualifiable-name
@@ -106,9 +120,6 @@ substitution:
 'substitutes' qualifiable-name
 ;
 
-root-structural-children:
-'{' '}'
-;
 
 occurrence:
 '?' | '*' | '+' | integer-value '..' integer-value?

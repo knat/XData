@@ -274,10 +274,10 @@ namespace XData.Compiler {
                 var type = new TypeNode(parent);
                 type.Name = NameExpected();
                 Unordered(_abstractOrSealedGetter, out type.AbstractOrSealed, "abstract, sealed or > expected.");
-                if (!TypeRestriction(type, out type.Body)) {
-                    if (!TypeExtension(type, out type.Body)) {
-                        if (!TypeList(type, out type.Body)) {
-                            if (!TypeDirectness(type, out type.Body)) {
+                if (!TypeDirectness(type, out type.Body)) {
+                    if (!TypeList(type, out type.Body)) {
+                        if (!TypeExtension(type, out type.Body)) {
+                            if (!TypeRestriction(type, out type.Body)) {
                                 ErrorDiagnosticAndThrow("Type directness, type list, type extension or type restriction expected.");
                             }
                         }
@@ -289,26 +289,26 @@ namespace XData.Compiler {
             result = null;
             return false;
         }
-        private bool TypeDirectness(Node parent, out TypeBodyNode result) {
-            var directness = new TypeDirectnessNode(parent);
-            var hasAttributes = Attributes(directness, out directness.Attributes);
-            var hasChildren = RootStructuralChildren(directness, out directness.StructuralChildren);
-            var hasSemicolon = false;
-            if (!hasAttributes && !hasChildren) {
-                hasSemicolon = Token(';');
-            }
-            if (hasAttributes || hasChildren || hasSemicolon) {
-                result = directness;
+        private bool TypeList(Node parent, out TypeBodyNode result) {
+            if (Keyword(ListsKeyword)) {
+                var list = new TypeListNode(parent);
+                list.ItemQName = QualifiableNameExpected();
+                SimpleTypeRestrictions(list, out list.SimpleTypeRestrictions);
+                result = list;
                 return true;
             }
             result = null;
             return false;
         }
-        private bool TypeList(Node parent, out TypeBodyNode result) {
-            if (Keyword(ListsKeyword)) {
-                var list = new TypeListNode(parent);
-                list.ItemQName = QualifiableNameExpected();
-                result = list;
+        private bool TypeDirectness(Node parent, out TypeBodyNode result) {
+            if (PeekToken('[', '{', (int)TokenKind.DollarOpenBrace, ';')) {
+                var directness = new TypeDirectnessNode(parent);
+                var hasAttributes = Attributes(directness, out directness.Attributes);
+                var hasChildren = Children(directness, out directness.Children);
+                if (!hasAttributes && !hasChildren) {
+                    Token(';');
+                }
+                result = directness;
                 return true;
             }
             result = null;
@@ -319,7 +319,7 @@ namespace XData.Compiler {
                 var extension = new TypeExtension(parent);
                 extension.BaseQName = QualifiableNameExpected();
                 Attributes(extension, out extension.Attributes);
-                RootStructuralChildren(extension, out extension.StructuralChildren);
+                Children(extension, out extension.Children);
                 result = extension;
                 return true;
             }
@@ -332,7 +332,7 @@ namespace XData.Compiler {
                 restriction.BaseQName = QualifiableNameExpected();
                 Attributes(restriction, out restriction.Attributes);
                 if (!RootStructuralChildren(restriction, out restriction.StructuralChildren)) {
-                    SimpleValueRestrictions(restriction, out restriction.SimpleValueRestrictions);
+                    SimpleTypeRestrictions(restriction, out restriction.SimpleTypeRestrictions);
                 }
                 result = restriction;
                 return true;
@@ -340,10 +340,31 @@ namespace XData.Compiler {
             result = null;
             return false;
         }
-        private bool SimpleValueRestrictions(Node parent, out SimpleValueRestrictionsNode result) {
+        private bool Children(Node parent, out ChildrenNode result) {
+            if (PeekToken('{', (int)TokenKind.DollarOpenBrace)) {
+                var children = new ChildrenNode(parent);
+                if (!RootStructuralChildren(parent, out children.StructuralChildren)) {
+                    SimpleTypeChild(out children.SimpleTypeChildQName);
+                }
+                result = children;
+                return true;
+            }
+            result = null;
+            return false;
+        }
+        private bool SimpleTypeChild(out QualifiableNameNode result) {
             if (Token(TokenKind.DollarOpenBrace)) {
-                result = new SimpleValueRestrictionsNode(parent);
-                bool hasLengths = false, hasDigits = false, hasValues = false, hasEnums = false, hasPattern = false;
+                result = QualifiableNameExpected();
+                TokenExpected('}');
+                return true;
+            }
+            result = default(QualifiableNameNode);
+            return false;
+        }
+        private bool SimpleTypeRestrictions(Node parent, out SimpleTypeRestrictionsNode result) {
+            if (Token(TokenKind.DollarOpenBrace)) {
+                result = new SimpleTypeRestrictionsNode(parent);
+                bool hasLengths = false, hasDigits = false, hasValues = false, hasEnums = false, hasPattern = false, hasListItemType = false;
                 while (true) {
                     var get = false;
                     if (!hasLengths) {
@@ -371,11 +392,16 @@ namespace XData.Compiler {
                             get = true;
                         }
                     }
+                    if (!get && !hasListItemType) {
+                        if (hasListItemType = ListItemType(out result.ListItemTypeQName)) {
+                            get = true;
+                        }
+                    }
                     if (Token('}')) {
                         return true;
                     }
                     if (!get) {
-                        ErrorDiagnosticAndThrow("lengths, digits, values, enums, pattern or } expected.");
+                        ErrorDiagnosticAndThrow("Lengths, digits, values, enums, pattern, list item type or } expected.");
                     }
                 }
             }
@@ -463,6 +489,14 @@ namespace XData.Compiler {
                 return true;
             }
             result = default(AtomValueNode);
+            return false;
+        }
+        private bool ListItemType(out QualifiableNameNode result) {
+            if (Keyword(ListsKeyword)) {
+                result = QualifiableNameExpected();
+                return true;
+            }
+            result = default(QualifiableNameNode);
             return false;
         }
         private IntegerRangeNode<ulong> UInt64Range() {

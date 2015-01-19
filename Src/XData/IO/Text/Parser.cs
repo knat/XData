@@ -76,6 +76,21 @@ namespace XData.IO.Text {
         protected void ConsumeToken() {
             _token = null;
         }
+        protected bool PeekToken(int rawKind) {
+            return GetToken().RawKind == rawKind;
+        }
+        protected bool PeekToken(int rawKind1, int rawKind2) {
+            var tokenKind = GetToken().RawKind;
+            return tokenKind == rawKind1 || tokenKind == rawKind2;
+        }
+        protected bool PeekToken(int rawKind1, int rawKind2, int rawKind3) {
+            var tokenKind = GetToken().RawKind;
+            return tokenKind == rawKind1 || tokenKind == rawKind2 || tokenKind == rawKind3;
+        }
+        protected bool PeekToken(int rawKind1, int rawKind2, int rawKind3, int rawKind4) {
+            var tokenKind = GetToken().RawKind;
+            return tokenKind == rawKind1 || tokenKind == rawKind2 || tokenKind == rawKind3 || tokenKind == rawKind4;
+        }
         protected bool Token(int rawKind, out TextSpan textSpan) {
             var token = GetToken();
             if (token.RawKind == rawKind) {

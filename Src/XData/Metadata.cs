@@ -241,6 +241,8 @@ namespace XData {
         AtomType,
         ListType,
         ComplexType,
+        //SimpleChildComplexType,
+        //ComplexChildrenComplexType,
         StringBase,
         String,
         IgnoreCaseString,
@@ -310,9 +312,29 @@ namespace XData {
         }
         public readonly AttributeSetInfo Attributes;//opt
         public readonly ObjectInfo Children;//opt, ChildSetInfo or SimpleTypeInfo
-        //public ChildSetInfo AsChildSet { get { return Children as ChildSetInfo; } }
-        //public SimpleTypeInfo AsSimpleType { get { return Children as SimpleTypeInfo; } }
     }
+    //public sealed class SimpleChildComplexTypeInfo : ComplexTypeInfo {
+    //    public SimpleChildComplexTypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeInfo baseType,
+    //        AttributeSetInfo attributes, SimpleTypeInfo child)
+    //        : base(clrType, isAbstract, fullName, baseType, attributes, child) {
+    //    }
+    //    public SimpleTypeInfo Child {
+    //        get {
+    //            return Children as SimpleTypeInfo;
+    //        }
+    //    }
+    //}
+    //public sealed class ComplexChildrenComplexTypeInfo : ComplexTypeInfo {
+    //    public ComplexChildrenComplexTypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeInfo baseType,
+    //        AttributeSetInfo attributes, ChildSetInfo children)
+    //        : base(clrType, isAbstract, fullName, baseType, attributes, children) {
+    //    }
+    //    new public ChildSetInfo Children {
+    //        get {
+    //            return base.Children as ChildSetInfo;
+    //        }
+    //    }
+    //}
 
     public sealed class AttributeSetInfo : ObjectInfo {
         public AttributeSetInfo(Type clrType, AttributeInfo[] attributes)

@@ -435,6 +435,7 @@ namespace XData.Compiler {
         public TypeListNode(Node parent) : base(parent) { }
         public QualifiableNameNode ItemQName;
         public TypeNode ItemType;
+        public SimpleTypeRestrictionsNode SimpleTypeRestrictions;//opt
         public override void Resolve() {
             ItemType = NamespaceAncestor.ResolveAsType(ItemQName);
         }
@@ -446,16 +447,31 @@ namespace XData.Compiler {
             return null;// new ListTypeSymbol(parent, csName, isAbstract, isSealed, fullName, itemSymbol);
         }
     }
+    public sealed class ChildrenNode : Node {
+        public ChildrenNode(Node parent) : base(parent) { }
+        public RootStructuralChildrenNode StructuralChildren;
+        public QualifiableNameNode SimpleTypeChildQName;
+        public TypeNode SimpleTypeChild;
+        public void Resolve() {
+            if (StructuralChildren != null) {
+                StructuralChildren.Resolve();
+            }
+            else {
+                SimpleTypeChild = NamespaceAncestor.ResolveAsType(SimpleTypeChildQName);
+            }
+        }
+    }
+
     public sealed class TypeDirectnessNode : TypeBodyNode {
         public TypeDirectnessNode(Node parent) : base(parent) { }
         public AttributesNode Attributes;
-        public RootStructuralChildrenNode StructuralChildren;
+        public ChildrenNode Children;
         public override void Resolve() {
             if (Attributes != null) {
                 Attributes.Resolve();
             }
-            if (StructuralChildren != null) {
-                StructuralChildren.Resolve();
+            if (Children != null) {
+                Children.Resolve();
             }
         }
         public override TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
@@ -467,39 +483,59 @@ namespace XData.Compiler {
         public TypeDerivation(Node parent) : base(parent) { }
         public QualifiableNameNode BaseQName;
         public AttributesNode Attributes;
-        public RootStructuralChildrenNode StructuralChildren;
         public TypeNode BaseType;
         public override void Resolve() {
             BaseType = NamespaceAncestor.ResolveAsType(BaseQName);
             if (Attributes != null) {
                 Attributes.Resolve();
             }
-            if (StructuralChildren != null) {
-                StructuralChildren.Resolve();
-            }
         }
     }
     public sealed class TypeExtension : TypeDerivation {
         public TypeExtension(Node parent) : base(parent) { }
+        public ChildrenNode Children;
+        public override void Resolve() {
+            base.Resolve();
+            if (Children != null) {
+                Children.Resolve();
+            }
+        }
         public override TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
             throw new NotImplementedException();
         }
     }
     public sealed class TypeRestriction : TypeDerivation {
         public TypeRestriction(Node parent) : base(parent) { }
-        public SimpleValueRestrictionsNode SimpleValueRestrictions;
+        public RootStructuralChildrenNode StructuralChildren;
+        public SimpleTypeRestrictionsNode SimpleTypeRestrictions;
+        public override void Resolve() {
+            base.Resolve();
+            if (StructuralChildren != null) {
+                StructuralChildren.Resolve();
+            }
+            else if (SimpleTypeRestrictions != null) {
+                SimpleTypeRestrictions.Resolve();
+            }
+        }
         public override TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
             throw new NotImplementedException();
         }
     }
 
-    public sealed class SimpleValueRestrictionsNode : Node {
-        public SimpleValueRestrictionsNode(Node parent) : base(parent) { }
+    public sealed class SimpleTypeRestrictionsNode : Node {
+        public SimpleTypeRestrictionsNode(Node parent) : base(parent) { }
         public IntegerRangeNode<ulong> Lengths;
         public IntegerRangeNode<byte> Digits;
         public ValueRangeNode Values;
         public EnumerationsNode Enumerations;
         public AtomValueNode Pattern;
+        public QualifiableNameNode ListItemTypeQName;
+        public TypeNode ListItemType;
+        public void Resolve() {
+            if (ListItemTypeQName.IsValid) {
+                ListItemType = NamespaceAncestor.ResolveAsType(ListItemTypeQName);
+            }
+        }
     }
 
     public struct IntegerRangeNode<T> where T : struct {
