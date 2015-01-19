@@ -164,9 +164,9 @@ namespace XData.Compiler {
             }
         }
         private void CheckUri(AtomValueNode uri) {
-            if (uri.Value == Extensions.SystemUri) {
+            if (uri.Value == InfoExtensions.SystemUri) {
                 ErrorDiagnosticAndThrow(DiagnosticCodeEx.UriIsReserved,
-                    "Uri '" + Extensions.SystemUri + "' is reserved.", uri.TextSpan);
+                    "Uri '" + InfoExtensions.SystemUri + "' is reserved.", uri.TextSpan);
             }
         }
         private bool UriAliasing(List<UriAliasingNode> list, out UriAliasingNode result) {

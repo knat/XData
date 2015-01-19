@@ -45,7 +45,7 @@ namespace XData {
         public readonly NamedObjectInfo[] GlobalObjects;
         public bool IsSystem {
             get {
-                return Uri == Extensions.SystemUri;
+                return Uri == InfoExtensions.SystemUri;
             }
         }
         public NamedObjectInfo TryGetGlobalObject(FullName fullName) {
@@ -62,7 +62,7 @@ namespace XData {
         private static volatile NamespaceInfo _system;
         public static NamespaceInfo System {
             get {
-                return _system ?? (_system = new NamespaceInfo(Extensions.SystemUri, new TypeInfo[] {
+                return _system ?? (_system = new NamespaceInfo(InfoExtensions.SystemUri, new TypeInfo[] {
                     //XType.ThisInfo,
                 }));
             }
@@ -235,13 +235,12 @@ namespace XData {
         public readonly SimpleTypeRestrictionSetInfo RestrictionSet;// { get; private set; }
     }
     //DOT NOT EDIT the order
-    public enum AtomTypeKind : byte {
+    public enum TypeKind : byte {
         None = 0,
-        //Type,//not allowed for use
-        //SimpleType,
-        //AtomType,
-        //ListType,
-        //ComplexType,
+        SimpleType,
+        AtomType,
+        ListType,
+        ComplexType,
         StringBase,
         String,
         IgnoreCaseString,
@@ -264,14 +263,28 @@ namespace XData {
         //Date,
         //Time,
     }
+    public static class InfoExtensions {
+        public const string SystemUri = "http://xdata-lang.org";
+        public const TypeKind TypeStart = TypeKind.SimpleType;
+        public const TypeKind TypeEnd = TypeKind.DateTimeOffset;
+        public const TypeKind AtomTypeStart = TypeKind.StringBase;
+        public const TypeKind AtomTypeEnd = TypeKind.DateTimeOffset;
+        public static FullName ToFullName(this TypeKind kind) {
+            return new FullName(SystemUri, kind.ToString());
+        }
+        public static AtomTypeInfo ToAtomTypeInfo(this TypeKind kind, Type clrType, AtomTypeInfo baseType, bool isAbstract = false) {
+            return new AtomTypeInfo(clrType, isAbstract, ToFullName(kind), baseType, null, kind);
+        }
+
+    }
 
     public sealed class AtomTypeInfo : SimpleTypeInfo {
         public AtomTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo baseType,
-            SimpleTypeRestrictionSetInfo restrictionSet, AtomTypeKind kind)
+            SimpleTypeRestrictionSetInfo restrictionSet, TypeKind kind)
             : base(clrType, isAbstract, fullName, baseType, restrictionSet) {
             Kind = kind;
         }
-        public readonly AtomTypeKind Kind;
+        public readonly TypeKind Kind;
 
         //new public SimpleTypeInfo BaseType { get { return (SimpleTypeInfo)base.BaseType; } }
     }

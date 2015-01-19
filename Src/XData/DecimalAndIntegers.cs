@@ -72,7 +72,7 @@ namespace XData {
             return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.Decimal.ToAtomTypeInfo(typeof(XDecimal), XAtomType.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = TypeKind.Decimal.ToAtomTypeInfo(typeof(XDecimal), XAtomType.ThisInfo);
     }
     public class XInt64 : XDecimal {
         public XInt64() { }
@@ -156,7 +156,7 @@ namespace XData {
             return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.Int64.ToAtomTypeInfo(typeof(XInt64), XDecimal.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = TypeKind.Int64.ToAtomTypeInfo(typeof(XInt64), XDecimal.ThisInfo);
     }
     public class XInt32 : XInt64 {
         public XInt32() { }
@@ -252,7 +252,7 @@ namespace XData {
             return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.Int32.ToAtomTypeInfo(typeof(XInt32), XInt64.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = TypeKind.Int32.ToAtomTypeInfo(typeof(XInt32), XInt64.ThisInfo);
     }
     public class XInt16 : XInt32 {
         public XInt16() { }
@@ -360,7 +360,7 @@ namespace XData {
             return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.Int16.ToAtomTypeInfo(typeof(XInt16), XInt32.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = TypeKind.Int16.ToAtomTypeInfo(typeof(XInt16), XInt32.ThisInfo);
     }
     public class XSByte : XInt16 {
         public XSByte() { }
@@ -480,7 +480,7 @@ namespace XData {
             return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.SByte.ToAtomTypeInfo(typeof(XSByte), XInt16.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = TypeKind.SByte.ToAtomTypeInfo(typeof(XSByte), XInt16.ThisInfo);
     }
 
     public class XUInt64 : XDecimal {
@@ -565,7 +565,7 @@ namespace XData {
             return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.UInt64.ToAtomTypeInfo(typeof(XUInt64), XDecimal.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = TypeKind.UInt64.ToAtomTypeInfo(typeof(XUInt64), XDecimal.ThisInfo);
     }
     public class XUInt32 : XUInt64 {
         public XUInt32() { }
@@ -661,7 +661,7 @@ namespace XData {
             return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.UInt32.ToAtomTypeInfo(typeof(XUInt32), XUInt64.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = TypeKind.UInt32.ToAtomTypeInfo(typeof(XUInt32), XUInt64.ThisInfo);
     }
     public class XUInt16 : XUInt32 {
         public XUInt16() { }
@@ -769,7 +769,7 @@ namespace XData {
             return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.UInt16.ToAtomTypeInfo(typeof(XUInt16), XUInt32.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = TypeKind.UInt16.ToAtomTypeInfo(typeof(XUInt16), XUInt32.ThisInfo);
     }
     public class XByte : XUInt16 {
         public XByte() { }
@@ -889,7 +889,7 @@ namespace XData {
             return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.Byte.ToAtomTypeInfo(typeof(XByte), XUInt16.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = TypeKind.Byte.ToAtomTypeInfo(typeof(XByte), XUInt16.ThisInfo);
     }
 
 }

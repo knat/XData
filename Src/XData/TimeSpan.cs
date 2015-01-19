@@ -66,6 +66,6 @@ namespace XData {
             return _value.ToString("c");
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.TimeSpan.ToAtomTypeInfo(typeof(XTimeSpan), XAtomType.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = TypeKind.TimeSpan.ToAtomTypeInfo(typeof(XTimeSpan), XAtomType.ThisInfo);
     }
 }

@@ -9,7 +9,6 @@ namespace XData {
                 return (TypeInfo)ObjectInfo;
             }
         }
-        //public static readonly TypeInfo ThisInfo = new TypeInfo(typeof(XType), AtomicTypeKind.Type.ToFullName(), AtomicTypeKind.Type, null);
         //
         internal static TypeInfo GetTypeInfo(Context context, ProgramInfo programInfo, QualifiableNameNode typeQName,
             TypeInfo declTypeInfo, TextSpan declTypeTextSpan) {

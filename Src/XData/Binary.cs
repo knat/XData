@@ -87,6 +87,6 @@ namespace XData {
             return true;
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.Binary.ToAtomTypeInfo(typeof(XBinary), XAtomType.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = TypeKind.Binary.ToAtomTypeInfo(typeof(XBinary), XAtomType.ThisInfo);
     }
 }

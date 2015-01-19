@@ -67,6 +67,6 @@ namespace XData {
             return _value.ToString(FormatString, DateTimeFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.DateTimeOffset.ToAtomTypeInfo(typeof(XDateTimeOffset), XAtomType.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = TypeKind.DateTimeOffset.ToAtomTypeInfo(typeof(XDateTimeOffset), XAtomType.ThisInfo);
     }
 }

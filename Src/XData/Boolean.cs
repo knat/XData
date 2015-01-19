@@ -71,6 +71,6 @@ namespace XData {
             return _value ? "true" : "false";
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.Boolean.ToAtomTypeInfo(typeof(XBoolean), XAtomType.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = TypeKind.Boolean.ToAtomTypeInfo(typeof(XBoolean), XAtomType.ThisInfo);
     }
 }

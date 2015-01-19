@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using XData.IO.Text;
 
 namespace XData {
 
@@ -102,24 +101,6 @@ namespace XData {
         //
         //
         //
-        public const string SystemUri = "http://xdata-lang.org";
-        public const string SimpleTypeName = "SimpleType";
-        public static readonly FullName SimpleTypeFullName = new FullName(SystemUri, SimpleTypeName);
-        public const string AtomTypeName = "AtomType";
-        public static readonly FullName AtomTypeFullName = new FullName(SystemUri, AtomTypeName);
-        public const string ListTypeName = "ListType";
-        public static readonly FullName ListTypeFullName = new FullName(SystemUri, ListTypeName);
-        public const string ComplexTypeName = "ComplexType";
-        public static readonly FullName ComplexTypeFullName = new FullName(SystemUri, ComplexTypeName);
-        public static string ToTypeName(this AtomTypeKind kind) {
-            return kind.ToString();
-        }
-        public static FullName ToTypeFullName(this AtomTypeKind kind) {
-            return new FullName(SystemUri, kind.ToString());
-        }
-        public static AtomTypeInfo ToAtomTypeInfo(this AtomTypeKind kind, Type clrType, AtomTypeInfo baseType, bool isAbstract = false) {
-            return new AtomTypeInfo(clrType, isAbstract, ToTypeFullName(kind), baseType, null, kind);
-        }
 
         //
         //
@@ -174,15 +155,12 @@ namespace XData {
         //
 
         //todo: move
-        public static bool IsValid(this DiagnosticSeverity severity) {
-            return severity == DiagnosticSeverity.Error || severity == DiagnosticSeverity.Warning || severity == DiagnosticSeverity.Info;
-        }
-        public static bool IsValid(this DiagnosticCode code) {
-            return code >= DiagnosticCode.Parsing && code < DiagnosticCode.Max;
-        }
-        public static bool IsTrivalToken(this TokenKind kind) {
-            return kind == TokenKind.WhitespaceOrNewLine || kind == TokenKind.SingleLineComment || kind == TokenKind.MultiLineComment;
-        }
+        //public static bool IsValid(this DiagnosticSeverity severity) {
+        //    return severity == DiagnosticSeverity.Error || severity == DiagnosticSeverity.Warning || severity == DiagnosticSeverity.Info;
+        //}
+        //public static bool IsValid(this DiagnosticCode code) {
+        //    return code >= DiagnosticCode.Parsing && code < DiagnosticCode.Max;
+        //}
 
     }
 }

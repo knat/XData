@@ -85,7 +85,7 @@ namespace XData {
             return value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.Double.ToAtomTypeInfo(typeof(XDouble), XAtomType.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = TypeKind.Double.ToAtomTypeInfo(typeof(XDouble), XAtomType.ThisInfo);
     }
     public class XSingle : XDouble {
         public XSingle() { }
@@ -192,6 +192,6 @@ namespace XData {
             return value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.Single.ToAtomTypeInfo(typeof(XSingle), XDouble.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = TypeKind.Single.ToAtomTypeInfo(typeof(XSingle), XDouble.ThisInfo);
     }
 }

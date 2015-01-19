@@ -65,6 +65,6 @@ namespace XData {
             return _value.ToString("D");
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.Guid.ToAtomTypeInfo(typeof(XGuid), XAtomType.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = TypeKind.Guid.ToAtomTypeInfo(typeof(XGuid), XAtomType.ThisInfo);
     }
 }

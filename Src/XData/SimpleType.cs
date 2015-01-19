@@ -61,7 +61,7 @@ namespace XData {
         //        return (SimpleTypeInfo)ObjectInfo;
         //    }
         //}
-        public static readonly SimpleTypeInfo ThisInfo = new SimpleTypeInfo(typeof(XSimpleType), true, Extensions.SimpleTypeFullName, null, null);
+        public static readonly SimpleTypeInfo ThisInfo = new SimpleTypeInfo(typeof(XSimpleType), true, TypeKind.SimpleType.ToFullName(), null, null);
         //
         internal static bool TryCreate(Context context, ProgramInfo programInfo, SimpleTypeInfo simpleTypeInfo,
             SimpleValueNode simpleValueNode, out XSimpleType result) {

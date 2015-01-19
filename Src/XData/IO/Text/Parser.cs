@@ -52,6 +52,9 @@ namespace XData.IO.Text {
         protected void ErrorDiagnosticAndThrow(string errMsg) {
             ErrorDiagnosticAndThrow(errMsg, GetToken());
         }
+        private static bool IsTrivalToken(TokenKind kind) {
+            return kind == TokenKind.WhitespaceOrNewLine || kind == TokenKind.SingleLineComment || kind == TokenKind.MultiLineComment;
+        }
         protected Token GetToken() {
             if (_token != null) {
                 return _token.Value;
@@ -59,7 +62,7 @@ namespace XData.IO.Text {
             while (true) {
                 var token = _lexer.GetToken();
                 var kind = token.Kind;
-                if (!kind.IsTrivalToken()) {
+                if (!IsTrivalToken(kind)) {
                     if (kind == TokenKind.Error) {
                         ErrorDiagnosticAndThrow(null, token);
                     }
@@ -537,7 +540,7 @@ namespace XData.IO.Text {
         }
         private string GetUri(NameNode alias) {
             if (alias.Value == "sys") {
-                return Extensions.SystemUri;
+                return InfoExtensions.SystemUri;
             }
             var isNull = !alias.IsValid;
             foreach (var uaList in _uriAliasingListStack) {

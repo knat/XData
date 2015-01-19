@@ -25,7 +25,7 @@ namespace XData {
         }
         internal abstract void InternalAdd(XSimpleType item);
 
-        new public static readonly ListTypeInfo ThisInfo = new ListTypeInfo(typeof(XListType), true, Extensions.ListTypeFullName,
+        new public static readonly ListTypeInfo ThisInfo = new ListTypeInfo(typeof(XListType), true, TypeKind.ListType.ToFullName(),
             XSimpleType.ThisInfo, null, null);
     }
     public abstract class XListType<T> : XListType, IList<T>, IReadOnlyList<T> where T : XSimpleType {

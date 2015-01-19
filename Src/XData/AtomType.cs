@@ -79,8 +79,8 @@ namespace XData {
             return true;
         }
 
-        new public static readonly AtomTypeInfo ThisInfo = new AtomTypeInfo(typeof(XAtomType), true, Extensions.AtomTypeFullName,
-            XSimpleType.ThisInfo, null, AtomTypeKind.None);
+        new public static readonly AtomTypeInfo ThisInfo = new AtomTypeInfo(typeof(XAtomType), true, TypeKind.AtomType.ToFullName(),
+            XSimpleType.ThisInfo, null, TypeKind.None);
 
     }
 

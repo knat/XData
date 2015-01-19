@@ -384,15 +384,15 @@ namespace XData.Compiler {
         protected abstract NamedObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName);
     }
     public sealed class SystemTypeNode : TypeNode {
-        private SystemTypeNode() : base(null) {
+        private SystemTypeNode(TypeKind kind) : base(null) {
+            Kind = kind;
         }
-        //public AtomicTypeKind Kind;
+        public readonly TypeKind Kind;
         private static readonly Dictionary<string, SystemTypeNode> Dict;
         static SystemTypeNode() {
             Dict = new Dictionary<string, SystemTypeNode>();
-            for (var kind = AtomTypeKind.StringBase; kind <= AtomTypeKind.DateTimeOffset; ++kind) {
-                var name = kind.ToString();
-                Dict.Add(name, new SystemTypeNode() { Name = new NameNode(name, default(TextSpan)) });
+            for (var kind = InfoExtensions.TypeStart; kind <= InfoExtensions.TypeEnd; ++kind) {
+                Dict.Add(kind.ToString(), new SystemTypeNode(kind));
             }
         }
         public static SystemTypeNode TryGet(string name) {
