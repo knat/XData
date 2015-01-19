@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace XData {
-    public class XBinary : XAtomicType {
+    public class XBinary : XAtomType {
         public XBinary() {
             _value = _emptyValue;
         }
@@ -87,6 +87,6 @@ namespace XData {
             return true;
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.Binary.ToAtomicTypeInfo(typeof(XBinary), XAtomicType.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.Binary.ToAtomTypeInfo(typeof(XBinary), XAtomType.ThisInfo);
     }
 }

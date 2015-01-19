@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using XData.IO.Text;
 
 namespace XData {
+
     public abstract class XAttributeSet : XObject, ICollection<XAttribute>, IReadOnlyCollection<XAttribute> {
         protected XAttributeSet() {
             _attributeList = new List<XAttribute>();

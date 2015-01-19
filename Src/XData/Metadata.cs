@@ -235,11 +235,11 @@ namespace XData {
         public readonly SimpleTypeRestrictionSetInfo RestrictionSet;// { get; private set; }
     }
     //DOT NOT EDIT the order
-    public enum AtomicTypeKind : byte {
+    public enum AtomTypeKind : byte {
         None = 0,
         //Type,//not allowed for use
         //SimpleType,
-        //AtomicType,
+        //AtomType,
         //ListType,
         //ComplexType,
         StringBase,
@@ -259,19 +259,19 @@ namespace XData {
         Boolean,
         Binary,
         Guid,
-        Duration,
+        TimeSpan,
         DateTimeOffset,
         //Date,
         //Time,
     }
 
-    public sealed class AtomicTypeInfo : SimpleTypeInfo {
-        public AtomicTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo baseType,
-            SimpleTypeRestrictionSetInfo restrictionSet, AtomicTypeKind kind)
+    public sealed class AtomTypeInfo : SimpleTypeInfo {
+        public AtomTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo baseType,
+            SimpleTypeRestrictionSetInfo restrictionSet, AtomTypeKind kind)
             : base(clrType, isAbstract, fullName, baseType, restrictionSet) {
             Kind = kind;
         }
-        public readonly AtomicTypeKind Kind;
+        public readonly AtomTypeKind Kind;
 
         //new public SimpleTypeInfo BaseType { get { return (SimpleTypeInfo)base.BaseType; } }
     }

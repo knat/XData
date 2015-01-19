@@ -2,15 +2,15 @@
 using System.Globalization;
 
 namespace XData {
-    public class XDuration : XAtomicType {
-        public XDuration() { }
-        public XDuration(TimeSpan value) {
+    public class XTimeSpan : XAtomType {
+        public XTimeSpan() { }
+        public XTimeSpan(TimeSpan value) {
             _value = value;
         }
-        public static implicit operator XDuration(TimeSpan value) {
-            return new XDuration(value);
+        public static implicit operator XTimeSpan(TimeSpan value) {
+            return new XTimeSpan(value);
         }
-        public static implicit operator TimeSpan(XDuration obj) {
+        public static implicit operator TimeSpan(XTimeSpan obj) {
             if ((object)obj == null) return TimeSpan.Zero;
             return obj._value;
         }
@@ -25,7 +25,7 @@ namespace XData {
         }
         public override bool Equals(XSimpleType other) {
             if ((object)this == other) return true;
-            var otherType = other as XDuration;
+            var otherType = other as XTimeSpan;
             if ((object)otherType == null) return false;
             return _value == otherType._value;
         }
@@ -38,10 +38,10 @@ namespace XData {
             }
             return false;
         }
-        public override bool TryCompareTo(XAtomicType other, out int result) {
+        public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
             if ((object)this == other) return true;
-            var otherType = other as XDuration;
+            var otherType = other as XTimeSpan;
             if ((object)otherType == null) return false;
             result = _value.CompareTo(otherType._value);
             return true;
@@ -66,6 +66,6 @@ namespace XData {
             return _value.ToString("c");
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.Duration.ToAtomicTypeInfo(typeof(XDuration), XAtomicType.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.TimeSpan.ToAtomTypeInfo(typeof(XTimeSpan), XAtomType.ThisInfo);
     }
 }

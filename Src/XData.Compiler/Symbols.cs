@@ -85,12 +85,12 @@ namespace XData.Compiler {
     }
     public class TypeSymbol : NamedObjectSymbol {
         protected TypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, NameSyntax csBaseFullName,
-            FullName fullName, AtomicTypeKind kind, TypeSymbol baseType)
+            FullName fullName, AtomTypeKind kind, TypeSymbol baseType)
             : base(parent, csName, isAbstract, isSealed, false, csBaseFullName, fullName) {
             Kind = kind;
             BaseType = baseType;
         }
-        public readonly AtomicTypeKind Kind;
+        public readonly AtomTypeKind Kind;
         public readonly TypeSymbol BaseType;
         //public static readonly TypeSymbol Instance = new TypeSymbol(NamespaceSymbol.System, XType.ThisInfo.ClrTypeName, true, false, null,
         //    XType.ThisInfo.FullName, AtomicTypeKind.Type, null);
@@ -98,7 +98,7 @@ namespace XData.Compiler {
     }
     public class SimpleTypeSymbol : TypeSymbol {
         protected SimpleTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
-            FullName fullName, AtomicTypeKind kind, TypeSymbol baseType,
+            FullName fullName, AtomTypeKind kind, TypeSymbol baseType,
             TypeSyntax valueCSFullName, SimpleTypeRestrictionSetInfo restrictionSet)
             : base(parent, csName, isAbstract, isSealed, baseType.CSBaseFullName, fullName, kind, baseType) {
             ValueCSFullName = valueCSFullName;
@@ -116,9 +116,9 @@ namespace XData.Compiler {
         //    XSimpleType.ThisInfo.FullName, AtomicTypeKind.SimpleType, TypeSymbol.Instance,
         //    CS.ObjectType, null);
     }
-    public sealed class AtomicTypeSymbol : SimpleTypeSymbol {
-        public AtomicTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
-            FullName fullName, AtomicTypeKind kind, TypeSymbol baseType,
+    public sealed class AtomTypeSymbol : SimpleTypeSymbol {
+        public AtomTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
+            FullName fullName, AtomTypeKind kind, TypeSymbol baseType,
             TypeSyntax valueCSFullName, SimpleTypeRestrictionSetInfo restrictionSet)
             : base(parent, csName, isAbstract, isSealed, fullName, kind, baseType,
                   valueCSFullName, restrictionSet) {

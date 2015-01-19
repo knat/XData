@@ -165,7 +165,7 @@ namespace XData.IO.Text {
             }
         }
     }
-    public enum AtomicValueKind : byte {
+    public enum AtomValueKind : byte {
         None = 0,
         String,
         //Char,
@@ -174,29 +174,29 @@ namespace XData.IO.Text {
         Decimal,
         Real,
     }
-    public struct AtomicValueNode {
-        public AtomicValueNode(AtomicValueKind kind, string value, TextSpan textSpan) {
+    public struct AtomValueNode {
+        public AtomValueNode(AtomValueKind kind, string value, TextSpan textSpan) {
             Kind = kind;
             Value = value;
             TextSpan = textSpan;
         }
-        public readonly AtomicValueKind Kind;
+        public readonly AtomValueKind Kind;
         public readonly string Value;
         public readonly TextSpan TextSpan;
         public bool IsValid {
             get {
-                return Kind != AtomicValueKind.None;
+                return Kind != AtomValueKind.None;
             }
         }
     }
     public struct SimpleValueNode {
-        public SimpleValueNode(QualifiableNameNode typeQName, AtomicValueNode atom, DelimitedList<SimpleValueNode> list) {
+        public SimpleValueNode(QualifiableNameNode typeQName, AtomValueNode atom, DelimitedList<SimpleValueNode> list) {
             TypeQName = typeQName;
             Atom = atom;
             List = list;
         }
         public readonly QualifiableNameNode TypeQName;
-        public readonly AtomicValueNode Atom;
+        public readonly AtomValueNode Atom;
         public readonly DelimitedList<SimpleValueNode> List;
         public bool IsValid {
             get {
@@ -213,13 +213,13 @@ namespace XData.IO.Text {
         }
     }
     public struct UriAliasingNode {
-        public UriAliasingNode(NameNode alias, AtomicValueNode uri, bool isDefault) {
+        public UriAliasingNode(NameNode alias, AtomValueNode uri, bool isDefault) {
             Alias = alias;
             Uri = uri;
             IsDefault = isDefault;
         }
         public readonly NameNode Alias;
-        public readonly AtomicValueNode Uri;
+        public readonly AtomValueNode Uri;
         public readonly bool IsDefault;
         //public bool HasAlias {
         //    get {

@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace XData {
-    public class XBoolean : XAtomicType {
+    public class XBoolean : XAtomType {
         public XBoolean() { }
         public XBoolean(bool value) {
             _value = value;
@@ -37,7 +37,7 @@ namespace XData {
             }
             return false;
         }
-        public override bool TryCompareTo(XAtomicType other, out int result) {
+        public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
             if ((object)this == other) return true;
             var otherType = other as XBoolean;
@@ -71,6 +71,6 @@ namespace XData {
             return _value ? "true" : "false";
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.Boolean.ToAtomicTypeInfo(typeof(XBoolean), XAtomicType.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.Boolean.ToAtomTypeInfo(typeof(XBoolean), XAtomType.ThisInfo);
     }
 }

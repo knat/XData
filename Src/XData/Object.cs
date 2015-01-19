@@ -20,7 +20,7 @@ namespace XData {
             }
             for (var i = parent; i != null; i = i._parent) {
                 if ((object)this == i) {
-                    throw new InvalidOperationException("Circular reference detected");
+                    throw new InvalidOperationException("Circular reference detected.");
                 }
             }
             XObject obj;

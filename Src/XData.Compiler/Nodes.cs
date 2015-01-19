@@ -301,13 +301,13 @@ namespace XData.Compiler {
     }
 
     public struct UriNode {
-        public UriNode(NameNode alias, AtomicValueNode stringValue, string value) {
+        public UriNode(NameNode alias, AtomValueNode stringValue, string value) {
             Alias = alias;
             StringValue = stringValue;
             Value = value;
         }
         public readonly NameNode Alias;
-        public readonly AtomicValueNode StringValue;
+        public readonly AtomValueNode StringValue;
         public readonly string Value;
         //public bool IsValid {
         //    get {
@@ -324,11 +324,11 @@ namespace XData.Compiler {
         }
     }
     public struct UriAliasingNode {
-        public UriAliasingNode(AtomicValueNode uri, NameNode alias) {
+        public UriAliasingNode(AtomValueNode uri, NameNode alias) {
             Uri = uri;
             Alias = alias;
         }
-        public readonly AtomicValueNode Uri;
+        public readonly AtomValueNode Uri;
         public readonly NameNode Alias;
     }
     public struct ImportNode {
@@ -390,7 +390,7 @@ namespace XData.Compiler {
         private static readonly Dictionary<string, SystemTypeNode> Dict;
         static SystemTypeNode() {
             Dict = new Dictionary<string, SystemTypeNode>();
-            for (var kind = AtomicTypeKind.StringBase; kind <= AtomicTypeKind.DateTimeOffset; ++kind) {
+            for (var kind = AtomTypeKind.StringBase; kind <= AtomTypeKind.DateTimeOffset; ++kind) {
                 var name = kind.ToString();
                 Dict.Add(name, new SystemTypeNode() { Name = new NameNode(name, default(TextSpan)) });
             }
@@ -499,7 +499,7 @@ namespace XData.Compiler {
         public IntegerRangeNode<byte> Digits;
         public ValueRangeNode Values;
         public EnumerationsNode Enumerations;
-        public AtomicValueNode Pattern;
+        public AtomValueNode Pattern;
     }
 
     public struct IntegerRangeNode<T> where T : struct {

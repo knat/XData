@@ -193,60 +193,60 @@ namespace XData.IO.Text {
             ErrorDiagnosticAndThrow("Qualifiable name expected.");
             return qName;
         }
-        protected bool AtomicValue(out AtomicValueNode atomicValue, AtomicValueKind expectedKind = AtomicValueKind.None) {
-            var kind = AtomicValueKind.None;
+        protected bool AtomValue(out AtomValueNode atomValue, AtomValueKind expectedKind = AtomValueKind.None) {
+            var kind = AtomValueKind.None;
             var token = GetToken();
             switch (token.Kind) {
                 case TokenKind.StringValue:
                 case TokenKind.VerbatimStringValue:
-                    kind = AtomicValueKind.String;
+                    kind = AtomValueKind.String;
                     break;
                 //case TokenKind.CharValue:
-                //    kind = AtomicValueKind.Char;
+                //    kind = AtomValueKind.Char;
                 //    break;
                 case TokenKind.Name:
                     if (token.Value == "true" || token.Value == "false") {
-                        kind = AtomicValueKind.Boolean;
+                        kind = AtomValueKind.Boolean;
                     }
                     break;
                 case TokenKind.IntegerValue:
-                    kind = AtomicValueKind.Integer;
+                    kind = AtomValueKind.Integer;
                     break;
                 case TokenKind.DecimalValue:
-                    kind = AtomicValueKind.Decimal;
+                    kind = AtomValueKind.Decimal;
                     break;
                 case TokenKind.RealValue:
-                    kind = AtomicValueKind.Real;
+                    kind = AtomValueKind.Real;
                     break;
             }
-            if (kind != AtomicValueKind.None && (expectedKind == AtomicValueKind.None || kind == expectedKind)) {
-                atomicValue = new AtomicValueNode(kind, token.Value, token.ToTextSpan(_filePath));
+            if (kind != AtomValueKind.None && (expectedKind == AtomValueKind.None || kind == expectedKind)) {
+                atomValue = new AtomValueNode(kind, token.Value, token.ToTextSpan(_filePath));
                 ConsumeToken();
                 return true;
             }
-            atomicValue = default(AtomicValueNode);
+            atomValue = default(AtomValueNode);
             return false;
         }
-        protected AtomicValueNode AtomicValueExpected(AtomicValueKind expectedKind = AtomicValueKind.None) {
-            AtomicValueNode atomicValue;
-            if (AtomicValue(out atomicValue, expectedKind)) {
-                return atomicValue;
+        protected AtomValueNode AtomValueExpected(AtomValueKind expectedKind = AtomValueKind.None) {
+            AtomValueNode atomValue;
+            if (AtomValue(out atomValue, expectedKind)) {
+                return atomValue;
             }
-            ErrorDiagnosticAndThrow(expectedKind == AtomicValueKind.None ? "Atomic value expected." :
+            ErrorDiagnosticAndThrow(expectedKind == AtomValueKind.None ? "Atom value expected." :
                 expectedKind.ToString() + " value expected.");
-            return atomicValue;
+            return atomValue;
         }
-        protected bool StringValue(out AtomicValueNode atomicValue) {
-            return AtomicValue(out atomicValue, AtomicValueKind.String);
+        protected bool StringValue(out AtomValueNode atomValue) {
+            return AtomValue(out atomValue, AtomValueKind.String);
         }
-        protected AtomicValueNode StringValueExpected() {
-            return AtomicValueExpected(AtomicValueKind.String);
+        protected AtomValueNode StringValueExpected() {
+            return AtomValueExpected(AtomValueKind.String);
         }
-        protected bool IntegerValue(out AtomicValueNode atomicValue) {
-            return AtomicValue(out atomicValue, AtomicValueKind.Integer);
+        protected bool IntegerValue(out AtomValueNode atomValue) {
+            return AtomValue(out atomValue, AtomValueKind.Integer);
         }
-        protected AtomicValueNode IntegerValueExpected() {
-            return AtomicValueExpected(AtomicValueKind.Integer);
+        protected AtomValueNode IntegerValueExpected() {
+            return AtomValueExpected(AtomValueKind.Integer);
         }
 
         protected bool TypeIndicator(out QualifiableNameNode typeQName) {
@@ -259,9 +259,9 @@ namespace XData.IO.Text {
             return false;
         }
         protected bool SimpleValue(QualifiableNameNode typeQName, out SimpleValueNode simpleValue) {
-            AtomicValueNode atom;
+            AtomValueNode atom;
             DelimitedList<SimpleValueNode> list = null;
-            var hasAtom = AtomicValue(out atom);
+            var hasAtom = AtomValue(out atom);
             var hasList = false;
             if (!hasAtom) {
                 hasList = List((int)TokenKind.HashOpenBracket, ']', _simpleValueGetter, "Simple value or ] expected.", out list);
@@ -280,7 +280,7 @@ namespace XData.IO.Text {
                 return true;
             }
             if (hasTypeQName) {
-                ErrorDiagnosticAndThrow("Atomic value or list value expetced.");
+                ErrorDiagnosticAndThrow("Atom value or list value expetced.");
             }
             return false;
         }

@@ -116,10 +116,10 @@ element-children:
 ;
 
 simple-value:
-type-indicator? (atomic-value | list-value)
+type-indicator? (atom-value | list-value)
 ;
-atomic-value:
-string-value | char-value | boolean-value | integer-value | decimal-value | real-value
+atom-value:
+string-value | boolean-value | integer-value | decimal-value | real-value
 ;
 list-value:
 '#[' simple-value* ']'

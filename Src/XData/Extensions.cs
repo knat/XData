@@ -105,20 +105,20 @@ namespace XData {
         public const string SystemUri = "http://xdata-lang.org";
         public const string SimpleTypeName = "SimpleType";
         public static readonly FullName SimpleTypeFullName = new FullName(SystemUri, SimpleTypeName);
-        public const string AtomicTypeName = "AtomicType";
-        public static readonly FullName AtomicTypeFullName = new FullName(SystemUri, AtomicTypeName);
+        public const string AtomTypeName = "AtomType";
+        public static readonly FullName AtomTypeFullName = new FullName(SystemUri, AtomTypeName);
         public const string ListTypeName = "ListType";
         public static readonly FullName ListTypeFullName = new FullName(SystemUri, ListTypeName);
         public const string ComplexTypeName = "ComplexType";
         public static readonly FullName ComplexTypeFullName = new FullName(SystemUri, ComplexTypeName);
-        public static string ToTypeName(this AtomicTypeKind kind) {
+        public static string ToTypeName(this AtomTypeKind kind) {
             return kind.ToString();
         }
-        public static FullName ToTypeFullName(this AtomicTypeKind kind) {
+        public static FullName ToTypeFullName(this AtomTypeKind kind) {
             return new FullName(SystemUri, kind.ToString());
         }
-        public static AtomicTypeInfo ToAtomicTypeInfo(this AtomicTypeKind kind, Type clrType, AtomicTypeInfo baseType, bool isAbstract = false) {
-            return new AtomicTypeInfo(clrType, isAbstract, ToTypeFullName(kind), baseType, null, kind);
+        public static AtomTypeInfo ToAtomTypeInfo(this AtomTypeKind kind, Type clrType, AtomTypeInfo baseType, bool isAbstract = false) {
+            return new AtomTypeInfo(clrType, isAbstract, ToTypeFullName(kind), baseType, null, kind);
         }
 
         //

@@ -216,7 +216,7 @@ namespace XData.IO.Text {
                     }
                 }
                 else if (stateKind == StateKind.InName || stateKind == StateKind.InVerbatimName) {
-                    if (IsNamePartCharacter(ch)) {
+                    if (IsNamePartChar(ch)) {
                         sb.Append(ch);
                         AdvanceChar();
                     }
@@ -407,7 +407,7 @@ namespace XData.IO.Text {
                         AdvanceChar();
                         sb = Extensions.AcquireStringBuilder();
                     }
-                    else if (IsNameStartCharacter(nextch)) {
+                    else if (IsNameStartChar(nextch)) {
                         state = CreateState(StateKind.InVerbatimName);
                         AdvanceChar();
                         AdvanceChar();
@@ -418,7 +418,7 @@ namespace XData.IO.Text {
                         return CreateTokenAndAdvanceChar(ch);
                     }
                 }
-                else if (IsNameStartCharacter(ch)) {
+                else if (IsNameStartChar(ch)) {
                     state = CreateState(StateKind.InName);
                     AdvanceChar();
                     sb = Extensions.AcquireStringBuilder();
@@ -619,7 +619,7 @@ namespace XData.IO.Text {
             return (ch >= '0' && ch <= '9') ? ch - '0' : (ch & 0xdf) - 'A' + 10;
         }
 
-        public static bool IsNameStartCharacter(char ch) {
+        public static bool IsNameStartChar(char ch) {
             // identifier-start-character:
             //   letter-character
             //   _ (the underscore character U+005F)
@@ -647,7 +647,7 @@ namespace XData.IO.Text {
 
             return IsLetterChar(CharUnicodeInfo.GetUnicodeCategory(ch));
         }
-        public static bool IsNamePartCharacter(char ch) {
+        public static bool IsNamePartChar(char ch) {
             // identifier-part-character:
             //   letter-character
             //   decimal-digit-character

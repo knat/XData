@@ -1,5 +1,6 @@
 ﻿using System;
 
+
 namespace XData {
     public interface IEntityObject {//Attribute and Element impl this interface
         EntityInfo EntityInfo { get; }
@@ -136,4 +137,6 @@ namespace XData {
         }
 
     }
+
+
 }

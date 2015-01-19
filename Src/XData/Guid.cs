@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace XData {
-    public class XGuid : XAtomicType {
+    public class XGuid : XAtomType {
         public XGuid() { }
         public XGuid(Guid value) {
             _value = value;
@@ -37,7 +37,7 @@ namespace XData {
             }
             return false;
         }
-        public override bool TryCompareTo(XAtomicType other, out int result) {
+        public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
             if ((object)this == other) return true;
             var otherType = other as XGuid;
@@ -65,6 +65,6 @@ namespace XData {
             return _value.ToString("D");
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.Guid.ToAtomicTypeInfo(typeof(XGuid), XAtomicType.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.Guid.ToAtomTypeInfo(typeof(XGuid), XAtomType.ThisInfo);
     }
 }

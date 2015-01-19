@@ -2,7 +2,7 @@
 using System.Globalization;
 
 namespace XData {
-    public class XDecimal : XAtomicType {
+    public class XDecimal : XAtomType {
         public XDecimal() { }
         public XDecimal(decimal value) {
             Value = value;
@@ -45,7 +45,7 @@ namespace XData {
             }
             return false;
         }
-        public override bool TryCompareTo(XAtomicType other, out int result) {
+        public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
             if ((object)this == other) return true;
             var otherType = other as XDecimal;
@@ -72,7 +72,7 @@ namespace XData {
             return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.Decimal.ToAtomicTypeInfo(typeof(XDecimal), XAtomicType.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.Decimal.ToAtomTypeInfo(typeof(XDecimal), XAtomType.ThisInfo);
     }
     public class XInt64 : XDecimal {
         public XInt64() { }
@@ -129,7 +129,7 @@ namespace XData {
             }
             return false;
         }
-        public override bool TryCompareTo(XAtomicType other, out int result) {
+        public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
             if ((object)this == other) return true;
             var otherType = other as XInt64;
@@ -156,7 +156,7 @@ namespace XData {
             return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.Int64.ToAtomicTypeInfo(typeof(XInt64), XDecimal.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.Int64.ToAtomTypeInfo(typeof(XInt64), XDecimal.ThisInfo);
     }
     public class XInt32 : XInt64 {
         public XInt32() { }
@@ -225,7 +225,7 @@ namespace XData {
             }
             return false;
         }
-        public override bool TryCompareTo(XAtomicType other, out int result) {
+        public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
             if ((object)this == other) return true;
             var otherType = other as XInt32;
@@ -252,7 +252,7 @@ namespace XData {
             return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.Int32.ToAtomicTypeInfo(typeof(XInt32), XInt64.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.Int32.ToAtomTypeInfo(typeof(XInt32), XInt64.ThisInfo);
     }
     public class XInt16 : XInt32 {
         public XInt16() { }
@@ -333,7 +333,7 @@ namespace XData {
             }
             return false;
         }
-        public override bool TryCompareTo(XAtomicType other, out int result) {
+        public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
             if ((object)this == other) return true;
             var otherType = other as XInt16;
@@ -360,7 +360,7 @@ namespace XData {
             return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.Int16.ToAtomicTypeInfo(typeof(XInt16), XInt32.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.Int16.ToAtomTypeInfo(typeof(XInt16), XInt32.ThisInfo);
     }
     public class XSByte : XInt16 {
         public XSByte() { }
@@ -453,7 +453,7 @@ namespace XData {
             }
             return false;
         }
-        public override bool TryCompareTo(XAtomicType other, out int result) {
+        public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
             if ((object)this == other) return true;
             var otherType = other as XSByte;
@@ -480,7 +480,7 @@ namespace XData {
             return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.SByte.ToAtomicTypeInfo(typeof(XSByte), XInt16.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.SByte.ToAtomTypeInfo(typeof(XSByte), XInt16.ThisInfo);
     }
 
     public class XUInt64 : XDecimal {
@@ -538,7 +538,7 @@ namespace XData {
             }
             return false;
         }
-        public override bool TryCompareTo(XAtomicType other, out int result) {
+        public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
             if ((object)this == other) return true;
             var otherType = other as XUInt64;
@@ -565,7 +565,7 @@ namespace XData {
             return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.UInt64.ToAtomicTypeInfo(typeof(XUInt64), XDecimal.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.UInt64.ToAtomTypeInfo(typeof(XUInt64), XDecimal.ThisInfo);
     }
     public class XUInt32 : XUInt64 {
         public XUInt32() { }
@@ -634,7 +634,7 @@ namespace XData {
             }
             return false;
         }
-        public override bool TryCompareTo(XAtomicType other, out int result) {
+        public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
             if ((object)this == other) return true;
             var otherType = other as XUInt32;
@@ -661,7 +661,7 @@ namespace XData {
             return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.UInt32.ToAtomicTypeInfo(typeof(XUInt32), XUInt64.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.UInt32.ToAtomTypeInfo(typeof(XUInt32), XUInt64.ThisInfo);
     }
     public class XUInt16 : XUInt32 {
         public XUInt16() { }
@@ -742,7 +742,7 @@ namespace XData {
             }
             return false;
         }
-        public override bool TryCompareTo(XAtomicType other, out int result) {
+        public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
             if ((object)this == other) return true;
             var otherType = other as XUInt16;
@@ -769,7 +769,7 @@ namespace XData {
             return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.UInt16.ToAtomicTypeInfo(typeof(XUInt16), XUInt32.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.UInt16.ToAtomTypeInfo(typeof(XUInt16), XUInt32.ThisInfo);
     }
     public class XByte : XUInt16 {
         public XByte() { }
@@ -862,7 +862,7 @@ namespace XData {
             }
             return false;
         }
-        public override bool TryCompareTo(XAtomicType other, out int result) {
+        public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
             if ((object)this == other) return true;
             var otherType = other as XByte;
@@ -889,7 +889,7 @@ namespace XData {
             return Value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.Byte.ToAtomicTypeInfo(typeof(XByte), XUInt16.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.Byte.ToAtomTypeInfo(typeof(XByte), XUInt16.ThisInfo);
     }
 
 }

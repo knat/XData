@@ -163,7 +163,7 @@ namespace XData.Compiler {
                     "Alias 'sys' is reserved.", alias.TextSpan);
             }
         }
-        private void CheckUri(AtomicValueNode uri) {
+        private void CheckUri(AtomValueNode uri) {
             if (uri.Value == Extensions.SystemUri) {
                 ErrorDiagnosticAndThrow(DiagnosticCodeEx.UriIsReserved,
                     "Uri '" + Extensions.SystemUri + "' is reserved.", uri.TextSpan);
@@ -193,7 +193,7 @@ namespace XData.Compiler {
         private bool Uri(Node parent, out UriNode result) {
             string value = null;
             NameNode alias;
-            var stringValue = default(AtomicValueNode);
+            var stringValue = default(AtomValueNode);
             if (Name(out alias)) {
                 var uaList = parent.CompilationUnitAncestor.UriAliasingList;
                 if (uaList != null) {
@@ -457,18 +457,18 @@ namespace XData.Compiler {
             result = default(EnumerationsNode);
             return false;
         }
-        private bool Pattern(out AtomicValueNode result) {
+        private bool Pattern(out AtomValueNode result) {
             if (Keyword(PatternKeyword)) {
                 result = StringValueExpected();
                 return true;
             }
-            result = default(AtomicValueNode);
+            result = default(AtomValueNode);
             return false;
         }
         private IntegerRangeNode<ulong> UInt64Range() {
             ulong? minValue = null, maxValue = null;
             TextSpan textSpan;
-            AtomicValueNode minValueNode, maxValueNode;
+            AtomValueNode minValueNode, maxValueNode;
             if (IntegerValue(out minValueNode)) {
                 minValue = ToUInt64(minValueNode);
             }
@@ -489,7 +489,7 @@ namespace XData.Compiler {
         private IntegerRangeNode<byte> ByteRange() {
             byte? minValue = null, maxValue = null;
             TextSpan textSpan;
-            AtomicValueNode minValueNode, maxValueNode;
+            AtomValueNode minValueNode, maxValueNode;
             if (IntegerValue(out minValueNode)) {
                 minValue = ToByte(minValueNode);
             }
@@ -507,14 +507,14 @@ namespace XData.Compiler {
             }
             return new IntegerRangeNode<byte>(minValue, maxValue, textSpan);
         }
-        private ulong ToUInt64(AtomicValueNode node) {
+        private ulong ToUInt64(AtomValueNode node) {
             ulong value;
             if (!node.Value.TryToInvUInt64(out value)) {
                 ErrorDiagnosticAndThrow(DiagnosticCodeEx.UInt64ValueRequired, "UInt64 value required.", node.TextSpan);
             }
             return value;
         }
-        private byte ToByte(AtomicValueNode node) {
+        private byte ToByte(AtomValueNode node) {
             byte value;
             if (!node.Value.TryToInvByte(out value)) {
                 ErrorDiagnosticAndThrow(DiagnosticCodeEx.ByteValueRequired, "Byte value required.", node.TextSpan);
@@ -747,11 +747,11 @@ namespace XData.Compiler {
                 maxValue = ulong.MaxValue;
             }
             else {
-                AtomicValueNode minValueNode;
+                AtomValueNode minValueNode;
                 if (IntegerValue(out minValueNode)) {
                     minValue = ToUInt64(minValueNode);
                     TokenExpected((int)TokenKind.DotDot, ".. expected.", out textSpan);
-                    AtomicValueNode maxValueNode;
+                    AtomValueNode maxValueNode;
                     if (IntegerValue(out maxValueNode)) {
                         maxValue = ToUInt64(maxValueNode);
                         if (maxValue < minValue) {

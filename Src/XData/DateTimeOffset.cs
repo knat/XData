@@ -2,7 +2,7 @@
 using System.Globalization;
 
 namespace XData {
-    public class XDateTimeOffset : XAtomicType {
+    public class XDateTimeOffset : XAtomType {
         public XDateTimeOffset() { }
         public XDateTimeOffset(DateTimeOffset value) {
             _value = value;
@@ -38,7 +38,7 @@ namespace XData {
             }
             return false;
         }
-        public override bool TryCompareTo(XAtomicType other, out int result) {
+        public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
             if ((object)this == other) return true;
             var otherType = other as XDateTimeOffset;
@@ -67,6 +67,6 @@ namespace XData {
             return _value.ToString(FormatString, DateTimeFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.DateTimeOffset.ToAtomicTypeInfo(typeof(XDateTimeOffset), XAtomicType.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.DateTimeOffset.ToAtomTypeInfo(typeof(XDateTimeOffset), XAtomType.ThisInfo);
     }
 }

@@ -2,7 +2,7 @@
 
 
 namespace XData {
-    public abstract class XStringBase : XAtomicType {
+    public abstract class XStringBase : XAtomType {
         protected XStringBase() {
             _value = "";
         }
@@ -37,7 +37,7 @@ namespace XData {
         public override bool ValueEquals(object other) {
             return ValueEquals(_value, other as string);
         }
-        public override bool TryCompareTo(XAtomicType other, out int result) {
+        public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
             if ((object)this == other) return true;
             var otherType = other as XStringBase;
@@ -65,7 +65,7 @@ namespace XData {
             result = (ulong)_value.Length;
             return true;
         }
-        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.StringBase.ToAtomicTypeInfo(typeof(XStringBase), XAtomicType.ThisInfo, true);
+        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.StringBase.ToAtomTypeInfo(typeof(XStringBase), XAtomType.ThisInfo, true);
     }
     public class XString : XStringBase {
         public XString() { }
@@ -83,7 +83,7 @@ namespace XData {
             return string.CompareOrdinal(a, b);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.String.ToAtomicTypeInfo(typeof(XString), XStringBase.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.String.ToAtomTypeInfo(typeof(XString), XStringBase.ThisInfo);
     }
     public class XIgnoreCaseString : XStringBase {
         public XIgnoreCaseString() { }
@@ -101,6 +101,6 @@ namespace XData {
             return string.Compare(a, b, StringComparison.OrdinalIgnoreCase);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.IgnoreCaseString.ToAtomicTypeInfo(typeof(XIgnoreCaseString), XStringBase.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.IgnoreCaseString.ToAtomTypeInfo(typeof(XIgnoreCaseString), XStringBase.ThisInfo);
     }
 }

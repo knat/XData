@@ -2,7 +2,7 @@
 using System.Globalization;
 
 namespace XData {
-    public class XDouble : XAtomicType {
+    public class XDouble : XAtomType {
         public XDouble() { }
         public XDouble(double value) {
             Value = value;
@@ -45,7 +45,7 @@ namespace XData {
             }
             return false;
         }
-        public override bool TryCompareTo(XAtomicType other, out int result) {
+        public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
             if ((object)this == other) return true;
             var otherType = other as XDouble;
@@ -85,7 +85,7 @@ namespace XData {
             return value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.Double.ToAtomicTypeInfo(typeof(XDouble), XAtomicType.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.Double.ToAtomTypeInfo(typeof(XDouble), XAtomType.ThisInfo);
     }
     public class XSingle : XDouble {
         public XSingle() { }
@@ -152,7 +152,7 @@ namespace XData {
             }
             return false;
         }
-        public override bool TryCompareTo(XAtomicType other, out int result) {
+        public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
             if ((object)this == other) return true;
             var otherType = other as XSingle;
@@ -192,6 +192,6 @@ namespace XData {
             return value.ToString(NumberFormatInfo.InvariantInfo);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomicTypeInfo ThisInfo = AtomicTypeKind.Single.ToAtomicTypeInfo(typeof(XSingle), XDouble.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = AtomTypeKind.Single.ToAtomTypeInfo(typeof(XSingle), XDouble.ThisInfo);
     }
 }

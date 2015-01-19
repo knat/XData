@@ -38,10 +38,10 @@
     <Content Include="IO\Text\Grammars.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AtomicType.cs" />
+    <Compile Include="AtomType.cs" />
     <Compile Include="Attribute.cs" />
     <Compile Include="AttributeSet.cs" />
-    <Compile Include="ChildContainer.cs" />
+    <Compile Include="ChildSetAndList.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="ComplexType.cs" />
     <Compile Include="Diagnostics.cs" />
@@ -54,11 +54,11 @@
     <Compile Include="Binary.cs" />
     <Compile Include="Boolean.cs" />
     <Compile Include="DateTimeOffset.cs" />
-    <Compile Include="Duration.cs" />
+    <Compile Include="TimeSpan.cs" />
     <Compile Include="Guid.cs" />
     <Compile Include="ListType.cs" />
-    <Compile Include="Numerics.cs" />
-    <Compile Include="Reals.cs" />
+    <Compile Include="DecimalAndIntegers.cs" />
+    <Compile Include="DoubleAndSingle.cs" />
     <Compile Include="SimpleType.cs" />
     <Compile Include="Strings.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

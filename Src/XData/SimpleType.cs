@@ -70,15 +70,15 @@ namespace XData {
             if (effSimpleTypeInfo == null) {
                 return false;
             }
-            var atomicTypeInfo = effSimpleTypeInfo as AtomicTypeInfo;
-            if (atomicTypeInfo != null) {
+            var atomTypeInfo = effSimpleTypeInfo as AtomTypeInfo;
+            if (atomTypeInfo != null) {
                 var atomicValueNode = simpleValueNode.Atom;
                 if (!atomicValueNode.IsValid) {
                     //context.AddErrorDiagnostic()
                     return false;
                 }
-                XAtomicType atomicType;
-                if (!XAtomicType.TryCreate(context, atomicTypeInfo, atomicValueNode, out atomicType)) {
+                XAtomType atomicType;
+                if (!XAtomType.TryCreate(context, atomTypeInfo, atomicValueNode, out atomicType)) {
                     return false;
                 }
                 result = atomicType;
