@@ -133,7 +133,7 @@ namespace XData.Compiler {
                     result.IsRef = true;
                 }
                 if (!CSNamespaceName(out result.CSNamespaceName)) {
-                    ErrorDiagnosticAndThrow("C# namespace name expected.");
+                    ErrorDiagAndThrow("C# namespace name expected.");
                 }
                 return true;
             }
@@ -159,14 +159,12 @@ namespace XData.Compiler {
         }
         private void CheckAlias(NameNode alias) {
             if (alias.Value == "sys") {
-                ErrorDiagnosticAndThrow(DiagnosticCodeEx.AliasIsReserved,
-                    "Alias 'sys' is reserved.", alias.TextSpan);
+                ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AliasSysIsReserved), alias.TextSpan);
             }
         }
         private void CheckUri(AtomValueNode uri) {
             if (uri.Value == InfoExtensions.SystemUri) {
-                ErrorDiagnosticAndThrow(DiagnosticCodeEx.UriIsReserved,
-                    "Uri '" + InfoExtensions.SystemUri + "' is reserved.", uri.TextSpan);
+                ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.UriSystemIsReserved), uri.TextSpan);
             }
         }
         private bool UriAliasing(List<UriAliasingNode> list, out UriAliasingNode result) {
@@ -179,8 +177,7 @@ namespace XData.Compiler {
                 if (list != null) {
                     foreach (var item in list) {
                         if (item.Alias == alias) {
-                            ErrorDiagnosticAndThrow(DiagnosticCodeEx.DuplicateUriAlias,
-                                "Duplicate uri alias '{0}'.".InvFormat(alias.ToString()), alias.TextSpan);
+                            ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateUriAlias, alias.ToString()), alias.TextSpan);
                         }
                     }
                 }
@@ -205,8 +202,7 @@ namespace XData.Compiler {
                     }
                 }
                 if (value == null) {
-                    ErrorDiagnosticAndThrow(DiagnosticCodeEx.InvalidUriAlias,
-                        "Invalid uri alias '{0}'.".InvFormat(alias.ToString()), alias.TextSpan);
+                    ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidUriAlias, alias.ToString()), alias.TextSpan);
                 }
             }
             else if (StringValue(out stringValue)) {
@@ -225,7 +221,7 @@ namespace XData.Compiler {
             if (Uri(parent, out uri)) {
                 return uri;
             }
-            ErrorDiagnosticAndThrow("Uri expected.");
+            ErrorDiagAndThrow("Uri expected.");
             return uri;
         }
         private bool Import(Node parent, List<ImportNode> list, out ImportNode result) {
@@ -238,8 +234,7 @@ namespace XData.Compiler {
                     if (list != null) {
                         foreach (var item in list) {
                             if (item.Alias == alias) {
-                                ErrorDiagnosticAndThrow(DiagnosticCodeEx.DuplicateImportAlias,
-                                    "Duplicate import alias '{0}'.".InvFormat(alias.ToString()), alias.TextSpan);
+                                ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateImportAlias, alias.ToString()), alias.TextSpan);
                             }
                         }
                     }
@@ -262,8 +257,7 @@ namespace XData.Compiler {
                 var name = result.Name;
                 foreach (var item in list) {
                     if (item.Name == name) {
-                        ErrorDiagnosticAndThrow(DiagnosticCodeEx.DuplicateNamespaceMember,
-                            "Duplicate namespace member '{0}'.".InvFormat(name.ToString()), name.TextSpan);
+                        ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateNamespaceMember, name.ToString()), name.TextSpan);
                     }
                 }
             }
@@ -278,7 +272,7 @@ namespace XData.Compiler {
                     if (!TypeList(type, out type.Body)) {
                         if (!TypeExtension(type, out type.Body)) {
                             if (!TypeRestriction(type, out type.Body)) {
-                                ErrorDiagnosticAndThrow("Type directness, type list, type extension or type restriction expected.");
+                                ErrorDiagAndThrow("Type directness, type list, type extension or type restriction expected.");
                             }
                         }
                     }
@@ -402,7 +396,7 @@ namespace XData.Compiler {
                         return true;
                     }
                     if (!get) {
-                        ErrorDiagnosticAndThrow("Lengths, digits, values, enums, pattern, list item type or } expected.");
+                        ErrorDiagAndThrow("Lengths, digits, values, enums, pattern, list item type or } expected.");
                     }
                 }
             }
@@ -453,7 +447,7 @@ namespace XData.Compiler {
                     }
                 }
                 else if (minIsInclusive == null) {
-                    ErrorDiagnosticAndThrow("Max value expected.");
+                    ErrorDiagAndThrow("Max value expected.");
                 }
                 result = new ValueRangeNode(minIsInclusive == null ? default(ValueBoundaryNode?) : new ValueBoundaryNode(minValue, minIsInclusive.Value),
                     maxIsInclusive == null ? default(ValueBoundaryNode?) : new ValueBoundaryNode(maxValue, maxIsInclusive.Value), textSpan);
@@ -475,7 +469,7 @@ namespace XData.Compiler {
                         if (list.Count > 0) {
                             break;
                         }
-                        ErrorDiagnosticAndThrow("Simple value expected.");
+                        ErrorDiagAndThrow("Simple value expected.");
                     }
                 }
                 result = new EnumerationsNode(list, textSpan);
@@ -511,13 +505,12 @@ namespace XData.Compiler {
             if (IntegerValue(out maxValueNode)) {
                 maxValue = ToUInt64(maxValueNode);
                 if (maxValue < minValue) {
-                    ErrorDiagnosticAndThrow(DiagnosticCodeEx.MaxValueMustEqualToOrBeGreaterThanMinValue,
-                        "Max value '{0}' must equal to or be greater than min value '{1}'.".InvFormat(maxValue.Value.ToInvString(), minValue.Value.ToInvString()),
-                        maxValueNode.TextSpan);
+                    ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxValueMustEqualToOrBeGreaterThanMinValue,
+                        maxValue.Value.ToInvString(), minValue.Value.ToInvString()), maxValueNode.TextSpan);
                 }
             }
             else if (minValue == null) {
-                ErrorDiagnosticAndThrow("Max value expected.");
+                ErrorDiagAndThrow("Max value expected.");
             }
             return new IntegerRangeNode<ulong>(minValue, maxValue, textSpan);
         }
@@ -532,27 +525,26 @@ namespace XData.Compiler {
             if (IntegerValue(out maxValueNode)) {
                 maxValue = ToByte(maxValueNode);
                 if (maxValue < minValue) {
-                    ErrorDiagnosticAndThrow(DiagnosticCodeEx.MaxValueMustEqualToOrBeGreaterThanMinValue,
-                        "Max value '{0}' must equal to or be greater than min value '{1}'.".InvFormat(maxValue.Value.ToInvString(), minValue.Value.ToInvString()),
-                        maxValueNode.TextSpan);
+                    ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxValueMustEqualToOrBeGreaterThanMinValue,
+                        maxValue.Value.ToInvString(), minValue.Value.ToInvString()), maxValueNode.TextSpan);
                 }
             }
             else if (minValue == null) {
-                ErrorDiagnosticAndThrow("Max value expected.");
+                ErrorDiagAndThrow("Max value expected.");
             }
             return new IntegerRangeNode<byte>(minValue, maxValue, textSpan);
         }
         private ulong ToUInt64(AtomValueNode node) {
             ulong value;
             if (!node.Value.TryToInvUInt64(out value)) {
-                ErrorDiagnosticAndThrow(DiagnosticCodeEx.UInt64ValueRequired, "UInt64 value required.", node.TextSpan);
+                ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.UInt64ValueRequired), node.TextSpan);
             }
             return value;
         }
         private byte ToByte(AtomValueNode node) {
             byte value;
             if (!node.Value.TryToInvByte(out value)) {
-                ErrorDiagnosticAndThrow(DiagnosticCodeEx.ByteValueRequired, "Byte value required.", node.TextSpan);
+                ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ByteValueRequired), node.TextSpan);
             }
             return value;
         }
@@ -602,8 +594,7 @@ namespace XData.Compiler {
                 var memberName = result.MemberName;
                 foreach (var item in list) {
                     if (item.MemberName == memberName) {
-                        ErrorDiagnosticAndThrow(DiagnosticCodeEx.DuplicateMemberName,
-                            "Duplicate member name '{0}'.".InvFormat(memberName.ToString()), memberName.TextSpan);
+                        ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateMemberName, memberName.ToString()), memberName.TextSpan);
                     }
                 }
             }
@@ -669,8 +660,7 @@ namespace XData.Compiler {
                 var memberName = result.MemberName;
                 foreach (var item in list) {
                     if (item.MemberName == memberName) {
-                        ErrorDiagnosticAndThrow(DiagnosticCodeEx.DuplicateMemberName,
-                            "Duplicate member name '{0}'.".InvFormat(memberName.ToString()), memberName.TextSpan);
+                        ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateMemberName, memberName.ToString()), memberName.TextSpan);
                     }
                 }
             }
@@ -790,13 +780,11 @@ namespace XData.Compiler {
                     if (IntegerValue(out maxValueNode)) {
                         maxValue = ToUInt64(maxValueNode);
                         if (maxValue < minValue) {
-                            ErrorDiagnosticAndThrow(DiagnosticCodeEx.MaxValueMustEqualToOrBeGreaterThanMinValue,
-                                "Max value '{0}' must equal to or be greater than min value '{1}'.".InvFormat(maxValue.ToInvString(), minValue.ToInvString()),
-                                maxValueNode.TextSpan);
+                            ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxValueMustEqualToOrBeGreaterThanMinValue,
+                                maxValue.ToInvString(), minValue.ToInvString()), maxValueNode.TextSpan);
                         }
                         else if (maxValue == 0) {
-                            ErrorDiagnosticAndThrow(DiagnosticCodeEx.MaxValueMustBeGreaterThanZero,
-                                "Max value must be greater than zero.", maxValueNode.TextSpan);
+                            ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxValueMustBeGreaterThanZero), maxValueNode.TextSpan);
                         }
                     }
                     else {
@@ -819,7 +807,7 @@ namespace XData.Compiler {
                 if (Token(endToken)) {
                     return true;
                 }
-                ErrorDiagnosticAndThrow(errMsg);
+                ErrorDiagAndThrow(errMsg);
             }
             return false;
         }
@@ -845,7 +833,7 @@ namespace XData.Compiler {
                         return true;
                     }
                     if (!get) {
-                        ErrorDiagnosticAndThrow(errMsg);
+                        ErrorDiagAndThrow(errMsg);
                     }
                 }
             }
@@ -879,7 +867,7 @@ namespace XData.Compiler {
                         return true;
                     }
                     if (!get) {
-                        ErrorDiagnosticAndThrow(errMsg);
+                        ErrorDiagAndThrow(errMsg);
                     }
                 }
             }
@@ -919,7 +907,7 @@ namespace XData.Compiler {
                         return true;
                     }
                     if (!get) {
-                        ErrorDiagnosticAndThrow(errMsg);
+                        ErrorDiagAndThrow(errMsg);
                     }
                 }
             }
@@ -966,14 +954,15 @@ namespace XData.Compiler {
                         return true;
                     }
                     if (!get) {
-                        ErrorDiagnosticAndThrow(errMsg);
+                        ErrorDiagAndThrow(errMsg);
                     }
                 }
             }
             return false;
         }
-        private void ErrorDiagnosticAndThrow(DiagnosticCodeEx code, string errMsg, TextSpan textSpan) {
-            ErrorDiagnosticAndThrow((int)code, errMsg, textSpan);
+        private void ErrorDiagAndThrow(DiagMsgEx diagMsg, TextSpan textSpan) {
+            _context.AddDiag(DiagSeverity.Error, (int)diagMsg.Code, diagMsg.GetMessage(), textSpan, null);
+            throw _parsingException;
         }
         private bool List<T>(Node parent, NodeGetterWithParent<T> nodeGetterWithParent, out List<T> result) {
             result = null;

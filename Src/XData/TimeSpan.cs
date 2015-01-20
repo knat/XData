@@ -11,7 +11,7 @@ namespace XData {
             return new XTimeSpan(value);
         }
         public static implicit operator TimeSpan(XTimeSpan obj) {
-            if ((object)obj == null) return TimeSpan.Zero;
+            if ((object)obj == null) return default(TimeSpan);
             return obj._value;
         }
         private TimeSpan _value;

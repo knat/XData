@@ -228,7 +228,6 @@ namespace XData {
         AtomType,
         ListType,
         ComplexType,
-        StringBase,
         String,
         IgnoreCaseString,
         Decimal,
@@ -254,13 +253,13 @@ namespace XData {
         public const string SystemUri = "http://xdata-lang.org";
         public const TypeKind TypeStart = TypeKind.SimpleType;
         public const TypeKind TypeEnd = TypeKind.DateTimeOffset;
-        public const TypeKind AtomTypeStart = TypeKind.StringBase;
+        public const TypeKind AtomTypeStart = TypeKind.String;
         public const TypeKind AtomTypeEnd = TypeKind.DateTimeOffset;
         public static FullName ToFullName(this TypeKind kind) {
             return new FullName(SystemUri, kind.ToString());
         }
-        public static AtomTypeInfo ToAtomTypeInfo(this TypeKind kind, Type clrType, AtomTypeInfo baseType, bool isAbstract = false) {
-            return new AtomTypeInfo(clrType, isAbstract, ToFullName(kind), baseType, null, kind);
+        public static AtomTypeInfo ToAtomTypeInfo(this TypeKind kind, Type clrType, AtomTypeInfo baseType) {
+            return new AtomTypeInfo(clrType, false, ToFullName(kind), baseType, null, kind);
         }
 
     }

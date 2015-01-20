@@ -18,39 +18,37 @@ namespace XData.IO.Text {
                 throw new ArgumentNullException("context");
             }
             _lexer = Lexer.Get(reader);
+            _token = null;
             _filePath = filePath;
             _context = context;
-            _token = null;
         }
         protected virtual void Clear() {
             if (_lexer != null) {
                 _lexer.Clear();
             }
+            _token = null;
             _filePath = null;
             _context = null;
-            _token = null;
         }
         private Lexer _lexer;
-        private string _filePath;
-        private Context _context;
         private Token? _token;
+        protected string _filePath;
+        protected Context _context;
         protected sealed class ParsingException : Exception { }
-        private static readonly ParsingException _parsingException = new ParsingException();
-        protected void ErrorDiagnosticAndThrow(int rawCode, string errMsg, TextSpan textSpan) {
-            _context.AddDiagnostic(DiagnosticSeverity.Error, rawCode, errMsg, textSpan, null);
+        protected static readonly ParsingException _parsingException = new ParsingException();
+        protected void ErrorDiagAndThrow(string errMsg, TextSpan textSpan) {
+            _context.AddDiag(DiagSeverity.Error, (int)DiagCode.Parsing, errMsg, textSpan, null);
             throw _parsingException;
         }
-        protected void ErrorDiagnosticAndThrow(DiagnosticCode code, string errMsg, TextSpan textSpan) {
-            ErrorDiagnosticAndThrow((int)code, errMsg, textSpan);
+        protected void ErrorDiagAndThrow(string errMsg, Token token) {
+            ErrorDiagAndThrow(errMsg ?? token.Value, token.ToTextSpan(_filePath));
         }
-        protected void ErrorDiagnosticAndThrow(string errMsg, TextSpan textSpan) {
-            ErrorDiagnosticAndThrow((int)DiagnosticCode.Parsing, errMsg, textSpan);
+        protected void ErrorDiagAndThrow(string errMsg) {
+            ErrorDiagAndThrow(errMsg, GetToken());
         }
-        protected void ErrorDiagnosticAndThrow(string errMsg, Token token) {
-            ErrorDiagnosticAndThrow(errMsg ?? token.Value, token.ToTextSpan(_filePath));
-        }
-        protected void ErrorDiagnosticAndThrow(string errMsg) {
-            ErrorDiagnosticAndThrow(errMsg, GetToken());
+        protected void ErrorDiagAndThrow(DiagMsg diagMsg, TextSpan textSpan) {
+            _context.AddErrorDiag(diagMsg, textSpan);
+            throw _parsingException;
         }
         private static bool IsTrivalToken(TokenKind kind) {
             return kind == TokenKind.WhitespaceOrNewLine || kind == TokenKind.SingleLineComment || kind == TokenKind.MultiLineComment;
@@ -64,7 +62,7 @@ namespace XData.IO.Text {
                 var kind = token.Kind;
                 if (!IsTrivalToken(kind)) {
                     if (kind == TokenKind.Error) {
-                        ErrorDiagnosticAndThrow(null, token);
+                        ErrorDiagAndThrow(null, token);
                     }
                     else {
                         _token = token;
@@ -113,12 +111,12 @@ namespace XData.IO.Text {
         }
         protected void TokenExpected(char ch) {
             if (!Token(ch)) {
-                ErrorDiagnosticAndThrow(ch.ToString() + " expected.");
+                ErrorDiagAndThrow(ch.ToString() + " expected.");
             }
         }
         protected void TokenExpected(int rawKind, string errMsg) {
             if (!Token(rawKind)) {
-                ErrorDiagnosticAndThrow(errMsg);
+                ErrorDiagAndThrow(errMsg);
             }
         }
         protected void TokenExpected(TokenKind kind, string errMsg) {
@@ -126,12 +124,12 @@ namespace XData.IO.Text {
         }
         protected void TokenExpected(char ch, out TextSpan textSpan) {
             if (!Token(ch, out textSpan)) {
-                ErrorDiagnosticAndThrow(ch.ToString() + " expected.");
+                ErrorDiagAndThrow(ch.ToString() + " expected.");
             }
         }
         protected void TokenExpected(int rawKind, string errMsg, out TextSpan textSpan) {
             if (!Token(rawKind, out textSpan)) {
-                ErrorDiagnosticAndThrow(errMsg);
+                ErrorDiagAndThrow(errMsg);
             }
         }
         protected void EndOfFileExpected() {
@@ -153,7 +151,7 @@ namespace XData.IO.Text {
             if (Name(out name)) {
                 return name;
             }
-            ErrorDiagnosticAndThrow("Name expected.");
+            ErrorDiagAndThrow("Name expected.");
             return name;
         }
         protected bool Keyword(string keywordValue) {
@@ -166,7 +164,7 @@ namespace XData.IO.Text {
         }
         protected void KeywordExpected(string keywordValue) {
             if (!Keyword(keywordValue)) {
-                ErrorDiagnosticAndThrow(keywordValue + " expetced.");
+                ErrorDiagAndThrow(keywordValue + " expetced.");
             }
         }
         protected bool Keyword(string keywordValue, out NameNode keyword) {
@@ -208,7 +206,7 @@ namespace XData.IO.Text {
             if (QualifiableName(out qName)) {
                 return qName;
             }
-            ErrorDiagnosticAndThrow("Qualifiable name expected.");
+            ErrorDiagAndThrow("Qualifiable name expected.");
             return qName;
         }
         protected bool AtomValue(out AtomValueNode atomValue, AtomValueKind expectedKind = AtomValueKind.None) {
@@ -250,7 +248,7 @@ namespace XData.IO.Text {
             if (AtomValue(out atomValue, expectedKind)) {
                 return atomValue;
             }
-            ErrorDiagnosticAndThrow(expectedKind == AtomValueKind.None ? "Atom value expected." :
+            ErrorDiagAndThrow(expectedKind == AtomValueKind.None ? "Atom value expected." :
                 expectedKind.ToString() + " value expected.");
             return atomValue;
         }
@@ -298,7 +296,7 @@ namespace XData.IO.Text {
                 return true;
             }
             if (hasTypeQName) {
-                ErrorDiagnosticAndThrow("Atom value or list value expetced.");
+                ErrorDiagAndThrow("Atom value or list value expetced.");
             }
             return false;
         }
@@ -307,7 +305,7 @@ namespace XData.IO.Text {
             if (SimpleValue(out value)) {
                 return value;
             }
-            ErrorDiagnosticAndThrow("Simple value expected.");
+            ErrorDiagAndThrow("Simple value expected.");
             return value;
         }
         protected bool List<T>(int startRawKind, int endRawKind, NodeGetter<T> nodeGetter, string errorMsg, out DelimitedList<T> result) {
@@ -325,7 +323,7 @@ namespace XData.IO.Text {
                         return true;
                     }
                     else {
-                        ErrorDiagnosticAndThrow(errorMsg);
+                        ErrorDiagAndThrow(errorMsg);
                     }
                 }
             }
@@ -347,7 +345,7 @@ namespace XData.IO.Text {
                         return true;
                     }
                     else {
-                        ErrorDiagnosticAndThrow(errorMsg);
+                        ErrorDiagAndThrow(errorMsg);
                     }
                 }
             }
@@ -365,40 +363,6 @@ namespace XData.IO.Text {
             }
             return result != null;
         }
-
-        //protected bool ListOrSingle<T>(int startRawKind, int endRawKind, TryGetter<T> itemGetter, string errorMsg, out ListOrSingleNode<T> listOrSingle) {
-        //    TextSpan openTokenTextSpan, closeTokenTextSpan;
-        //    if (Token(startRawKind, out openTokenTextSpan)) {
-        //        var hasSingle = false;
-        //        var single = default(T);
-        //        List<T> list = null;
-        //        while (true) {
-        //            T item;
-        //            if (itemGetter(out item)) {
-        //                if (hasSingle) {
-        //                    if (list == null) {
-        //                        list = new List<T>();
-        //                        list.Add(single);
-        //                    }
-        //                    list.Add(item);
-        //                }
-        //                else {
-        //                    single = item;
-        //                    hasSingle = true;
-        //                }
-        //            }
-        //            else if (Token(endRawKind, out closeTokenTextSpan)) {
-        //                listOrSingle = new ListOrSingleNode<T>(list, single, hasSingle, openTokenTextSpan, closeTokenTextSpan);
-        //                return true;
-        //            }
-        //            else {
-        //                ErrorDiagnosticAndThrow(errorMsg);
-        //            }
-        //        }
-        //    }
-        //    listOrSingle = default(ListOrSingleNode<T>);
-        //    return false;
-        //}
 
     }
     public sealed class Parser : ParserBase {
@@ -431,7 +395,7 @@ namespace XData.IO.Text {
                     return true;
                 }
                 else {
-                    ErrorDiagnosticAndThrow("Element expected.");
+                    ErrorDiagAndThrow("Element expected.");
                 }
             }
             catch (ParsingException) {
@@ -442,48 +406,6 @@ namespace XData.IO.Text {
             result = default(ElementNode);
             return false;
         }
-        //private bool UriAliasingList() {
-        //    if (Token('<')) {
-        //        var hasSingle = false;
-        //        var single = default(UriAliasingNode);
-        //        List<UriAliasingNode> list = null;
-        //        while (true) {
-        //            UriAliasingNode ua;
-        //            if (UriAliasing(out ua)) {
-        //                if (hasSingle) {
-        //                    if (list == null) {
-        //                        list = new List<UriAliasingNode>();
-        //                        list.Add(single);
-        //                    }
-        //                    foreach (var item in list) {
-        //                        if (item.IsDefault && ua.IsDefault) {
-        //                            ErrorDiagnosticAndThrow("Duplicate default uri.", ua.Uri.TextSpan);
-        //                        }
-        //                        else if (item.Alias == ua.Alias) {
-        //                            ErrorDiagnosticAndThrow("Duplicate uri alias '{0}'.".InvFormat(ua.Alias.ToString()), ua.Alias.TextSpan);
-        //                        }
-        //                    }
-        //                    list.Add(ua);
-        //                }
-        //                else {
-        //                    single = ua;
-        //                    hasSingle = true;
-        //                }
-        //            }
-        //            else if (Token('>')) {
-        //                if (list != null || hasSingle) {
-        //                    _uriAliasingListStack.Push(new ListOrSingleNode<UriAliasingNode>(list, single, hasSingle, default(TextSpan), default(TextSpan)));
-        //                    return true;
-        //                }
-        //                return false;
-        //            }
-        //            else {
-        //                ErrorDiagnosticAndThrow("Uri aliasing or > expected.");
-        //            }
-        //        }
-        //    }
-        //    return false;
-        //}
         private bool UriAliasingList() {
             DelimitedList<UriAliasingNode> list;
             if (List('<', '>', _uriAliasingGetter, "Uri aliasing or > expected.", out list)) {
@@ -495,6 +417,9 @@ namespace XData.IO.Text {
             bool? isDefault = null;
             NameNode alias;
             if (Name(out alias)) {
+                if (alias.Value == "sys") {
+                    ErrorDiagAndThrow(new DiagMsg(DiagCode.AliasSysIsReserved), alias.TextSpan);
+                }
                 if (Token('=')) {
                     isDefault = false;
                 }
@@ -514,12 +439,10 @@ namespace XData.IO.Text {
                 if (list != null) {
                     foreach (var item in list) {
                         if (item.IsDefault && isDefaultValue) {
-                            ErrorDiagnosticAndThrow(DiagnosticCode.DuplicateDefaultUri,
-                                "Duplicate default uri.", uri.TextSpan);
+                            ErrorDiagAndThrow(new DiagMsg(DiagCode.DuplicateDefaultUri), uri.TextSpan);
                         }
                         else if (item.Alias == alias) {
-                            ErrorDiagnosticAndThrow(DiagnosticCode.DuplicateUriAlias,
-                                "Duplicate uri alias '{0}'.".InvFormat(alias.ToString()), alias.TextSpan);
+                            ErrorDiagAndThrow(new DiagMsg(DiagCode.DuplicateUriAlias, alias.ToString()), alias.TextSpan);
                         }
                     }
                 }
@@ -566,8 +489,7 @@ namespace XData.IO.Text {
                 }
             }
             if (!isNull) {
-                ErrorDiagnosticAndThrow(DiagnosticCode.InvalidUriAlias,
-                    "Invalid uri alias '{0}'.".InvFormat(alias.ToString()), alias.TextSpan);
+                ErrorDiagAndThrow(new DiagMsg(DiagCode.InvalidUriAlias, alias.ToString()), alias.TextSpan);
             }
             return null;
         }
@@ -583,7 +505,7 @@ namespace XData.IO.Text {
                 TextSpan equalsTokenTextSpan;
                 if (Token('=', out equalsTokenTextSpan)) {
                     if (!ElementValue(equalsTokenTextSpan, out elementValue)) {
-                        ErrorDiagnosticAndThrow("Element value expected.");
+                        ErrorDiagAndThrow("Element value expected.");
                     }
                 }
                 if (hasUriAliasingList) {
@@ -611,7 +533,7 @@ namespace XData.IO.Text {
             }
             else {
                 if (hasTypeQName) {
-                    ErrorDiagnosticAndThrow("Complex value or simple value expetced.");
+                    ErrorDiagAndThrow("Complex value or simple value expetced.");
                 }
                 elementValue = default(ElementValueNode);
                 return false;
@@ -639,7 +561,7 @@ namespace XData.IO.Text {
                             break;
                         }
                         else {
-                            ErrorDiagnosticAndThrow(elementList.Count > 0 ? "Element or } expected." :
+                            ErrorDiagAndThrow(elementList.Count > 0 ? "Element or } expected." :
                                 "Element, simple value or } expected.");
                         }
                     }

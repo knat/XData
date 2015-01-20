@@ -139,9 +139,7 @@ namespace XData {
             var elementNameTextSpan = elementNode.QName.TextSpan;
             var effElementInfo = globalElementInfo ?? elementInfo;
             if (effElementInfo.IsAbstract) {
-                context.AddErrorDiagnostic(DiagnosticCode.ElementIsAbstract,
-                    "Element '{0}' is abstract.".InvFormat(effElementInfo.DisplayName),
-                    elementNameTextSpan);
+                context.AddErrorDiag(new DiagMsg(DiagCode.ElementIsAbstract, effElementInfo.DisplayName), elementNameTextSpan);
                 return CreationResult.Error;
             }
             XType type = null;
@@ -152,8 +150,7 @@ namespace XData {
                 if (complexTypeInfo != null) {
                     var complexValueNode = elementValueNode.ComplexValue;
                     if (!complexValueNode.IsValid) {
-                        context.AddErrorDiagnostic(DiagnosticCode.ElementRequiresComplexTypeValue,
-                            "Element '{0}' requires complex type value.".InvFormat(effElementInfo.DisplayName),
+                        context.AddErrorDiag(new DiagMsg(DiagCode.ElementRequiresComplexTypeValue, effElementInfo.DisplayName),
                             elementNameTextSpan);
                         return CreationResult.Error;
                     }
@@ -168,8 +165,7 @@ namespace XData {
                     var simpleTypeInfo = effElementInfo.Type as SimpleTypeInfo;
                     var simpleValueNode = elementValueNode.SimpleValue;
                     if (!simpleValueNode.IsValid) {
-                        context.AddErrorDiagnostic(DiagnosticCode.ElementRequiresSimpleTypeValue,
-                            "Element '{0}' requires simple type value.".InvFormat(effElementInfo.DisplayName),
+                        context.AddErrorDiag(new DiagMsg(DiagCode.ElementRequiresSimpleTypeValue, effElementInfo.DisplayName),
                             elementNameTextSpan);
                         return CreationResult.Error;
                     }
@@ -183,9 +179,7 @@ namespace XData {
             }
             else {
                 if (!isNullable) {
-                    context.AddErrorDiagnostic(DiagnosticCode.ElementIsNotNullable,
-                        "Element '{0}' is not nullable.".InvFormat(effElementInfo.DisplayName),
-                        elementNameTextSpan);
+                    context.AddErrorDiag(new DiagMsg(DiagCode.ElementIsNotNullable, effElementInfo.DisplayName), elementNameTextSpan);
                     return CreationResult.Error;
                 }
             }

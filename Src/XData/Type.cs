@@ -17,20 +17,19 @@ namespace XData {
                 var typeFullName = typeQName.FullName;
                 typeInfo = programInfo.TryGetGlobalObject(typeFullName) as TypeInfo;
                 if (typeInfo == null) {
-                    context.AddErrorDiagnostic(DiagnosticCode.InvalidTypeName, "Invalid type name '{0}'.".InvFormat(typeFullName.ToString()),
+                    context.AddErrorDiag(new DiagMsg(DiagCode.InvalidTypeName, typeFullName.ToString()),
                         typeQName.TextSpan);
                     return null;
                 }
                 if (!typeInfo.IsEqualToOrDeriveFrom(declTypeInfo)) {
-                    context.AddErrorDiagnostic(DiagnosticCode.TypeDoesNotEqualToOrDeriveFrom,
-                        "Type '{0}' does not equal to or derive from '{1}'.".InvFormat(typeFullName.ToString(), declTypeInfo.FullName.ToString()),
-                        typeQName.TextSpan);
+                    context.AddErrorDiag(new DiagMsg(DiagCode.TypeDoesNotEqualToOrDeriveFrom,
+                        typeFullName.ToString(), declTypeInfo.FullName.ToString()), typeQName.TextSpan);
                     return null;
                 }
             }
             var effTypeInfo = typeInfo ?? declTypeInfo;
             if (effTypeInfo.IsAbstract) {
-                context.AddErrorDiagnostic(DiagnosticCode.TypeIsAbstract, "Type '{0}' is abstract.".InvFormat(effTypeInfo.FullName.ToString()),
+                context.AddErrorDiag(new DiagMsg(DiagCode.TypeIsAbstract, effTypeInfo.FullName.ToString()),
                     typeInfo != null ? typeQName.TextSpan : declTypeTextSpan);
                 return null;
             }

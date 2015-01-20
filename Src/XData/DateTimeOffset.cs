@@ -11,7 +11,7 @@ namespace XData {
             return new XDateTimeOffset(value);
         }
         public static implicit operator DateTimeOffset(XDateTimeOffset obj) {
-            if ((object)obj == null) return DateTimeOffset.MinValue;
+            if ((object)obj == null) return default(DateTimeOffset);
             return obj._value;
         }
         private DateTimeOffset _value;

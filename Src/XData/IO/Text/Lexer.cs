@@ -229,6 +229,7 @@ namespace XData.IO.Text {
                         AdvanceChar();
                         Token errToken;
                         if (!ProcessCharEscSeq(sb, out errToken)) {
+                            sb.ReleaseStringBuilder();
                             return errToken;
                         }
                     }
@@ -237,6 +238,7 @@ namespace XData.IO.Text {
                         return CreateToken(TokenKind.StringValue, state, sb.ToStringAndRelease());
                     }
                     else if (IsNewLine(ch) || ch == char.MaxValue) {
+                        sb.ReleaseStringBuilder();
                         return CreateErrorToken("\" expected.");
                     }
                     else {
@@ -257,6 +259,7 @@ namespace XData.IO.Text {
                         }
                     }
                     else if (ch == char.MaxValue) {
+                        sb.ReleaseStringBuilder();
                         return CreateErrorToken("\" expected.");
                     }
                     else {
@@ -269,6 +272,7 @@ namespace XData.IO.Text {
                 //        AdvanceChar();
                 //        Token errToken;
                 //        if (!ProcessCharEscSeq(sb, out errToken)) {
+                //            sb.ReleaseStringBuilder();
                 //            return errToken;
                 //        }
                 //    }
@@ -278,10 +282,12 @@ namespace XData.IO.Text {
                 //            return CreateToken(TokenKind.CharValue, state, sb.ToStringAndRelease());
                 //        }
                 //        else {
+                //            sb.ReleaseStringBuilder();
                 //            return CreateErrorToken("Character expected.");
                 //        }
                 //    }
                 //    else if (IsNewLine(ch) || ch == char.MaxValue) {
+                //        sb.ReleaseStringBuilder();
                 //        return CreateErrorToken("' expected.");
                 //    }
                 //    else {
@@ -290,6 +296,7 @@ namespace XData.IO.Text {
                 //            AdvanceChar();
                 //        }
                 //        else {
+                //            sb.ReleaseStringBuilder();
                 //            return CreateErrorToken("' expected.");
                 //        }
                 //    }
@@ -313,6 +320,7 @@ namespace XData.IO.Text {
                         }
                         else {
                             AdvanceChar();
+                            sb.ReleaseStringBuilder();
                             return CreateErrorToken("Decimal digit expected.");
                         }
                     }
@@ -331,6 +339,7 @@ namespace XData.IO.Text {
                             AdvanceChar();
                         }
                         else {
+                            sb.ReleaseStringBuilder();
                             return CreateErrorToken("Decimal digit expected.");
                         }
                     }
@@ -358,6 +367,7 @@ namespace XData.IO.Text {
                             AdvanceChar();
                         }
                         else {
+                            sb.ReleaseStringBuilder();
                             return CreateErrorToken("Decimal digit expected.");
                         }
                     }

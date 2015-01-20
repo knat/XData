@@ -26,7 +26,7 @@ namespace XData {
             }
             return new StringBuilder(_stringBuilderCapacity);
         }
-        public static void ReleaseStringBuilder(StringBuilder sb) {
+        public static void ReleaseStringBuilder(this StringBuilder sb) {
             if (sb != null && sb.Capacity <= _stringBuilderCapacity * 8) {
                 var sbs = _stringBuilders;
                 lock (_stringBuilders) {

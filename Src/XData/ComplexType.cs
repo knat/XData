@@ -107,8 +107,7 @@ namespace XData {
             }
             else {
                 if (attributeListNode != null && attributeListNode.Count > 0) {
-                    context.AddErrorDiagnostic(DiagnosticCode.TypeProhibitsAttributes,
-                        "Type '{0}' prohibits attributes.".InvFormat(effComplexTypeInfo.FullName.ToString()),
+                    context.AddErrorDiag(new DiagMsg(DiagCode.TypeProhibitsAttributes, effComplexTypeInfo.FullName.ToString()),
                         attributeListNode.OpenTokenTextSpan);
                     return false;
                 }
@@ -119,8 +118,7 @@ namespace XData {
             var simpleTypeInfo = effComplexTypeInfo.Children as SimpleTypeInfo;
             if (simpleTypeInfo != null) {
                 if (!simpleValueNode.IsValid) {
-                    context.AddErrorDiagnostic(DiagnosticCode.TypeRequiresSimpleTypeChild,
-                        "Type '{0}' requires simple type child.".InvFormat(effComplexTypeInfo.FullName.ToString()),
+                    context.AddErrorDiag(new DiagMsg(DiagCode.TypeRequiresSimpleTypeChild, effComplexTypeInfo.FullName.ToString()),
                         complexValueNode.OpenElementTextSpan);
                     return false;
                 }
@@ -136,8 +134,7 @@ namespace XData {
                 var childSetInfo = effComplexTypeInfo.Children as ChildSetInfo;
                 if (childSetInfo != null) {
                     if (simpleValueNode.IsValid) {
-                        context.AddErrorDiagnostic(DiagnosticCode.TypeRequiresElementChildren,
-                            "Type '{0}' requires elemment children.".InvFormat(effComplexTypeInfo.FullName.ToString()),
+                        context.AddErrorDiag(new DiagMsg(DiagCode.TypeRequiresElementChildren, effComplexTypeInfo.FullName.ToString()),
                             simpleValueNode.TextSpan);
                         return false;
                     }
@@ -150,8 +147,7 @@ namespace XData {
                 }
                 else {
                     if (simpleValueNode.IsValid || (elementListNode != null && elementListNode.Count > 0)) {
-                        context.AddErrorDiagnostic(DiagnosticCode.TypeProhibitsChildren,
-                            "Type '{0}' prohibits children.".InvFormat(effComplexTypeInfo.FullName.ToString()),
+                        context.AddErrorDiag(new DiagMsg(DiagCode.TypeProhibitsChildren, effComplexTypeInfo.FullName.ToString()),
                             complexValueNode.OpenElementTextSpan);
                     }
                 }
@@ -162,44 +158,5 @@ namespace XData {
             return true;
         }
     }
-    //public abstract class XSimpleChildComplexType : XComplexType {
-    //    protected XSimpleChildComplexType() { }
-    //    public XSimpleType Child {
-    //        get {
-    //            return Children as XSimpleType;
-    //        }
-    //        set {
-    //            Children = value;
-    //        }
-    //    }
-    //    public XSimpleType GenericChild {
-    //        get {
-    //            return Child;
-    //        }
-    //        set {
-    //            Children = value;
-    //        }
-    //    }
-
-    //}
-    //public abstract class XComplexChildrenComplexType : XComplexType {
-    //    protected XComplexChildrenComplexType() { }
-    //    new public XChildSet Children {
-    //        get {
-    //            return base.Children as XChildSet;
-    //        }
-    //        set {
-    //            base.Children = value;
-    //        }
-    //    }
-    //    public XChildSet GenericChildren {
-    //        get {
-    //            return Children;
-    //        }
-    //        set {
-    //            base.Children = value;
-    //        }
-    //    }
-    //}
 
 }

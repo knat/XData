@@ -219,8 +219,7 @@ namespace XData {
                                         if (memberList.Count == 0) {
                                             return res;
                                         }
-                                        _context.AddErrorDiagnostic(DiagnosticCode.RequiredChildMemberIsNotMatched,
-                                            "Required child member '{0}' is not matched.".InvFormat(memberInfo.DisplayName), GetTextSpan());
+                                        _context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildMemberIsNotMatched, memberInfo.DisplayName), GetTextSpan());
                                         return CreationResult.Error;
                                     }
                                 }
@@ -278,8 +277,7 @@ namespace XData {
                                     return res;
                                 }
                                 if (itemCount < childListInfo.MinOccurs) {
-                                    _context.AddErrorDiagnostic(DiagnosticCode.ChildListCountIsNotGreaterThanOrEqualToMinOccurs,
-                                        "Child list '{0}' count '{1}' is not greater than or equal to min occurs '{2}'.".InvFormat(
+                                    _context.AddErrorDiag(new DiagMsg( DiagCode.ChildListCountIsNotGreaterThanOrEqualToMinOccurs,
                                         childListInfo.DisplayName, itemCount.ToInvString(), childListInfo.MinOccurs.ToInvString()), GetTextSpan());
                                     return CreationResult.Error;
                                 }

@@ -46,26 +46,24 @@ namespace XData.Compiler {
                 foreach (var nsIndicator in nsIndicatorList) {
                     LogicalNamespaceNode logicalNS;
                     if (!nsDict.TryGetValue(nsIndicator.Uri, out logicalNS)) {
-                        ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.InvalidIndicatorNamespaceName,
-                            "Invalid indicator namespace name '{0}'.".InvFormat(nsIndicator.Uri), nsIndicator.UriNode.TextSpan);
+                        ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidIndicatorNamespaceName, nsIndicator.Uri),
+                            nsIndicator.UriNode.TextSpan);
                     }
                     if (logicalNS.CSNamespaceName == null) {
                         logicalNS.CSNamespaceName = nsIndicator.CSNamespaceName;
                         logicalNS.IsCSNamespaceRef = nsIndicator.IsRef;
                     }
                     else if (logicalNS.IsCSNamespaceRef != nsIndicator.IsRef || logicalNS.CSNamespaceName != nsIndicator.CSNamespaceName) {
-                        ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.InconsistentCSharpNamespaceName,
-                            "Inconsistent C# namespace name '{0}' '{1}' and '{2}' '{3}'.".InvFormat(
-                                logicalNS.IsCSNamespaceRef ? "&" : "=", logicalNS.CSNamespaceName.ToString(),
-                                nsIndicator.IsRef ? "&" : "=", nsIndicator.CSNamespaceName.ToString()),
+                        ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InconsistentCSharpNamespaceName,
+                            logicalNS.IsCSNamespaceRef ? "&" : "=", logicalNS.CSNamespaceName.ToString(), nsIndicator.IsRef ? "&" : "=", nsIndicator.CSNamespaceName.ToString()),
                             nsIndicator.CSNamespaceName.TextSpan);
                     }
 
                 }
                 foreach (var logicalNS in nsDict.Values) {
                     if (logicalNS.CSNamespaceName == null) {
-                        ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.CSNamespaceNameNotSpecifiedForNamespace,
-                            "C# namespace name is not specified for namespace '{0}'.".InvFormat(logicalNS.Uri), nsIndicatorList[0].TextSpan);
+                        ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CSNamespaceNameNotSpecifiedForNamespace, logicalNS.Uri),
+                            nsIndicatorList[0].TextSpan);
                     }
                 }
             }
@@ -201,8 +199,7 @@ namespace XData.Compiler {
                 for (var i = 0; i < ImportList.Count; ++i) {
                     var import = ImportList[i];
                     if (!nsDict.TryGetValue(import.Uri.Value, out import.LogicalNamespace)) {
-                        ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.InvalidImportUri,
-                            "Invalid import uri '{0}'.".InvFormat(import.Uri.Value), import.Uri.TextSpan);
+                        ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidImportUri, import.Uri.Value), import.Uri.TextSpan);
                     }
                 }
             }
@@ -212,8 +209,8 @@ namespace XData.Compiler {
                 foreach (var thisMember in MemberList) {
                     foreach (var otherMember in otherList) {
                         if (thisMember.Name == otherMember.Name) {
-                            ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.DuplicateNamespaceMember,
-                                "Duplicate namespace member '{0}'.".InvFormat(otherMember.Name.ToString()), otherMember.Name.TextSpan);
+                            ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateNamespaceMember, otherMember.Name.ToString()),
+                                otherMember.Name.TextSpan);
                         }
                     }
                 }
@@ -253,8 +250,7 @@ namespace XData.Compiler {
                         }
                     }
                     if (import == null) {
-                        ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.InvalidQualifiableNameAlias,
-                            "Invalid qualifiable name alias '{0}'.".InvFormat(alias.ToString()), alias.TextSpan);
+                        ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidQualifiableNameAlias, alias.ToString()), alias.TextSpan);
                     }
                     result = import.Value.LogicalNamespace.TryGetMember(name);
                 }
@@ -268,8 +264,7 @@ namespace XData.Compiler {
                             var member = item.LogicalNamespace.TryGetMember(name);
                             if (member != null) {
                                 if (result != null) {
-                                    ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.AmbiguousNameReference,
-                                        "Ambiguous name reference '{0}'.".InvFormat(name.ToString()), name.TextSpan);
+                                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AmbiguousNameReference, name.ToString()), name.TextSpan);
                                 }
                                 result = member;
                             }
@@ -278,32 +273,28 @@ namespace XData.Compiler {
                 }
             }
             if (result == null) {
-                ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.InvalidNameReference,
-                    "Invalid name reference '{0}'.".InvFormat(name.ToString()), name.TextSpan);
+                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidNameReference, name.ToString()), name.TextSpan);
             }
             return result;
         }
         public TypeNode ResolveAsType(QualifiableNameNode qName) {
             var result = Resolve(qName) as TypeNode;
             if (result == null) {
-                ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.InvalidTypeNameReference,
-                    "Invalid type name reference '{0}'.".InvFormat(qName.ToString()), qName.TextSpan);
+                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidTypeNameReference, qName.ToString()), qName.TextSpan);
             }
             return result;
         }
         public GlobalAttributeNode ResolveAsAttribute(QualifiableNameNode qName) {
             var result = Resolve(qName) as GlobalAttributeNode;
             if (result == null) {
-                ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.InvalidAttributeNameReference,
-                    "Invalid attribute name reference '{0}'.".InvFormat(qName.ToString()), qName.TextSpan);
+                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidAttributeNameReference, qName.ToString()), qName.TextSpan);
             }
             return result;
         }
         public GlobalElementNode ResolveAsElement(QualifiableNameNode qName) {
             var result = Resolve(qName) as GlobalElementNode;
             if (result == null) {
-                ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.InvalidElementNameReference,
-                    "Invalid element name reference '{0}'.".InvFormat(qName.ToString()), qName.TextSpan);
+                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidElementNameReference, qName.ToString()), qName.TextSpan);
             }
             return result;
         }
@@ -371,7 +362,7 @@ namespace XData.Compiler {
                 return _csName ?? (_csName = Name.Value.EscapeId());
             }
         }
-        protected FullName? _fullName;
+        private FullName? _fullName;
         public FullName FullName {
             get {
                 if (_fullName == null) {
@@ -382,12 +373,12 @@ namespace XData.Compiler {
         }
         public abstract void Resolve();
         //
-        private NamedObjectSymbol _objectSymbol;
+        protected NamedObjectSymbol _objectSymbol;
         private bool _isProcessing;
         public NamedObjectSymbol CreateSymbol() {
             if (_objectSymbol == null) {
                 if (_isProcessing) {
-                    ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.CircularReferenceDetected, "Circular reference detected.", Name.TextSpan);
+                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CircularReferenceDetected), Name.TextSpan);
                 }
                 _isProcessing = true;
                 _objectSymbol = CreateSymbolCore();
@@ -401,26 +392,29 @@ namespace XData.Compiler {
         protected abstract NamedObjectSymbol CreateSymbolCore();
     }
     public sealed class SystemTypeNode : TypeNode {
-        private SystemTypeNode(TypeKind kind) : base(null) {
+        private SystemTypeNode() : base(null) {
             //Name = new NameNode(kind.ToString(), default(TextSpan));
-            _fullName = kind.ToFullName();
-            Kind = kind;
+            //_fullName = kind.ToFullName();
+            //Kind = kind;
+            //_objectSymbol= .TryGetGlobalObject(_fullName.Value);
         }
-        public readonly TypeKind Kind;
-        private static readonly Dictionary<string, SystemTypeNode> Dict;
+        //public readonly TypeKind Kind;
+        private static readonly Dictionary<string, SystemTypeNode> _dict;
         static SystemTypeNode() {
-            Dict = new Dictionary<string, SystemTypeNode>();
+            _dict = new Dictionary<string, SystemTypeNode>();
+            var sysNs = NamespaceSymbol.System;
             for (var kind = InfoExtensions.TypeStart; kind <= InfoExtensions.TypeEnd; ++kind) {
-                Dict.Add(kind.ToString(), new SystemTypeNode(kind));
+                var name = kind.ToString();
+                _dict.Add(name, new SystemTypeNode() { _objectSymbol = sysNs.TryGetGlobalObject(name) });
             }
         }
         public static SystemTypeNode TryGet(string name) {
             SystemTypeNode result;
-            Dict.TryGetValue(name, out result);
+            _dict.TryGetValue(name, out result);
             return result;
         }
         protected override NamedObjectSymbol CreateSymbolCore() {
-            return NamespaceSymbol.System.TryGetGlobalObject(_fullName.Value);
+            throw new NotImplementedException();
         }
     }
     public class TypeNode : NamespaceMemberNode {
@@ -459,15 +453,15 @@ namespace XData.Compiler {
             if (SimpleTypeRestrictions != null) {
                 SimpleTypeRestrictions.CheckApplicabilities(TypeKind.ListType);
                 if (SimpleTypeRestrictions.ListItemTypeQName.IsValid) {
-                    ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.ListItemTypeNotAllowed, "List item type not allowed.",
-                        SimpleTypeRestrictions.ListItemTypeQName.TextSpan);
+                    //ContextEx.ErrorDiagAndThrow(DiagCodeEx.ListItemTypeNotAllowed, "List item type not allowed.",
+                    //    SimpleTypeRestrictions.ListItemTypeQName.TextSpan);
                 }
             }
         }
         public override TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
             var itemSymbol = ItemType.CreateSymbol() as SimpleTypeSymbol;
             if (itemSymbol == null) {
-                ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.SimpleTypeRequired, "Simple type required.", ItemQName.TextSpan);
+                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.SimpleTypeRequired), ItemQName.TextSpan);
             }
             if (SimpleTypeRestrictions != null) {
                 if (SimpleTypeRestrictions.ListItemTypeQName.IsValid) {
@@ -570,7 +564,9 @@ namespace XData.Compiler {
         public void CheckApplicabilities(TypeKind kind) {
             switch (kind) {
                 case TypeKind.ListType:
-
+                    if (Digits.IsValid) {
+                        //ContextEx.ErrorDiagnostic(DiagnosticCodeEx.SimpleTypeRestrictionNotAllowed)
+                    }
                     break;
             }
             ContextEx.ThrowIfHasErrors();
@@ -666,8 +662,8 @@ namespace XData.Compiler {
                     attribute.Resolve();
                     for (var j = 0; j < i - 1; ++j) {
                         if (AttributeList[j].FullName == attribute.FullName) {
-                            ContextEx.ErrorDiagnosticAndThrow(DiagnosticCodeEx.DuplicateAttributeFullName,
-                                "Duplicate attribute full name '{0}'.".InvFormat(attribute.FullName.ToString()), attribute.MemberName.TextSpan);
+                            ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateAttributeFullName, attribute.FullName.ToString()),
+                                attribute.MemberName.TextSpan);
                         }
                     }
                 }

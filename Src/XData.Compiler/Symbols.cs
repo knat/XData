@@ -41,29 +41,35 @@ namespace XData.Compiler {
         public readonly CSNamespaceNameNode CSNamespaceName;
         public readonly bool IsCSNamespaceRef;
         public readonly List<NamedObjectSymbol> GlobalObjectList;
-        public NamedObjectSymbol TryGetGlobalObject(FullName fullName) {
+        public NamedObjectSymbol TryGetGlobalObject(string name) {
             foreach (var obj in GlobalObjectList) {
-                if (obj.FullName == fullName) {
+                if (obj.FullName.Name == name) {
                     return obj;
                 }
             }
             return null;
         }
+        //public NamedObjectSymbol TryGetGlobalObject(FullName fullName) {
+        //    foreach (var obj in GlobalObjectList) {
+        //        if (obj.FullName == fullName) {
+        //            return obj;
+        //        }
+        //    }
+        //    return null;
+        //}
 
 
         //
         public static readonly NamespaceSymbol System;
         static NamespaceSymbol() {
             System = new NamespaceSymbol(InfoExtensions.SystemUri, new CSNamespaceNameNode { "XData" }, true);
-            var list = System.GlobalObjectList;
+            var objList = System.GlobalObjectList;
             var SimpleType = new SimpleTypeSymbol(System, TypeKind.SimpleType.ToClassName(), true, false, null, null, TypeKind.SimpleType.ToFullName(), TypeKind.SimpleType, null, null);
-            list.Add(SimpleType);
+            objList.Add(SimpleType);
             var AtomType = new AtomTypeSymbol(System, TypeKind.AtomType.ToClassName(), true, false, TypeKind.AtomType.ToFullName(), TypeKind.AtomType, SimpleType, null, null);
-            list.Add(AtomType);
-            var StringBase = new AtomTypeSymbol(System, TypeKind.StringBase.ToClassName(), true, false, TypeKind.StringBase.ToFullName(), TypeKind.StringBase, AtomType, null, CS.StringType);
-            list.Add(StringBase);
-            CreateAndAdd(StringBase, TypeKind.String, CS.StringType);
-            CreateAndAdd(StringBase, TypeKind.IgnoreCaseString, CS.StringType);
+            objList.Add(AtomType);
+            CreateAndAdd(AtomType, TypeKind.String, CS.StringType);
+            CreateAndAdd(AtomType, TypeKind.IgnoreCaseString, CS.StringType);
             var Decimal = CreateAndAdd(AtomType, TypeKind.Decimal, CS.DecimalType);
             var Int64 = CreateAndAdd(Decimal, TypeKind.Int64, CS.LongType);
             var Int32 = CreateAndAdd(Int64, TypeKind.Int32, CS.IntType);
@@ -81,7 +87,7 @@ namespace XData.Compiler {
             CreateAndAdd(AtomType, TypeKind.TimeSpan, CS.TimeSpanName);
             CreateAndAdd(AtomType, TypeKind.DateTimeOffset, CS.DateTimeOffsetName);
             var ListType = new ListTypeSymbol(System, TypeKind.ListType.ToClassName(), true, false, TypeKind.ListType.ToFullName(), TypeKind.ListType, SimpleType, null, null, null);
-            list.Add(ListType);
+            objList.Add(ListType);
 
 
         }

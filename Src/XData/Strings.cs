@@ -65,7 +65,6 @@ namespace XData {
             result = (ulong)_value.Length;
             return true;
         }
-        new public static readonly AtomTypeInfo ThisInfo = TypeKind.StringBase.ToAtomTypeInfo(typeof(XStringBase), XAtomType.ThisInfo, true);
     }
     public class XString : XStringBase {
         public XString() { }
@@ -83,7 +82,7 @@ namespace XData {
             return string.CompareOrdinal(a, b);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomTypeInfo ThisInfo = TypeKind.String.ToAtomTypeInfo(typeof(XString), XStringBase.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = TypeKind.String.ToAtomTypeInfo(typeof(XString), XAtomType.ThisInfo);
     }
     public class XIgnoreCaseString : XStringBase {
         public XIgnoreCaseString() { }
@@ -101,6 +100,6 @@ namespace XData {
             return string.Compare(a, b, StringComparison.OrdinalIgnoreCase);
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
-        new public static readonly AtomTypeInfo ThisInfo = TypeKind.IgnoreCaseString.ToAtomTypeInfo(typeof(XIgnoreCaseString), XStringBase.ThisInfo);
+        new public static readonly AtomTypeInfo ThisInfo = TypeKind.IgnoreCaseString.ToAtomTypeInfo(typeof(XIgnoreCaseString), XAtomType.ThisInfo);
     }
 }

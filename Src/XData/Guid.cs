@@ -10,7 +10,7 @@ namespace XData {
             return new XGuid(value);
         }
         public static implicit operator Guid(XGuid obj) {
-            if ((object)obj == null) return Guid.Empty;
+            if ((object)obj == null) return default(Guid);
             return obj._value;
         }
         private Guid _value;

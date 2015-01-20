@@ -31,7 +31,7 @@ namespace Test {
             using (var reader = new StreamReader("test.txt")) {
                 Parser.Parse("test.txt", reader, ctx, out element);
             }
-            foreach (var diag in ctx.Diagnostics) {
+            foreach (var diag in ctx.DiagList) {
                 Console.WriteLine(diag.ToString());
             }
 
