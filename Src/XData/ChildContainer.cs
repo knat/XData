@@ -215,7 +215,7 @@ namespace XData {
                                     memberList.Add(member);
                                 }
                                 else if (res == CreationResult.Skipped) {
-                                    if (!memberInfo.IsEffectiveOptional) {
+                                    if (!memberInfo.IsOptional) {
                                         if (memberList.Count == 0) {
                                             return res;
                                         }

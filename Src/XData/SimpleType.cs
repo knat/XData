@@ -27,7 +27,7 @@ namespace XData {
         }
         protected override bool TryValidateCore(Context context) {
             var simpleTypeInfo = (SimpleTypeInfo)ObjectInfo;
-            var restrictionSet = simpleTypeInfo.RestrictionSet;
+            var restrictionSet = simpleTypeInfo.ValueRestrictionSet;
             if (restrictionSet != null) {
                 var minLength = restrictionSet.MinLength;
                 var maxLength = restrictionSet.MaxLength;
@@ -38,7 +38,7 @@ namespace XData {
                     }
 
                 }
-                var n_enumerations = restrictionSet.Enumerations;
+                var n_enumerations = restrictionSet.Enums;
                 if (n_enumerations != null) {
                     var enumerations = n_enumerations.Value;
                     var found = false;

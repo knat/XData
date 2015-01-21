@@ -287,7 +287,7 @@ namespace XData.Compiler {
             if (Keyword(ListsKeyword)) {
                 var list = new TypeListNode(parent);
                 list.ItemQName = QualifiableNameExpected();
-                SimpleTypeRestrictions(list, out list.SimpleTypeRestrictions);
+                ValueRestrictions(list, out list.ValueRestrictions);
 
                 result = list;
                 return true;
@@ -327,7 +327,7 @@ namespace XData.Compiler {
                 restriction.BaseQName = QualifiableNameExpected();
                 Attributes(restriction, out restriction.Attributes);
                 if (!RootStructuralChildren(restriction, out restriction.StructuralChildren)) {
-                    SimpleTypeRestrictions(restriction, out restriction.SimpleTypeRestrictions);
+                    ValueRestrictions(restriction, out restriction.ValueRestrictions);
                 }
                 result = restriction;
                 return true;
@@ -356,9 +356,9 @@ namespace XData.Compiler {
             result = default(QualifiableNameNode);
             return false;
         }
-        private bool SimpleTypeRestrictions(Node parent, out SimpleTypeRestrictionsNode result) {
+        private bool ValueRestrictions(Node parent, out ValueRestrictionsNode result) {
             if (Token(TokenKind.DollarOpenBrace)) {
-                result = new SimpleTypeRestrictionsNode(parent);
+                result = new ValueRestrictionsNode(parent);
                 bool hasLengths = false, hasDigits = false, hasValues = false, hasEnums = false, hasPattern = false, hasListItemType = false;
                 while (true) {
                     var get = false;
@@ -378,7 +378,7 @@ namespace XData.Compiler {
                         }
                     }
                     if (!get && !hasEnums) {
-                        if (hasEnums = Enumerations(out result.Enumerations)) {
+                        if (hasEnums = Enums(out result.Enums)) {
                             get = true;
                         }
                     }
@@ -403,8 +403,8 @@ namespace XData.Compiler {
             result = null;
             return false;
         }
-        protected override bool SimpleValue(out SimpleValueNode simpleValue) {
-            return SimpleValue(default(QualifiableNameNode), out simpleValue);
+        protected override bool SimpleValue(out SimpleValueNode result) {
+            return SimpleValue(default(QualifiableNameNode), out result);
         }
         private bool Lengths(out IntegerRangeNode<ulong> result) {
             if (Keyword(LengthsKeyword)) {
@@ -426,7 +426,7 @@ namespace XData.Compiler {
             if (Keyword(ValuesKeyword)) {
                 bool? minIsInclusive = null, maxIsInclusive = null;
                 SimpleValueNode minValue = default(SimpleValueNode), maxValue;
-                TextSpan textSpan;
+                TextSpan dotDot;
                 if (Token('(')) {
                     minIsInclusive = false;
                 }
@@ -436,7 +436,7 @@ namespace XData.Compiler {
                 if (minIsInclusive != null) {
                     minValue = SimpleValueExpected();
                 }
-                TokenExpected((int)TokenKind.DotDot, ".. expected.", out textSpan);
+                TokenExpected((int)TokenKind.DotDot, ".. expected.", out dotDot);
                 if (SimpleValue(out maxValue)) {
                     if (Token(')')) {
                         maxIsInclusive = false;
@@ -450,15 +450,14 @@ namespace XData.Compiler {
                     ErrorDiagAndThrow("Max value expected.");
                 }
                 result = new ValueRangeNode(minIsInclusive == null ? default(ValueBoundaryNode?) : new ValueBoundaryNode(minValue, minIsInclusive.Value),
-                    maxIsInclusive == null ? default(ValueBoundaryNode?) : new ValueBoundaryNode(maxValue, maxIsInclusive.Value), textSpan);
+                    maxIsInclusive == null ? default(ValueBoundaryNode?) : new ValueBoundaryNode(maxValue, maxIsInclusive.Value), dotDot);
                 return true;
             }
             result = default(ValueRangeNode);
             return false;
         }
-        private bool Enumerations(out EnumerationsNode result) {
-            TextSpan textSpan;
-            if (Keyword(EnumsKeyword, out textSpan)) {
+        private bool Enums(out List<SimpleValueNode> result) {
+            if (Keyword(EnumsKeyword)) {
                 var list = new List<SimpleValueNode>();
                 while (true) {
                     SimpleValueNode item;
@@ -472,10 +471,10 @@ namespace XData.Compiler {
                         ErrorDiagAndThrow("Simple value expected.");
                     }
                 }
-                result = new EnumerationsNode(list, textSpan);
+                result = list;
                 return true;
             }
-            result = default(EnumerationsNode);
+            result = null;
             return false;
         }
         private bool Pattern(out AtomValueNode result) {
@@ -496,12 +495,12 @@ namespace XData.Compiler {
         }
         private IntegerRangeNode<ulong> UInt64Range() {
             ulong? minValue = null, maxValue = null;
-            TextSpan textSpan;
+            TextSpan dotdot;
             AtomValueNode minValueNode, maxValueNode;
             if (IntegerValue(out minValueNode)) {
                 minValue = ToUInt64(minValueNode);
             }
-            TokenExpected((int)TokenKind.DotDot, ".. expected.", out textSpan);
+            TokenExpected((int)TokenKind.DotDot, ".. expected.", out dotdot);
             if (IntegerValue(out maxValueNode)) {
                 maxValue = ToUInt64(maxValueNode);
                 if (maxValue < minValue) {
@@ -512,16 +511,16 @@ namespace XData.Compiler {
             else if (minValue == null) {
                 ErrorDiagAndThrow("Max value expected.");
             }
-            return new IntegerRangeNode<ulong>(minValue, maxValue, textSpan);
+            return new IntegerRangeNode<ulong>(minValueNode, minValue, maxValueNode, maxValue, dotdot);
         }
         private IntegerRangeNode<byte> ByteRange() {
             byte? minValue = null, maxValue = null;
-            TextSpan textSpan;
+            TextSpan dotdot;
             AtomValueNode minValueNode, maxValueNode;
             if (IntegerValue(out minValueNode)) {
                 minValue = ToByte(minValueNode);
             }
-            TokenExpected((int)TokenKind.DotDot, ".. expected.", out textSpan);
+            TokenExpected((int)TokenKind.DotDot, ".. expected.", out dotdot);
             if (IntegerValue(out maxValueNode)) {
                 maxValue = ToByte(maxValueNode);
                 if (maxValue < minValue) {
@@ -532,7 +531,7 @@ namespace XData.Compiler {
             else if (minValue == null) {
                 ErrorDiagAndThrow("Max value expected.");
             }
-            return new IntegerRangeNode<byte>(minValue, maxValue, textSpan);
+            return new IntegerRangeNode<byte>(minValueNode, minValue, maxValueNode, maxValue, dotdot);
         }
         private ulong ToUInt64(AtomValueNode node) {
             ulong value;
@@ -740,7 +739,6 @@ namespace XData.Compiler {
         }
         private bool MemberName(out NameNode result) {
             if (Keyword(MemberNameKeyword)) {
-                //TokenExpected(':');
                 result = NameExpected();
                 return true;
             }
@@ -749,7 +747,6 @@ namespace XData.Compiler {
         }
         private bool Substitution(out QualifiableNameNode result) {
             if (Keyword(SubstitutesKeyword)) {
-                //TokenExpected(':');
                 result = QualifiableNameExpected();
                 return true;
             }
@@ -960,10 +957,6 @@ namespace XData.Compiler {
             }
             return false;
         }
-        private void ErrorDiagAndThrow(DiagMsgEx diagMsg, TextSpan textSpan) {
-            _context.AddDiag(DiagSeverity.Error, (int)diagMsg.Code, diagMsg.GetMessage(), textSpan, null);
-            throw _parsingException;
-        }
         private bool List<T>(Node parent, NodeGetterWithParent<T> nodeGetterWithParent, out List<T> result) {
             result = null;
             T item;
@@ -985,6 +978,10 @@ namespace XData.Compiler {
                 result.Add(item);
             }
             return result != null;
+        }
+        private void ErrorDiagAndThrow(DiagMsgEx diagMsg, TextSpan textSpan) {
+            _context.AddDiag(DiagSeverity.Error, (int)diagMsg.Code, diagMsg.GetMessage(), textSpan, null);
+            throw _parsingException;
         }
 
     }

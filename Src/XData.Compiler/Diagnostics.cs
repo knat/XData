@@ -29,7 +29,7 @@ namespace XData.Compiler {
         CircularReferenceDetected,
         SimpleTypeRequired,
         ListItemTypeNotAllowed,
-        SimpleTypeRestrictionNotAllowed,
+        ValueRestrictionNotApplicable,
     }
     public struct DiagMsgEx {
         public DiagMsgEx(DiagCodeEx code) {
@@ -92,7 +92,8 @@ namespace XData.Compiler {
                     return "Circular reference detected.";
                 case DiagCodeEx.SimpleTypeRequired:
                     return "Simple type required.";
-
+                case DiagCodeEx.ValueRestrictionNotApplicable:
+                    return "Value restriction not applicable.";
 
 
 

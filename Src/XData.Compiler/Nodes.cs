@@ -447,15 +447,11 @@ namespace XData.Compiler {
         public TypeListNode(Node parent) : base(parent) { }
         public QualifiableNameNode ItemQName;
         public TypeNode ItemType;
-        public SimpleTypeRestrictionsNode SimpleTypeRestrictions;//opt
+        public ValueRestrictionsNode ValueRestrictions;//opt
         public override void Resolve() {
             ItemType = NamespaceAncestor.ResolveAsType(ItemQName);
-            if (SimpleTypeRestrictions != null) {
-                SimpleTypeRestrictions.CheckApplicabilities(TypeKind.ListType);
-                if (SimpleTypeRestrictions.ListItemTypeQName.IsValid) {
-                    //ContextEx.ErrorDiagAndThrow(DiagCodeEx.ListItemTypeNotAllowed, "List item type not allowed.",
-                    //    SimpleTypeRestrictions.ListItemTypeQName.TextSpan);
-                }
+            if (ValueRestrictions != null && ValueRestrictions.ListItemTypeQName.IsValid) {
+                ContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), ValueRestrictions.ListItemTypeQName.TextSpan);
             }
         }
         public override TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
@@ -463,8 +459,8 @@ namespace XData.Compiler {
             if (itemSymbol == null) {
                 ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.SimpleTypeRequired), ItemQName.TextSpan);
             }
-            if (SimpleTypeRestrictions != null) {
-                if (SimpleTypeRestrictions.ListItemTypeQName.IsValid) {
+            if (ValueRestrictions != null) {
+                if (ValueRestrictions.ListItemTypeQName.IsValid) {
 
                 }
             }
@@ -532,14 +528,14 @@ namespace XData.Compiler {
     public sealed class TypeRestriction : TypeDerivation {
         public TypeRestriction(Node parent) : base(parent) { }
         public RootStructuralChildrenNode StructuralChildren;
-        public SimpleTypeRestrictionsNode SimpleTypeRestrictions;
+        public ValueRestrictionsNode ValueRestrictions;
         public override void Resolve() {
             base.Resolve();
             if (StructuralChildren != null) {
                 StructuralChildren.Resolve();
             }
-            else if (SimpleTypeRestrictions != null) {
-                SimpleTypeRestrictions.Resolve();
+            else if (ValueRestrictions != null) {
+                ValueRestrictions.Resolve();
             }
         }
         public override TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
@@ -547,12 +543,12 @@ namespace XData.Compiler {
         }
     }
 
-    public sealed class SimpleTypeRestrictionsNode : Node {
-        public SimpleTypeRestrictionsNode(Node parent) : base(parent) { }
+    public sealed class ValueRestrictionsNode : Node {
+        public ValueRestrictionsNode(Node parent) : base(parent) { }
         public IntegerRangeNode<ulong> Lengths;
         public IntegerRangeNode<byte> Digits;
         public ValueRangeNode Values;
-        public EnumerationsNode Enumerations;
+        public List<SimpleValueNode> Enums;
         public AtomValueNode Pattern;
         public QualifiableNameNode ListItemTypeQName;
         public TypeNode ListItemType;
@@ -562,44 +558,76 @@ namespace XData.Compiler {
             }
         }
         public void CheckApplicabilities(TypeKind kind) {
-            switch (kind) {
-                case TypeKind.ListType:
-                    if (Digits.IsValid) {
-                        //ContextEx.ErrorDiagnostic(DiagnosticCodeEx.SimpleTypeRestrictionNotAllowed)
-                    }
-                    break;
+            if (Lengths.IsValid && !Contains(_lengthsTypeKinds, kind)) {
+                ContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Lengths.DotDot);
+            }
+            if (Digits.IsValid) {
+                if (Digits.MinValue != null && !Contains(_totalDigitsTypeKinds, kind)) {
+                    ContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Digits.MinValueNode.TextSpan);
+                }
+                if (Digits.MaxValue != null && kind != TypeKind.Decimal) {
+                    ContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Digits.MaxValueNode.TextSpan);
+                }
+            }
+            if (Values.IsValid && !Contains(_valuesTypeKinds, kind)) {
+                ContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Values.DotDot);
+            }
+            if (Enums != null && (!kind.IsConcreteAtomType())) {
+                ContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Enums[0].TextSpan);
+            }
+            if (Pattern.IsValid && !kind.IsConcreteAtomType()) {
+                ContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Pattern.TextSpan);
+            }
+            if (ListItemTypeQName.IsValid && kind != TypeKind.ListType) {
+                ContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), ListItemTypeQName.TextSpan);
             }
             ContextEx.ThrowIfHasErrors();
+        }
+        private static readonly TypeKind[] _lengthsTypeKinds = new TypeKind[] { TypeKind.ListType, TypeKind.String, TypeKind.IgnoreCaseString, TypeKind.Binary };
+        private static readonly TypeKind[] _totalDigitsTypeKinds = new TypeKind[] { TypeKind.Decimal, TypeKind.Int64, TypeKind.Int32, TypeKind.Int16, TypeKind.SByte, TypeKind.UInt64, TypeKind.UInt32, TypeKind.UInt16, TypeKind.Byte };
+        //private static readonly TypeKind[] _fractionDigitsTypeKinds = new TypeKind[] { TypeKind.Decimal };
+        private static readonly TypeKind[] _valuesTypeKinds = new TypeKind[] { TypeKind.String, TypeKind.IgnoreCaseString, TypeKind.Decimal, TypeKind.Int64, TypeKind.Int32, TypeKind.Int16, TypeKind.SByte, TypeKind.UInt64, TypeKind.UInt32, TypeKind.UInt16, TypeKind.Byte, TypeKind.Double, TypeKind.Single, TypeKind.Guid, TypeKind.TimeSpan, TypeKind.DateTimeOffset };
+        private static bool Contains(TypeKind[] array, TypeKind kind) {
+            foreach (var item in array) {
+                if (item == kind) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
     public struct IntegerRangeNode<T> where T : struct {
-        public IntegerRangeNode(T? minValue, T? maxValue, TextSpan textSpan) {
+        public IntegerRangeNode(AtomValueNode minValueNode, T? minValue, AtomValueNode maxValueNode, T? maxValue, TextSpan dotDot) {
+            MinValueNode = minValueNode;
             MinValue = minValue;
+            MaxValueNode = maxValueNode;
             MaxValue = maxValue;
-            TextSpan = textSpan;
+            DotDot = dotDot;
         }
+        public readonly AtomValueNode MinValueNode;
         public readonly T? MinValue;
+        public readonly AtomValueNode MaxValueNode;
         public readonly T? MaxValue;
-        public readonly TextSpan TextSpan;
+        public readonly TextSpan DotDot;
         public bool IsValid {
             get {
-                return TextSpan.IsValid;
+                return DotDot.IsValid;
             }
         }
     }
     public struct ValueRangeNode {
-        public ValueRangeNode(ValueBoundaryNode? minValue, ValueBoundaryNode? maxValue, TextSpan textSpan) {
+        public ValueRangeNode(ValueBoundaryNode? minValue, ValueBoundaryNode? maxValue, TextSpan dotDot) {
             MinValue = minValue;
             MaxValue = maxValue;
-            TextSpan = textSpan;
+            DotDot = dotDot;
         }
         public readonly ValueBoundaryNode? MinValue;
         public readonly ValueBoundaryNode? MaxValue;
-        public readonly TextSpan TextSpan;
+        public readonly TextSpan DotDot;
         public bool IsValid {
             get {
-                return TextSpan.IsValid;
+                return DotDot.IsValid;
             }
         }
 
@@ -617,21 +645,6 @@ namespace XData.Compiler {
             }
         }
     }
-    public struct EnumerationsNode {
-        public EnumerationsNode(List<SimpleValueNode> itemList, TextSpan textSpan) {
-            ItemList = itemList;
-            TextSpan = textSpan;
-        }
-        public readonly List<SimpleValueNode> ItemList;
-        public readonly TextSpan TextSpan;
-        public bool IsValid {
-            get {
-                return TextSpan.IsValid;
-            }
-        }
-
-    }
-
 
     public sealed class GlobalAttributeNode : NamespaceMemberNode {
         public GlobalAttributeNode(Node parent) : base(parent) { }

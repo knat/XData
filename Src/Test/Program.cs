@@ -7,7 +7,7 @@ using XData.IO.Text;
 namespace Test {
     class Program {
         static void Main(string[] args) {
-
+            new System.Data.SqlTypes.SqlDecimal();
             //TestLexer();
             TestParser();
         }

@@ -142,15 +142,15 @@ namespace XData {
 
     }
 
-    public sealed class SimpleTypeRestrictionSetInfo {
-        public SimpleTypeRestrictionSetInfo(
+    public sealed class ValueRestrictionSetInfo {
+        public ValueRestrictionSetInfo(
             ulong? minLength = null,
             ulong? maxLength = null,
             byte? totalDigits = null,
             byte? fractionDigits = null,
             ValueBoundaryInfo? minValue = null,
             ValueBoundaryInfo? maxValue = null,
-            EnumerationsInfo? enumerations = null,
+            EnumsInfo? enums = null,
             PatternInfo? pattern = null) {
             MinLength = minLength;
             MaxLength = maxLength;
@@ -158,7 +158,7 @@ namespace XData {
             FractionDigits = fractionDigits;
             MinValue = minValue;
             MaxValue = maxValue;
-            Enumerations = enumerations;
+            Enums = enums;
             Pattern = pattern;
         }
         public readonly ulong? MinLength;
@@ -167,14 +167,8 @@ namespace XData {
         public readonly byte? FractionDigits;
         public readonly ValueBoundaryInfo? MinValue;
         public readonly ValueBoundaryInfo? MaxValue;
-        public readonly EnumerationsInfo? Enumerations;
+        public readonly EnumsInfo? Enums;
         public readonly PatternInfo? Pattern;
-        //public bool EnumerationsContains(object value) {
-        //    if (Enumerations != null)
-        //        foreach (var i in Enumerations)
-        //            if (SimpleType.ValueEquals(i.Value, value)) return true;
-        //    return false;
-        //}
     }
     public struct ValueBoundaryInfo {
         public ValueBoundaryInfo(ValueTextInfo valueText, bool isInclusive) {
@@ -192,8 +186,8 @@ namespace XData {
         public readonly object Value;
         public readonly string Text;
     }
-    public struct EnumerationsInfo {
-        public EnumerationsInfo(ValueTextInfo[] items, string totalText) {
+    public struct EnumsInfo {
+        public EnumsInfo(ValueTextInfo[] items, string totalText) {
             Items = items;
             TotalText = totalText;
         }
@@ -211,23 +205,23 @@ namespace XData {
     }
     public class SimpleTypeInfo : TypeInfo {
         public SimpleTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo baseType,
-            SimpleTypeRestrictionSetInfo restrictionSet)
+            ValueRestrictionSetInfo valueRestrictionSet)
             : base(clrType, isAbstract, fullName, baseType) {
             if (baseType == null) throw new ArgumentNullException("baseType");
             //if (valueClrType == null) throw new ArgumentNullException("valueClrType");
             //ValueClrType = valueClrType;
-            RestrictionSet = restrictionSet;
+            ValueRestrictionSet = valueRestrictionSet;
         }
         //public Type ValueClrType { get; private set; }
-        public readonly SimpleTypeRestrictionSetInfo RestrictionSet;// { get; private set; }
+        public readonly ValueRestrictionSetInfo ValueRestrictionSet;// { get; private set; }
     }
-    //DOT NOT EDIT the order
     public enum TypeKind : byte {
         None = 0,
+        //DOT NOT CHANGE THE ORDER
+        ComplexType,
         SimpleType,
         AtomType,
         ListType,
-        ComplexType,
         String,
         IgnoreCaseString,
         Decimal,
@@ -251,10 +245,13 @@ namespace XData {
     }
     public static class InfoExtensions {
         public const string SystemUri = "http://xdata-lang.org";
-        public const TypeKind TypeStart = TypeKind.SimpleType;
+        public const TypeKind TypeStart = TypeKind.ComplexType;
         public const TypeKind TypeEnd = TypeKind.DateTimeOffset;
-        public const TypeKind AtomTypeStart = TypeKind.String;
-        public const TypeKind AtomTypeEnd = TypeKind.DateTimeOffset;
+        public const TypeKind ConcreteAtomTypeStart = TypeKind.String;
+        public const TypeKind ConcreteAtomTypeEnd = TypeKind.DateTimeOffset;
+        public static bool IsConcreteAtomType(this TypeKind kind) {
+            return kind >= ConcreteAtomTypeStart && kind <= ConcreteAtomTypeEnd;
+        }
         public static FullName ToFullName(this TypeKind kind) {
             return new FullName(SystemUri, kind.ToString());
         }
@@ -262,12 +259,13 @@ namespace XData {
             return new AtomTypeInfo(clrType, false, ToFullName(kind), baseType, null, kind);
         }
 
+
     }
 
     public sealed class AtomTypeInfo : SimpleTypeInfo {
         public AtomTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo baseType,
-            SimpleTypeRestrictionSetInfo restrictionSet, TypeKind kind)
-            : base(clrType, isAbstract, fullName, baseType, restrictionSet) {
+            ValueRestrictionSetInfo valueRestrictionSet, TypeKind kind)
+            : base(clrType, isAbstract, fullName, baseType, valueRestrictionSet) {
             Kind = kind;
         }
         public readonly TypeKind Kind;
@@ -276,8 +274,8 @@ namespace XData {
     }
     public sealed class ListTypeInfo : SimpleTypeInfo {
         public ListTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo baseType, SimpleTypeInfo itemType,
-            SimpleTypeRestrictionSetInfo restrictionSet)
-            : base(clrType, isAbstract, fullName, baseType, restrictionSet) {
+            ValueRestrictionSetInfo valueRestrictionSet)
+            : base(clrType, isAbstract, fullName, baseType, valueRestrictionSet) {
             ItemType = itemType;
         }
         //new public SimpleTypeInfo BaseType {
@@ -289,36 +287,14 @@ namespace XData {
     }
     public sealed class ComplexTypeInfo : TypeInfo {
         public ComplexTypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeInfo baseType,
-            AttributeSetInfo attributes, ObjectInfo children)
+            AttributeSetInfo attributeSet, ObjectInfo children)
             : base(clrType, isAbstract, fullName, baseType) {
-            Attributes = attributes;
+            AttributeSet = attributeSet;
             Children = children;
         }
-        public readonly AttributeSetInfo Attributes;//opt
+        public readonly AttributeSetInfo AttributeSet;//opt
         public readonly ObjectInfo Children;//opt, ChildSetInfo or SimpleTypeInfo
     }
-    //public sealed class SimpleChildComplexTypeInfo : ComplexTypeInfo {
-    //    public SimpleChildComplexTypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeInfo baseType,
-    //        AttributeSetInfo attributes, SimpleTypeInfo child)
-    //        : base(clrType, isAbstract, fullName, baseType, attributes, child) {
-    //    }
-    //    public SimpleTypeInfo Child {
-    //        get {
-    //            return Children as SimpleTypeInfo;
-    //        }
-    //    }
-    //}
-    //public sealed class ComplexChildrenComplexTypeInfo : ComplexTypeInfo {
-    //    public ComplexChildrenComplexTypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeInfo baseType,
-    //        AttributeSetInfo attributes, ChildSetInfo children)
-    //        : base(clrType, isAbstract, fullName, baseType, attributes, children) {
-    //    }
-    //    new public ChildSetInfo Children {
-    //        get {
-    //            return base.Children as ChildSetInfo;
-    //        }
-    //    }
-    //}
 
     public sealed class AttributeSetInfo : ObjectInfo {
         public AttributeSetInfo(Type clrType, AttributeInfo[] attributes)
@@ -338,7 +314,7 @@ namespace XData {
             return null;
         }
     }
-    public enum EntityDeclarationKind : byte {
+    public enum EntityDeclKind : byte {
         None = 0,
         Local,
         Global,
@@ -346,44 +322,41 @@ namespace XData {
     }
     public abstract class EntityInfo : NamedObjectInfo {
         public EntityInfo(Type clrType, bool isAbstract, FullName fullName, string displayName, TypeInfo type,
-            EntityDeclarationKind declarationKind, EntityInfo referencedEntity, bool isNullable)
+            EntityDeclKind declKind, EntityInfo referencedEntity, bool isNullable, bool isOptional)
             : base(clrType, isAbstract, fullName) {
-            _displayName = displayName;
+            DisplayName = displayName;
             Type = type;
-            DeclarationKind = declarationKind;
-            IsNullable = isNullable;
+            DeclKind = declKind;
             ReferencedEntity = referencedEntity;
+            IsNullable = isNullable;
+            IsOptional = isOptional;
         }
-        private readonly string _displayName;
-        public string DisplayName {
-            get {
-                return _displayName;
-            }
-        }
+        public string DisplayName { get; private set; }
         public readonly TypeInfo Type;
-        public readonly EntityDeclarationKind DeclarationKind;
+        public readonly EntityDeclKind DeclKind;
         public readonly EntityInfo ReferencedEntity;
         public readonly bool IsNullable;
+        public bool IsOptional { get; private set; }
         public bool IsLocal {
             get {
-                return DeclarationKind == EntityDeclarationKind.Local;
+                return DeclKind == EntityDeclKind.Local;
             }
         }
         public bool IsGlobal {
             get {
-                return DeclarationKind == EntityDeclarationKind.Global;
+                return DeclKind == EntityDeclKind.Global;
             }
         }
         public bool IsReference {
             get {
-                return DeclarationKind == EntityDeclarationKind.Reference;
+                return DeclKind == EntityDeclKind.Reference;
             }
         }
     }
     public sealed class AttributeInfo : EntityInfo {
         public AttributeInfo(Type clrType, FullName fullName, string displayName, SimpleTypeInfo type,
-            EntityDeclarationKind declarationKind, AttributeInfo referencedAttribute, bool isNullable)
-            : base(clrType, false, fullName, displayName, type, declarationKind, referencedAttribute, isNullable) {
+            EntityDeclKind declKind, AttributeInfo referencedAttribute, bool isNullable, bool isOptional)
+            : base(clrType, false, fullName, displayName, type, declKind, referencedAttribute, isNullable, isOptional) {
         }
         new public SimpleTypeInfo Type {
             get {
@@ -395,44 +368,29 @@ namespace XData {
                 return (AttributeInfo)ReferencedEntity;
             }
         }
-        public readonly bool IsOptional;
-        public readonly ValueTextInfo? DefaultValue;
 
     }
     public interface IChildInfo {
         string DisplayName { get; }
         int Order { get; }
-        bool IsEffectiveOptional { get; }
+        bool IsOptional { get; }
     }
 
     public sealed class ElementInfo : EntityInfo, IChildInfo {
         public ElementInfo(Type clrType, bool isAbstract, FullName fullName, string displayName, TypeInfo type,
-            EntityDeclarationKind declarationKind, ElementInfo referencedElement, bool isNullable,
-            int order, bool isEffectiveOptional,
-            ElementInfo substitutedElement, FullName[] directSubstitutingElementFullNames,
+            EntityDeclKind declKind, ElementInfo referencedElement, bool isNullable, bool isOptional,
+            int order, ElementInfo substitutedElement, FullName[] directSubstitutingElementFullNames,
             ProgramInfo program)
-            : base(clrType, isAbstract, fullName, displayName, type, declarationKind, referencedElement, isNullable) {
-            _order = order;
-            _isEffectiveOptional = isEffectiveOptional;
+            : base(clrType, isAbstract, fullName, displayName, type, declKind, referencedElement, isNullable, isOptional) {
+            Order = order;
             SubstitutedElement = substitutedElement;
             _directSubstitutingElementFullNames = directSubstitutingElementFullNames;
             Program = program;
         }
+        public int Order { get; private set; }
         public ElementInfo ReferencedElement {
             get {
                 return (ElementInfo)ReferencedEntity;
-            }
-        }
-        private readonly int _order;
-        public int Order {
-            get {
-                return _order;
-            }
-        }
-        private readonly bool _isEffectiveOptional;
-        public bool IsEffectiveOptional {
-            get {
-                return _isEffectiveOptional;
             }
         }
         public readonly ElementInfo SubstitutedElement;//opt, for global element
@@ -487,30 +445,15 @@ namespace XData {
 
     }
     public abstract class ChildContainerInfo : ObjectInfo, IChildInfo {
-        protected ChildContainerInfo(Type clrType, string displayName, int order, bool isEffectiveOptional)
+        protected ChildContainerInfo(Type clrType, string displayName, int order, bool isOptional)
             : base(clrType, false) {
-            _displayName = displayName;
-            _order = order;
-            _isEffectiveOptional = isEffectiveOptional;
+            DisplayName = displayName;
+            Order = order;
+            IsOptional = isOptional;
         }
-        private readonly string _displayName;
-        public string DisplayName {
-            get {
-                return _displayName;
-            }
-        }
-        private readonly int _order;
-        public int Order {
-            get {
-                return _order;
-            }
-        }
-        private readonly bool _isEffectiveOptional;
-        public bool IsEffectiveOptional {
-            get {
-                return _isEffectiveOptional;
-            }
-        }
+        public string DisplayName { get; private set; }
+        public int Order { get; private set; }
+        public bool IsOptional { get; private set; }
     }
     public enum ChildSetKind : byte {
         None = 0,
@@ -518,27 +461,29 @@ namespace XData {
         Choice
     }
     public sealed class ChildSetInfo : ChildContainerInfo {
-        public ChildSetInfo(Type clrType, string displayName, int order, bool isEffectiveOptional,
+        public ChildSetInfo(Type clrType, string displayName, int order, bool isOptional,
             ChildSetKind kind, IChildInfo[] members)
-            : base(clrType, displayName, order, isEffectiveOptional) {
+            : base(clrType, displayName, order, isOptional) {
             Kind = kind;
             Members = members;
         }
         public readonly ChildSetKind Kind;
         public readonly IChildInfo[] Members;
         public IChildInfo TryGetMember(int order) {
-            foreach (var member in Members) {
-                if (member.Order == order) {
-                    return member;
+            if (Members != null) {
+                foreach (var member in Members) {
+                    if (member.Order == order) {
+                        return member;
+                    }
                 }
             }
             return null;
         }
     }
     public sealed class ChildListInfo : ChildContainerInfo {
-        public ChildListInfo(Type clrType, string displayName, int order, bool isEffectiveOptional,
+        public ChildListInfo(Type clrType, string displayName, int order, bool isOptional,
             ulong minOccurs, ulong maxOccurs, IChildInfo item)
-            : base(clrType, displayName, order, isEffectiveOptional) {
+            : base(clrType, displayName, order, isOptional) {
             MinOccurs = minOccurs;
             MaxOccurs = maxOccurs;
             Item = item;

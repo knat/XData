@@ -58,7 +58,7 @@ type-extension:
 'extends' qualifiable-name attributes? children?
 ;
 type-restriction:
-'restricts' qualifiable-name attributes? (root-structural-children | simple-type-restrictions)?
+'restricts' qualifiable-name attributes? (root-structural-children | value-restrictions)?
 ;
 
 attributes:
@@ -73,7 +73,7 @@ simple-type-child:
 root-structural-children:
 '{' '}'
 ;
-simple-type-restrictions:
+value-restrictions:
 '${' (lengths | ?? | list-item-type)* '}'
 ;
 

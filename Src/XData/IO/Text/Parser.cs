@@ -135,15 +135,15 @@ namespace XData.IO.Text {
         protected void EndOfFileExpected() {
             TokenExpected(char.MaxValue, "End of file expected.");
         }
-        protected bool Name(out NameNode name) {
+        protected bool Name(out NameNode result) {
             var token = GetToken();
             var kind = token.Kind;
             if (kind == TokenKind.Name || kind == TokenKind.VerbatimName) {
-                name = new NameNode(token.Value, token.ToTextSpan(_filePath));
+                result = new NameNode(token.Value, token.ToTextSpan(_filePath));
                 ConsumeToken();
                 return true;
             }
-            name = default(NameNode);
+            result = default(NameNode);
             return false;
         }
         protected NameNode NameExpected() {
@@ -187,18 +187,18 @@ namespace XData.IO.Text {
             textSpan = default(TextSpan);
             return false;
         }
-        protected virtual bool QualifiableName(out QualifiableNameNode qName) {
+        protected virtual bool QualifiableName(out QualifiableNameNode result) {
             NameNode name;
             if (Name(out name)) {
                 if (Token(':')) {
-                    qName = new QualifiableNameNode(name, NameExpected());
+                    result = new QualifiableNameNode(name, NameExpected());
                 }
                 else {
-                    qName = new QualifiableNameNode(default(NameNode), name);
+                    result = new QualifiableNameNode(default(NameNode), name);
                 }
                 return true;
             }
-            qName = default(QualifiableNameNode);
+            result = default(QualifiableNameNode);
             return false;
         }
         protected QualifiableNameNode QualifiableNameExpected() {
@@ -209,7 +209,7 @@ namespace XData.IO.Text {
             ErrorDiagAndThrow("Qualifiable name expected.");
             return qName;
         }
-        protected bool AtomValue(out AtomValueNode atomValue, AtomValueKind expectedKind = AtomValueKind.None) {
+        protected bool AtomValue(out AtomValueNode result, AtomValueKind expectedKind = AtomValueKind.None) {
             var kind = AtomValueKind.None;
             var token = GetToken();
             switch (token.Kind) {
@@ -236,11 +236,11 @@ namespace XData.IO.Text {
                     break;
             }
             if (kind != AtomValueKind.None && (expectedKind == AtomValueKind.None || kind == expectedKind)) {
-                atomValue = new AtomValueNode(kind, token.Value, token.ToTextSpan(_filePath));
+                result = new AtomValueNode(kind, token.Value, token.ToTextSpan(_filePath));
                 ConsumeToken();
                 return true;
             }
-            atomValue = default(AtomValueNode);
+            result = default(AtomValueNode);
             return false;
         }
         protected AtomValueNode AtomValueExpected(AtomValueKind expectedKind = AtomValueKind.None) {
@@ -252,29 +252,29 @@ namespace XData.IO.Text {
                 expectedKind.ToString() + " value expected.");
             return atomValue;
         }
-        protected bool StringValue(out AtomValueNode atomValue) {
-            return AtomValue(out atomValue, AtomValueKind.String);
+        protected bool StringValue(out AtomValueNode result) {
+            return AtomValue(out result, AtomValueKind.String);
         }
         protected AtomValueNode StringValueExpected() {
             return AtomValueExpected(AtomValueKind.String);
         }
-        protected bool IntegerValue(out AtomValueNode atomValue) {
-            return AtomValue(out atomValue, AtomValueKind.Integer);
+        protected bool IntegerValue(out AtomValueNode result) {
+            return AtomValue(out result, AtomValueKind.Integer);
         }
         protected AtomValueNode IntegerValueExpected() {
             return AtomValueExpected(AtomValueKind.Integer);
         }
 
-        protected bool TypeIndicator(out QualifiableNameNode typeQName) {
+        protected bool TypeIndicator(out QualifiableNameNode result) {
             if (Token('(')) {
-                typeQName = QualifiableNameExpected();
+                result = QualifiableNameExpected();
                 TokenExpected(')');
                 return true;
             }
-            typeQName = default(QualifiableNameNode);
+            result = default(QualifiableNameNode);
             return false;
         }
-        protected bool SimpleValue(QualifiableNameNode typeQName, out SimpleValueNode simpleValue) {
+        protected bool SimpleValue(QualifiableNameNode typeQName, out SimpleValueNode result) {
             AtomValueNode atom;
             DelimitedList<SimpleValueNode> list = null;
             var hasAtom = AtomValue(out atom);
@@ -283,16 +283,16 @@ namespace XData.IO.Text {
                 hasList = List((int)TokenKind.HashOpenBracket, ']', _simpleValueGetter, "Simple value or ] expected.", out list);
             }
             if (hasAtom || hasList) {
-                simpleValue = new SimpleValueNode(typeQName, atom, list);
+                result = new SimpleValueNode(typeQName, atom, list);
                 return true;
             }
-            simpleValue = default(SimpleValueNode);
+            result = default(SimpleValueNode);
             return false;
         }
-        protected virtual bool SimpleValue(out SimpleValueNode simpleValue) {
+        protected virtual bool SimpleValue(out SimpleValueNode result) {
             QualifiableNameNode typeQName;
             var hasTypeQName = TypeIndicator(out typeQName);
-            if (SimpleValue(typeQName, out simpleValue)) {
+            if (SimpleValue(typeQName, out result)) {
                 return true;
             }
             if (hasTypeQName) {
@@ -413,7 +413,7 @@ namespace XData.IO.Text {
             }
             return false;
         }
-        private bool UriAliasing(List<UriAliasingNode> list, out UriAliasingNode uriAliasing) {
+        private bool UriAliasing(List<UriAliasingNode> list, out UriAliasingNode result) {
             bool? isDefault = null;
             NameNode alias;
             if (Name(out alias)) {
@@ -446,27 +446,27 @@ namespace XData.IO.Text {
                         }
                     }
                 }
-                uriAliasing = new UriAliasingNode(alias, uri, isDefaultValue);
+                result = new UriAliasingNode(alias, uri, isDefaultValue);
                 return true;
             }
-            uriAliasing = default(UriAliasingNode);
+            result = default(UriAliasingNode);
             return false;
         }
-        protected override bool QualifiableName(out QualifiableNameNode qName) {
+        protected override bool QualifiableName(out QualifiableNameNode result) {
             NameNode name;
             if (Name(out name)) {
                 if (Token(':')) {
-                    qName = new QualifiableNameNode(name, NameExpected());
+                    result = new QualifiableNameNode(name, NameExpected());
                 }
                 else {
-                    qName = new QualifiableNameNode(default(NameNode), name);
+                    result = new QualifiableNameNode(default(NameNode), name);
                 }
                 if (_getFullName) {
-                    GetFullName(ref qName);
+                    GetFullName(ref result);
                 }
                 return true;
             }
-            qName = default(QualifiableNameNode);
+            result = default(QualifiableNameNode);
             return false;
         }
         private void GetFullName(ref QualifiableNameNode qName) {
@@ -493,7 +493,7 @@ namespace XData.IO.Text {
             }
             return null;
         }
-        private bool Element(out ElementNode element) {
+        private bool Element(out ElementNode result) {
             QualifiableNameNode qName;
             _getFullName = false;
             var hasQName = QualifiableName(out qName);
@@ -511,13 +511,13 @@ namespace XData.IO.Text {
                 if (hasUriAliasingList) {
                     _uriAliasingListStack.Pop();
                 }
-                element = new ElementNode(qName, elementValue);
+                result = new ElementNode(qName, elementValue);
                 return true;
             }
-            element = default(ElementNode);
+            result = default(ElementNode);
             return false;
         }
-        private bool ElementValue(TextSpan equalsTokenTextSpan, out ElementValueNode elementValue) {
+        private bool ElementValue(TextSpan equalsTokenTextSpan, out ElementValueNode result) {
             QualifiableNameNode typeQName;
             var hasTypeQName = TypeIndicator(out typeQName);
             ComplexValueNode complexValue;
@@ -528,18 +528,18 @@ namespace XData.IO.Text {
                 hasSimpleValue = SimpleValue(typeQName, out simpleValue);
             }
             if (hasComplexValue || hasSimpleValue) {
-                elementValue = new ElementValueNode(complexValue, simpleValue);
+                result = new ElementValueNode(complexValue, simpleValue);
                 return true;
             }
             else {
                 if (hasTypeQName) {
                     ErrorDiagAndThrow("Complex value or simple value expetced.");
                 }
-                elementValue = default(ElementValueNode);
+                result = default(ElementValueNode);
                 return false;
             }
         }
-        private bool ComplexValue(TextSpan equalsTokenTextSpan, QualifiableNameNode typeQName, out ComplexValueNode complexValue) {
+        private bool ComplexValue(TextSpan equalsTokenTextSpan, QualifiableNameNode typeQName, out ComplexValueNode result) {
             DelimitedList<AttributeNode> attributeList;
             var hasAttributeList = List('[', ']', _attributeGetter, "Attribute or ] expected.", out attributeList);
             DelimitedList<ElementNode> elementList = null;
@@ -568,21 +568,21 @@ namespace XData.IO.Text {
                 }
             }
             if (hasAttributeList || elementList != null || simpleValue.IsValid) {
-                complexValue = new ComplexValueNode(equalsTokenTextSpan, typeQName, attributeList, elementList, simpleValue, default(TextSpan));
+                result = new ComplexValueNode(equalsTokenTextSpan, typeQName, attributeList, elementList, simpleValue, default(TextSpan));
                 return true;
             }
             else {
                 TextSpan semicolonTokenTextSpan;
                 if (Token(';', out semicolonTokenTextSpan)) {
-                    complexValue = new ComplexValueNode(equalsTokenTextSpan, typeQName, null, null,
+                    result = new ComplexValueNode(equalsTokenTextSpan, typeQName, null, null,
                         default(SimpleValueNode), semicolonTokenTextSpan);
                     return true;
                 }
             }
-            complexValue = default(ComplexValueNode);
+            result = default(ComplexValueNode);
             return false;
         }
-        private bool Attribute(out AttributeNode attribute) {
+        private bool Attribute(out AttributeNode result) {
             QualifiableNameNode qName;
             _resolveNullAlias = false;
             var hasQName = QualifiableName(out qName);
@@ -592,10 +592,10 @@ namespace XData.IO.Text {
                 if (Token('=')) {
                     value = SimpleValueExpected();
                 }
-                attribute = new AttributeNode(qName, value);
+                result = new AttributeNode(qName, value);
                 return true;
             }
-            attribute = default(AttributeNode);
+            result = default(AttributeNode);
             return false;
         }
 

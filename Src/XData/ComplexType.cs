@@ -33,13 +33,13 @@ namespace XData {
                 return obj;
             }
             var complexTypeInfo = ComplexTypeInfo;
-            if (complexTypeInfo.Attributes == null) {
+            if (complexTypeInfo.AttributeSet == null) {
                 if (@try) {
                     return null;
                 }
                 throw new InvalidOperationException("Attribute set not allowed.");
             }
-            obj = complexTypeInfo.Attributes.CreateInstance<T>();
+            obj = complexTypeInfo.AttributeSet.CreateInstance<T>();
             Attributes = obj;
             return obj;
         }
@@ -98,7 +98,7 @@ namespace XData {
             //
             XAttributeSet attributeSet = null;
             var attributeListNode = complexValueNode.AttributeList;
-            var attributeSetInfo = effComplexTypeInfo.Attributes;
+            var attributeSetInfo = effComplexTypeInfo.AttributeSet;
             if (attributeSetInfo != null) {
                 if (!XAttributeSet.TryCreate(context, programInfo, attributeSetInfo,
                     equalsTokenTextSpan, attributeListNode, out attributeSet)) {

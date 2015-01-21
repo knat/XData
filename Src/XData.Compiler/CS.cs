@@ -908,14 +908,6 @@ namespace XData.Compiler {
             get { return QualifiedName(GlobalSystemRuntimeSerializationName, "OnDeserializedAttribute"); }
         }
         //
-        //global::Metah
-        internal static AliasQualifiedNameSyntax GlobalMetahName {
-            get { return GlobalAliasQualifiedName("Metah"); }
-        }
-        //global::XData
-        internal static AliasQualifiedNameSyntax GlobalXDataName {
-            get { return GlobalAliasQualifiedName("XData"); }
-        }
         //
         //
         //global::System.NotImplementedException
