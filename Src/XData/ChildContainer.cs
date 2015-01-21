@@ -277,7 +277,7 @@ namespace XData {
                                     return res;
                                 }
                                 if (itemCount < childListInfo.MinOccurs) {
-                                    _context.AddErrorDiag(new DiagMsg( DiagCode.ChildListCountIsNotGreaterThanOrEqualToMinOccurs,
+                                    _context.AddErrorDiag(new DiagMsg(DiagCode.ChildListCountIsNotGreaterThanOrEqualToMinOccurs,
                                         childListInfo.DisplayName, itemCount.ToInvString(), childListInfo.MinOccurs.ToInvString()), GetTextSpan());
                                     return CreationResult.Error;
                                 }
@@ -308,39 +308,38 @@ namespace XData {
 
     public abstract class XChildList<T> : XChildContainer, IList<T>, IReadOnlyList<T> where T : XChild {
         protected XChildList() {
-            _childList = new List<T>();
+            _itemList = new List<T>();
         }
-        protected XChildList(IEnumerable<T> items)
-            : this() {
+        protected XChildList(IEnumerable<T> items) : this() {
             AddRange(items);
         }
-        private List<T> _childList;
+        private List<T> _itemList;
         internal override sealed void InternalAdd(XChild child) {
-            _childList.Add(SetParentTo((T)child));
+            Add((T)child);
         }
         public override XObject DeepClone() {
             var obj = (XChildList<T>)base.DeepClone();
-            obj._childList = new List<T>();
-            foreach (var child in _childList) {
-                obj._childList.Add(obj.SetParentTo(child));
+            obj._itemList = new List<T>();
+            foreach (var child in _itemList) {
+                obj.Add(child);
             }
             return obj;
         }
         public int Count {
             get {
-                return _childList.Count;
+                return _itemList.Count;
             }
         }
         public T this[int index] {
             get {
-                return _childList[index];
+                return _itemList[index];
             }
             set {
-                _childList[index] = SetParentTo(value);
+                _itemList[index] = SetParentTo(value);
             }
         }
         public void Add(T item) {
-            _childList.Add(SetParentTo(item));
+            _itemList.Add(SetParentTo(item));
         }
         public void AddRange(IEnumerable<T> items) {
             if (items != null) {
@@ -350,28 +349,28 @@ namespace XData {
             }
         }
         public void Insert(int index, T item) {
-            _childList.Insert(index, SetParentTo(item));
+            _itemList.Insert(index, SetParentTo(item));
         }
         public bool Remove(T item) {
-            return _childList.Remove(item);
+            return _itemList.Remove(item);
         }
         public void RemoveAt(int index) {
-            _childList.RemoveAt(index);
+            _itemList.RemoveAt(index);
         }
         public void Clear() {
-            _childList.Clear();
+            _itemList.Clear();
         }
         public int IndexOf(T item) {
-            return _childList.IndexOf(item);
+            return _itemList.IndexOf(item);
         }
         public bool Contains(T item) {
-            return _childList.Contains(item);
+            return _itemList.Contains(item);
         }
         public void CopyTo(T[] array, int arrayIndex) {
-            _childList.CopyTo(array, arrayIndex);
+            _itemList.CopyTo(array, arrayIndex);
         }
         public List<T>.Enumerator GetEnumerator() {
-            return _childList.GetEnumerator();
+            return _itemList.GetEnumerator();
         }
         IEnumerator<T> IEnumerable<T>.GetEnumerator() {
             return GetEnumerator();
@@ -379,11 +378,32 @@ namespace XData {
         IEnumerator IEnumerable.GetEnumerator() {
             return GetEnumerator();
         }
-        bool ICollection<T>.IsReadOnly {
+        public bool IsReadOnly {
             get {
                 return false;
             }
         }
+        protected IEnumerator<U> GetEnumeratorCore<U>() where U : T {
+            foreach (var item in _itemList) {
+                yield return item as U;
+            }
+        }
+        protected void CopyToCore<U>(U[] array, int arrayIndex) where U : T {
+            if (array == null) {
+                throw new ArgumentNullException("array");
+            }
+            if (arrayIndex < 0 || arrayIndex > array.Length) {
+                throw new ArgumentOutOfRangeException("arrayIndex");
+            }
+            var count = _itemList.Count;
+            if (array.Length - arrayIndex < count) {
+                throw new ArgumentException("Insufficient array space.");
+            }
+            for (var i = 0; i < count; ++i) {
+                array[arrayIndex++] = _itemList[i] as U;
+            }
+        }
+
         //
         public ChildListInfo ChildListInfo {
             get {

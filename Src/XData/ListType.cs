@@ -36,12 +36,12 @@ namespace XData {
             AddRange(items);
         }
         private List<T> _itemList;
-        internal override sealed void InternalAdd(XSimpleType item) {
-            Add((T)item);
-        }
         public override sealed bool TryGetValueLength(out ulong result) {
             result = (ulong)_itemList.Count;
             return true;
+        }
+        internal override sealed void InternalAdd(XSimpleType item) {
+            Add((T)item);
         }
         public override XObject DeepClone() {
             var obj = (XListType<T>)base.DeepClone();
@@ -162,9 +162,29 @@ namespace XData {
         IEnumerator IEnumerable.GetEnumerator() {
             return GetEnumerator();
         }
-        bool ICollection<T>.IsReadOnly {
+        public bool IsReadOnly {
             get {
                 return false;
+            }
+        }
+        protected IEnumerator<U> GetEnumeratorCore<U>() where U : T {
+            foreach (var item in _itemList) {
+                yield return item as U;
+            }
+        }
+        protected void CopyToCore<U>(U[] array, int arrayIndex) where U : T {
+            if (array == null) {
+                throw new ArgumentNullException("array");
+            }
+            if (arrayIndex < 0 || arrayIndex > array.Length) {
+                throw new ArgumentOutOfRangeException("arrayIndex");
+            }
+            var count = _itemList.Count;
+            if (array.Length - arrayIndex < count) {
+                throw new ArgumentException("Insufficient array space.");
+            }
+            for (var i = 0; i < count; ++i) {
+                array[arrayIndex++] = _itemList[i] as U;
             }
         }
     }

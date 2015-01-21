@@ -205,15 +205,15 @@ namespace XData {
     }
     public class SimpleTypeInfo : TypeInfo {
         public SimpleTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo baseType,
-            ValueRestrictionSetInfo valueRestrictionSet)
+            ValueRestrictionSetInfo valueRestrictions)
             : base(clrType, isAbstract, fullName, baseType) {
             if (baseType == null) throw new ArgumentNullException("baseType");
             //if (valueClrType == null) throw new ArgumentNullException("valueClrType");
             //ValueClrType = valueClrType;
-            ValueRestrictionSet = valueRestrictionSet;
+            ValueRestrictions = valueRestrictions;
         }
         //public Type ValueClrType { get; private set; }
-        public readonly ValueRestrictionSetInfo ValueRestrictionSet;// { get; private set; }
+        public readonly ValueRestrictionSetInfo ValueRestrictions;// { get; private set; }
     }
     public enum TypeKind : byte {
         None = 0,
@@ -264,8 +264,8 @@ namespace XData {
 
     public sealed class AtomTypeInfo : SimpleTypeInfo {
         public AtomTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo baseType,
-            ValueRestrictionSetInfo valueRestrictionSet, TypeKind kind)
-            : base(clrType, isAbstract, fullName, baseType, valueRestrictionSet) {
+            ValueRestrictionSetInfo valueRestrictions, TypeKind kind)
+            : base(clrType, isAbstract, fullName, baseType, valueRestrictions) {
             Kind = kind;
         }
         public readonly TypeKind Kind;
@@ -274,8 +274,8 @@ namespace XData {
     }
     public sealed class ListTypeInfo : SimpleTypeInfo {
         public ListTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo baseType, SimpleTypeInfo itemType,
-            ValueRestrictionSetInfo valueRestrictionSet)
-            : base(clrType, isAbstract, fullName, baseType, valueRestrictionSet) {
+            ValueRestrictionSetInfo valueRestrictions)
+            : base(clrType, isAbstract, fullName, baseType, valueRestrictions) {
             ItemType = itemType;
         }
         //new public SimpleTypeInfo BaseType {
@@ -287,13 +287,23 @@ namespace XData {
     }
     public sealed class ComplexTypeInfo : TypeInfo {
         public ComplexTypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeInfo baseType,
-            AttributeSetInfo attributeSet, ObjectInfo children)
+            AttributeSetInfo attributes, ObjectInfo children)
             : base(clrType, isAbstract, fullName, baseType) {
-            AttributeSet = attributeSet;
+            Attributes = attributes;
             Children = children;
         }
-        public readonly AttributeSetInfo AttributeSet;//opt
-        public readonly ObjectInfo Children;//opt, ChildSetInfo or SimpleTypeInfo
+        public readonly AttributeSetInfo Attributes;//opt
+        public readonly ObjectInfo Children;//opt
+        public SimpleTypeInfo SimpleChild {
+            get {
+                return Children as SimpleTypeInfo;
+            }
+        }
+        public ChildSetInfo ComplexChildren {
+            get {
+                return Children as ChildSetInfo;
+            }
+        }
     }
 
     public sealed class AttributeSetInfo : ObjectInfo {

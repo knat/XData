@@ -28,7 +28,14 @@ namespace XData.Compiler {
         CSNamespaceNameNotSpecifiedForNamespace,
         CircularReferenceDetected,
         SimpleTypeRequired,
+        ComplexTypeRequired,
         ListItemTypeNotAllowed,
+        ThisTypeContainsComplexChildrenButBaseTypeContainsSimpleChild,
+        ThisTypeContainsSimpleChildButBaseTypeContainsComplexChildren,
+        ExtendingWithSimpleChildRequiresBaseTypeHasNoChildren,
+        AttributesNotAllowedInSimpleTypeRestriction,
+        ComplexChildrenNotAllowedInSimpleTypeRestriction,
+
         ValueRestrictionNotApplicable,
     }
     public struct DiagMsgEx {
@@ -92,6 +99,19 @@ namespace XData.Compiler {
                     return "Circular reference detected.";
                 case DiagCodeEx.SimpleTypeRequired:
                     return "Simple type required.";
+                case DiagCodeEx.ComplexTypeRequired:
+                    return "Complex type required.";
+                case DiagCodeEx.ThisTypeContainsComplexChildrenButBaseTypeContainsSimpleChild:
+                    return "This type contains complex children but base type contains simple child.";
+                case DiagCodeEx.ThisTypeContainsSimpleChildButBaseTypeContainsComplexChildren:
+                    return "This type contains simple child but base type contains complex children.";
+                case DiagCodeEx.ExtendingWithSimpleChildRequiresBaseTypeHasNoChildren:
+                    return "Extending with simple child requires base type has no children.";
+                case DiagCodeEx.AttributesNotAllowedInSimpleTypeRestriction:
+                    return "Attributes not allowed in simple type restriction.";
+                case DiagCodeEx.ComplexChildrenNotAllowedInSimpleTypeRestriction:
+                    return "Complex children not allowed in simple type restriction.";
+
                 case DiagCodeEx.ValueRestrictionNotApplicable:
                     return "Value restriction not applicable.";
 

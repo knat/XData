@@ -33,13 +33,13 @@ namespace XData {
                 return obj;
             }
             var complexTypeInfo = ComplexTypeInfo;
-            if (complexTypeInfo.AttributeSet == null) {
+            if (complexTypeInfo.Attributes == null) {
                 if (@try) {
                     return null;
                 }
                 throw new InvalidOperationException("Attribute set not allowed.");
             }
-            obj = complexTypeInfo.AttributeSet.CreateInstance<T>();
+            obj = complexTypeInfo.Attributes.CreateInstance<T>();
             Attributes = obj;
             return obj;
         }
@@ -90,36 +90,36 @@ namespace XData {
         internal static bool TryCreate(Context context, ProgramInfo programInfo, ComplexTypeInfo complexTypeInfo, bool isNullable,
             ComplexValueNode complexValueNode, out XComplexType result) {
             result = null;
-            var equalsTokenTextSpan = complexValueNode.EqualsTokenTextSpan;
+            var equalsTokenTextSpan = complexValueNode.EqualsToken;
             var effComplexTypeInfo = (ComplexTypeInfo)GetTypeInfo(context, programInfo, complexValueNode.TypeQName, complexTypeInfo, equalsTokenTextSpan);
             if (effComplexTypeInfo == null) {
                 return false;
             }
             //
-            XAttributeSet attributeSet = null;
-            var attributeListNode = complexValueNode.AttributeList;
-            var attributeSetInfo = effComplexTypeInfo.AttributeSet;
+            XAttributeSet attributes = null;
+            var attributeListNode = complexValueNode.Attributes;
+            var attributeSetInfo = effComplexTypeInfo.Attributes;
             if (attributeSetInfo != null) {
                 if (!XAttributeSet.TryCreate(context, programInfo, attributeSetInfo,
-                    equalsTokenTextSpan, attributeListNode, out attributeSet)) {
+                    equalsTokenTextSpan, attributeListNode, out attributes)) {
                     return false;
                 }
             }
             else {
                 if (attributeListNode != null && attributeListNode.Count > 0) {
                     context.AddErrorDiag(new DiagMsg(DiagCode.TypeProhibitsAttributes, effComplexTypeInfo.FullName.ToString()),
-                        attributeListNode.OpenTokenTextSpan);
+                        attributeListNode.OpenToken);
                     return false;
                 }
             }
             //
             XObject children = null;
-            var simpleValueNode = complexValueNode.SimpleValue;
-            var simpleTypeInfo = effComplexTypeInfo.Children as SimpleTypeInfo;
+            var simpleValueNode = complexValueNode.SimpleChild;
+            var simpleTypeInfo = effComplexTypeInfo.SimpleChild;
             if (simpleTypeInfo != null) {
                 if (!simpleValueNode.IsValid) {
-                    context.AddErrorDiag(new DiagMsg(DiagCode.TypeRequiresSimpleTypeChild, effComplexTypeInfo.FullName.ToString()),
-                        complexValueNode.OpenElementTextSpan);
+                    context.AddErrorDiag(new DiagMsg(DiagCode.TypeRequiresSimpleChild, effComplexTypeInfo.FullName.ToString()),
+                        complexValueNode.ChildrenOpenToken);
                     return false;
                 }
                 XSimpleType simpleType;
@@ -130,17 +130,17 @@ namespace XData {
                 children = simpleType;
             }
             else {
-                var elementListNode = complexValueNode.ElementList;
-                var childSetInfo = effComplexTypeInfo.Children as ChildSetInfo;
+                var elementListNode = complexValueNode.ComplexChildren;
+                var childSetInfo = effComplexTypeInfo.ComplexChildren;
                 if (childSetInfo != null) {
                     if (simpleValueNode.IsValid) {
-                        context.AddErrorDiag(new DiagMsg(DiagCode.TypeRequiresElementChildren, effComplexTypeInfo.FullName.ToString()),
+                        context.AddErrorDiag(new DiagMsg(DiagCode.TypeRequiresComplexChildren, effComplexTypeInfo.FullName.ToString()),
                             simpleValueNode.TextSpan);
                         return false;
                     }
                     XChildSet childSet;
                     if (!XChildSet.TryCreate(context, programInfo, childSetInfo,
-                        complexValueNode.CloseElementTextSpan, elementListNode, out childSet)) {
+                        complexValueNode.ChildrenCloseToken, elementListNode, out childSet)) {
                         return false;
                     }
                     children = childSet;
@@ -148,12 +148,12 @@ namespace XData {
                 else {
                     if (simpleValueNode.IsValid || (elementListNode != null && elementListNode.Count > 0)) {
                         context.AddErrorDiag(new DiagMsg(DiagCode.TypeProhibitsChildren, effComplexTypeInfo.FullName.ToString()),
-                            complexValueNode.OpenElementTextSpan);
+                            complexValueNode.ChildrenOpenToken);
                     }
                 }
             }
             result = effComplexTypeInfo.CreateInstance<XComplexType>();
-            result.Attributes = attributeSet;
+            result.Attributes = attributes;
             result.Children = children;
             return true;
         }

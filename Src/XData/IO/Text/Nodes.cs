@@ -3,105 +3,13 @@ using System.Collections.Generic;
 
 namespace XData.IO.Text {
     public sealed class DelimitedList<T> : List<T> {
-        public DelimitedList(TextSpan openTokenTextSpan) {
-            OpenTokenTextSpan = openTokenTextSpan;
+        public DelimitedList(TextSpan openToken) {
+            OpenToken = openToken;
         }
-        public readonly TextSpan OpenTokenTextSpan;
-        public TextSpan CloseTokenTextSpan;
+        public readonly TextSpan OpenToken;
+        public TextSpan CloseToken;
     }
 
-    //public struct ListOrSingleNode<T> {
-    //    public ListOrSingleNode(List<T> list, T single, bool hasSingle,
-    //        TextSpan openTokenTextSpan, TextSpan closeTokenTextSpan) {
-    //        List = list;
-    //        Single = single;
-    //        HasSingle = hasSingle;
-    //        OpenTokenTextSpan = openTokenTextSpan;
-    //        CloseTokenTextSpan = closeTokenTextSpan;
-    //        IsValid = true;
-    //    }
-    //    public readonly List<T> List;//list take precedence
-    //    public readonly T Single;
-    //    public readonly bool HasSingle;
-    //    public readonly TextSpan OpenTokenTextSpan;
-    //    public readonly TextSpan CloseTokenTextSpan;
-    //    public readonly bool IsValid;
-    //    public bool HasList {
-    //        get {
-    //            return List != null;
-    //        }
-    //    }
-    //    public bool HasItem {
-    //        get {
-    //            return List != null || HasSingle;
-    //        }
-    //    }
-    //    public Enumerator GetEnumerator() {
-    //        return new Enumerator(List, Single, HasSingle);
-    //    }
-    //    public struct Enumerator {
-    //        internal Enumerator(List<T> list, T single, bool hasSingle) {
-    //            _list = list;
-    //            _single = single;
-    //            _index = 0;
-    //            if (list != null) {
-    //                _count = list.Count;
-    //            }
-    //            else if (hasSingle) {
-    //                _count = 1;
-    //            }
-    //            else {
-    //                _count = 0;
-    //            }
-    //            _current = default(T);
-    //        }
-    //        private readonly List<T> _list;
-    //        private readonly T _single;
-    //        private readonly int _count;
-    //        private int _index;
-    //        private T _current;
-    //        public bool MoveNext() {
-    //            if (_index < _count) {
-    //                if (_list != null) {
-    //                    _current = _list[_index];
-    //                }
-    //                else {
-    //                    _current = _single;
-    //                }
-    //                ++_index;
-    //                return true;
-    //            }
-    //            return false;
-    //        }
-    //        public T Current {
-    //            get {
-    //                return _current;
-    //            }
-    //        }
-    //    }
-    //}
-
-    //public struct ListNode<T> {
-    //    public ListNode(List<T> list, TextSpan openTokenTextSpan, TextSpan closeTokenTextSpan) {
-    //        List = list;
-    //        OpenTokenTextSpan = openTokenTextSpan;
-    //        CloseTokenTextSpan = closeTokenTextSpan;
-    //    }
-    //    public readonly List<T> List;
-    //    public readonly TextSpan OpenTokenTextSpan;
-    //    public readonly TextSpan CloseTokenTextSpan;
-    //    private static readonly List<T> _emptyList = new List<T>();
-    //    public List<T> EffectiveList {
-    //        get {
-    //            return List ?? _emptyList;
-    //        }
-    //    }
-    //    public bool IsValid {
-    //        get {
-    //            return List != null;
-    //        }
-    //    }
-    //}
     public struct NameNode : IEquatable<NameNode> {
         public NameNode(string value, TextSpan textSpan) {
             Value = value;
@@ -208,7 +116,7 @@ namespace XData.IO.Text {
                 if (Atom.IsValid) {
                     return Atom.TextSpan;
                 }
-                return List.OpenTokenTextSpan;
+                return List.OpenToken;
             }
         }
     }
@@ -269,53 +177,53 @@ namespace XData.IO.Text {
         }
     }
     public struct ComplexValueNode {
-        public ComplexValueNode(TextSpan equalsTokenTextSpan, QualifiableNameNode typeQName,
-            DelimitedList<AttributeNode> attributeList, DelimitedList<ElementNode> elementList,
-            SimpleValueNode simpleValue, TextSpan semicolonTokenTextSpan) {
-            EqualsTokenTextSpan = equalsTokenTextSpan;
+        public ComplexValueNode(TextSpan equalsToken, QualifiableNameNode typeQName,
+            DelimitedList<AttributeNode> attributes, DelimitedList<ElementNode> complexChildren,
+            SimpleValueNode simpleChild, TextSpan semicolonToken) {
+            EqualsToken = equalsToken;
             TypeQName = typeQName;
-            AttributeList = attributeList;
-            ElementList = elementList;
-            SimpleValue = simpleValue;
-            SemicolonTokenTextSpan = semicolonTokenTextSpan;
+            Attributes = attributes;
+            ComplexChildren = complexChildren;
+            SimpleChild = simpleChild;
+            SemicolonToken = semicolonToken;
         }
-        public readonly TextSpan EqualsTokenTextSpan;
+        public readonly TextSpan EqualsToken;
         public readonly QualifiableNameNode TypeQName;
-        public readonly DelimitedList<AttributeNode> AttributeList;
-        public readonly DelimitedList<ElementNode> ElementList;
-        public readonly SimpleValueNode SimpleValue;
-        public readonly TextSpan SemicolonTokenTextSpan;
+        public readonly DelimitedList<AttributeNode> Attributes;
+        public readonly DelimitedList<ElementNode> ComplexChildren;
+        public readonly SimpleValueNode SimpleChild;
+        public readonly TextSpan SemicolonToken;
         public bool IsValid {
             get {
-                return AttributeList != null || ElementList != null || SimpleValue.IsValid || SemicolonTokenTextSpan.IsValid;
+                return Attributes != null || ComplexChildren != null || SimpleChild.IsValid || SemicolonToken.IsValid;
             }
         }
-        public TextSpan OpenElementTextSpan {
+        public TextSpan ChildrenOpenToken {
             get {
-                if (ElementList != null) {
-                    return ElementList.OpenTokenTextSpan;
+                if (ComplexChildren != null) {
+                    return ComplexChildren.OpenToken;
                 }
-                if (SimpleValue.IsValid) {
-                    return SimpleValue.TextSpan;
+                if (SimpleChild.IsValid) {
+                    return SimpleChild.TextSpan;
                 }
-                if (AttributeList != null) {
-                    return AttributeList.CloseTokenTextSpan;
+                if (Attributes != null) {
+                    return Attributes.CloseToken;
                 }
-                return SemicolonTokenTextSpan;
+                return SemicolonToken;
             }
         }
-        public TextSpan CloseElementTextSpan {
+        public TextSpan ChildrenCloseToken {
             get {
-                if (ElementList != null) {
-                    return ElementList.CloseTokenTextSpan;
+                if (ComplexChildren != null) {
+                    return ComplexChildren.CloseToken;
                 }
-                if (SimpleValue.IsValid) {
-                    return SimpleValue.TextSpan;
+                if (SimpleChild.IsValid) {
+                    return SimpleChild.TextSpan;
                 }
-                if (AttributeList != null) {
-                    return AttributeList.CloseTokenTextSpan;
+                if (Attributes != null) {
+                    return Attributes.CloseToken;
                 }
-                return SemicolonTokenTextSpan;
+                return SemicolonToken;
             }
         }
     }

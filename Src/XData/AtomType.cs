@@ -58,7 +58,7 @@ namespace XData {
                 return false;
             }
             var atomTypeInfo = (AtomTypeInfo)ObjectInfo;
-            var restrictionSet = atomTypeInfo.ValueRestrictionSet;
+            var restrictionSet = atomTypeInfo.ValueRestrictions;
             if (restrictionSet != null) {
 
             }

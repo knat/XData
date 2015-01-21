@@ -470,19 +470,18 @@ namespace XData.Compiler {
     }
     public sealed class ChildrenNode : Node {
         public ChildrenNode(Node parent) : base(parent) { }
-        public RootStructuralChildrenNode StructuralChildren;
-        public QualifiableNameNode SimpleTypeChildQName;
-        public TypeNode SimpleTypeChild;
+        public RootComplexChildrenNode ComplexChildren;
+        public QualifiableNameNode SimpleChildQName;
+        public TypeNode SimpleChild;
         public void Resolve() {
-            if (StructuralChildren != null) {
-                StructuralChildren.Resolve();
+            if (ComplexChildren != null) {
+                ComplexChildren.Resolve();
             }
             else {
-                SimpleTypeChild = NamespaceAncestor.ResolveAsType(SimpleTypeChildQName);
+                SimpleChild = NamespaceAncestor.ResolveAsType(SimpleChildQName);
             }
         }
     }
-
     public sealed class TypeDirectnessNode : TypeBodyNode {
         public TypeDirectnessNode(Node parent) : base(parent) { }
         public AttributesNode Attributes;
@@ -496,17 +495,29 @@ namespace XData.Compiler {
             }
         }
         public override TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
-
-            throw new NotImplementedException();
+            AttributeSetSymbol attributesSymbol = null;
+            if (Attributes != null) {
+                attributesSymbol = Attributes.CreateSymbol(null, false);
+            }
+            ObjectSymbol childrenSymbol = null;
+            if (Children != null) {
+                if (Children.ComplexChildren != null) {
+                    childrenSymbol = Children.ComplexChildren.CreateSymbol(null, false);
+                }
+                else {
+                    childrenSymbol = Children.SimpleChild.CreateSymbol();
+                }
+            }
+            return new ComplexTypeSymbol(parent, csName, isAbstract, isSealed, fullName, null, attributesSymbol, childrenSymbol);
         }
     }
     public abstract class TypeDerivation : TypeBodyNode {
         public TypeDerivation(Node parent) : base(parent) { }
-        public QualifiableNameNode BaseQName;
+        public QualifiableNameNode BaseTypeQName;
         public AttributesNode Attributes;
         public TypeNode BaseType;
         public override void Resolve() {
-            BaseType = NamespaceAncestor.ResolveAsType(BaseQName);
+            BaseType = NamespaceAncestor.ResolveAsType(BaseTypeQName);
             if (Attributes != null) {
                 Attributes.Resolve();
             }
@@ -522,25 +533,92 @@ namespace XData.Compiler {
             }
         }
         public override TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
-            throw new NotImplementedException();
+            var baseTypeSymbol = BaseType.CreateSymbol() as ComplexTypeSymbol;
+            if (baseTypeSymbol == null) {
+                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ComplexTypeRequired), BaseTypeQName.TextSpan);
+            }
+            AttributeSetSymbol attributesSymbol = null;
+            if (Attributes != null) {
+                attributesSymbol = Attributes.CreateSymbol(baseTypeSymbol.Attributes, true);
+            }
+            ObjectSymbol childrenSymbol = null;
+            if (Children != null) {
+                if (Children.ComplexChildren != null) {
+                    if (baseTypeSymbol.SimpleChild != null) {
+                        ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ThisTypeContainsComplexChildrenButBaseTypeContainsSimpleChild), Children.ComplexChildren.OpenBraceToken);
+                    }
+                    childrenSymbol = Children.ComplexChildren.CreateSymbol(baseTypeSymbol.ComplexChildren, true);
+                }
+                else {
+                    if (baseTypeSymbol.Children != null) {
+                        ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ExtendingWithSimpleChildRequiresBaseTypeHasNoChildren), Children.SimpleChildQName.TextSpan);
+                    }
+                    childrenSymbol = Children.SimpleChild.CreateSymbol();
+                }
+            }
+            return new ComplexTypeSymbol(parent, csName, isAbstract, isSealed, fullName, baseTypeSymbol, attributesSymbol, childrenSymbol);
         }
     }
     public sealed class TypeRestriction : TypeDerivation {
         public TypeRestriction(Node parent) : base(parent) { }
-        public RootStructuralChildrenNode StructuralChildren;
+        public RootComplexChildrenNode ComplexChildren;
         public ValueRestrictionsNode ValueRestrictions;
         public override void Resolve() {
             base.Resolve();
-            if (StructuralChildren != null) {
-                StructuralChildren.Resolve();
+            if (ComplexChildren != null) {
+                ComplexChildren.Resolve();
             }
             else if (ValueRestrictions != null) {
                 ValueRestrictions.Resolve();
             }
         }
-        public override TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
-            throw new NotImplementedException();
+        private SimpleTypeSymbol CreateSimpleTypeSymbol(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed,
+            SimpleTypeSymbol baseTypeSymbol, bool inComplexType) {
+            if (baseTypeSymbol == null) {
+
+            }
+
+            if (inComplexType) {
+                parent.GlobalObjectList.Add(null);
+            }
+            return null;
         }
+        public override TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
+            var baseTypeSymbol = BaseType.CreateSymbol();
+            var baseSimpleTypeSymbol = baseTypeSymbol as SimpleTypeSymbol;
+            if (baseSimpleTypeSymbol != null) {
+                if (Attributes != null) {
+                    ContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.AttributesNotAllowedInSimpleTypeRestriction), Attributes.OpenBracketToken);
+                }
+                if (ComplexChildren != null) {
+                    ContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ComplexChildrenNotAllowedInSimpleTypeRestriction), ComplexChildren.OpenBraceToken);
+                }
+                ContextEx.ThrowIfHasErrors();
+                return CreateSimpleTypeSymbol(parent, csName, fullName, isAbstract, isSealed, baseSimpleTypeSymbol, false);
+            }
+            else {
+                var baseComplexTypeSymbol = (ComplexTypeSymbol)baseTypeSymbol;
+                AttributeSetSymbol attributesSymbol = null;
+                if (Attributes != null) {
+                    attributesSymbol = Attributes.CreateSymbol(baseComplexTypeSymbol.Attributes, false);
+                }
+                ObjectSymbol childrenSymbol = null;
+                if (ComplexChildren != null) {
+                    if (baseComplexTypeSymbol.SimpleChild != null) {
+                        ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ThisTypeContainsComplexChildrenButBaseTypeContainsSimpleChild), ComplexChildren.OpenBraceToken);
+                    }
+                    childrenSymbol = ComplexChildren.CreateSymbol(baseComplexTypeSymbol.ComplexChildren, false);
+                }
+                else if (ValueRestrictions != null) {
+                    if (baseComplexTypeSymbol.ComplexChildren != null) {
+                        ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ThisTypeContainsSimpleChildButBaseTypeContainsComplexChildren), ValueRestrictions.OpenBraceToken);
+                    }
+                    childrenSymbol = CreateSimpleTypeSymbol(parent, csName, fullName, isAbstract, isSealed, baseComplexTypeSymbol.SimpleChild, true);
+                }
+                return new ComplexTypeSymbol(parent, csName, isAbstract, isSealed, fullName, baseComplexTypeSymbol, attributesSymbol, childrenSymbol);
+            }
+        }
+
     }
 
     public sealed class ValueRestrictionsNode : Node {
@@ -552,6 +630,7 @@ namespace XData.Compiler {
         public AtomValueNode Pattern;
         public QualifiableNameNode ListItemTypeQName;
         public TypeNode ListItemType;
+        public TextSpan OpenBraceToken, CloseBraceToken;
         public void Resolve() {
             if (ListItemTypeQName.IsValid) {
                 ListItemType = NamespaceAncestor.ResolveAsType(ListItemTypeQName);
@@ -559,7 +638,7 @@ namespace XData.Compiler {
         }
         public void CheckApplicabilities(TypeKind kind) {
             if (Lengths.IsValid && !Contains(_lengthsTypeKinds, kind)) {
-                ContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Lengths.DotDot);
+                ContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Lengths.DotDotToken);
             }
             if (Digits.IsValid) {
                 if (Digits.MinValue != null && !Contains(_totalDigitsTypeKinds, kind)) {
@@ -570,7 +649,7 @@ namespace XData.Compiler {
                 }
             }
             if (Values.IsValid && !Contains(_valuesTypeKinds, kind)) {
-                ContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Values.DotDot);
+                ContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Values.DotDotToken);
             }
             if (Enums != null && (!kind.IsConcreteAtomType())) {
                 ContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Enums[0].TextSpan);
@@ -598,36 +677,36 @@ namespace XData.Compiler {
     }
 
     public struct IntegerRangeNode<T> where T : struct {
-        public IntegerRangeNode(AtomValueNode minValueNode, T? minValue, AtomValueNode maxValueNode, T? maxValue, TextSpan dotDot) {
+        public IntegerRangeNode(AtomValueNode minValueNode, T? minValue, AtomValueNode maxValueNode, T? maxValue, TextSpan dotDotToken) {
             MinValueNode = minValueNode;
             MinValue = minValue;
             MaxValueNode = maxValueNode;
             MaxValue = maxValue;
-            DotDot = dotDot;
+            DotDotToken = dotDotToken;
         }
         public readonly AtomValueNode MinValueNode;
         public readonly T? MinValue;
         public readonly AtomValueNode MaxValueNode;
         public readonly T? MaxValue;
-        public readonly TextSpan DotDot;
+        public readonly TextSpan DotDotToken;
         public bool IsValid {
             get {
-                return DotDot.IsValid;
+                return DotDotToken.IsValid;
             }
         }
     }
     public struct ValueRangeNode {
-        public ValueRangeNode(ValueBoundaryNode? minValue, ValueBoundaryNode? maxValue, TextSpan dotDot) {
+        public ValueRangeNode(ValueBoundaryNode? minValue, ValueBoundaryNode? maxValue, TextSpan dotDotToken) {
             MinValue = minValue;
             MaxValue = maxValue;
-            DotDot = dotDot;
+            DotDotToken = dotDotToken;
         }
         public readonly ValueBoundaryNode? MinValue;
         public readonly ValueBoundaryNode? MaxValue;
-        public readonly TextSpan DotDot;
+        public readonly TextSpan DotDotToken;
         public bool IsValid {
             get {
-                return DotDot.IsValid;
+                return DotDotToken.IsValid;
             }
         }
 
@@ -666,7 +745,7 @@ namespace XData.Compiler {
     public sealed class AttributesNode : Node {
         public AttributesNode(Node parent) : base(parent) { }
         public List<MemberAttributeNode> AttributeList;
-        public TextSpan CloseTokenTextSpan;
+        public TextSpan OpenBracketToken, CloseBracketToken;
         public void Resolve() {
             if (AttributeList != null) {
                 var count = AttributeList.Count;
@@ -681,6 +760,10 @@ namespace XData.Compiler {
                     }
                 }
             }
+        }
+        public AttributeSetSymbol CreateSymbol(AttributeSetSymbol baseAttributeSet, bool isExtension) {
+
+            return null;
         }
     }
 
@@ -761,16 +844,20 @@ namespace XData.Compiler {
             throw new NotImplementedException();
         }
     }
-    public sealed class RootStructuralChildrenNode : Node {
-        public RootStructuralChildrenNode(Node parent) : base(parent) { }
+    public sealed class RootComplexChildrenNode : Node {
+        public RootComplexChildrenNode(Node parent) : base(parent) { }
         public List<MemberChildNode> ChildList;
-        public TextSpan CloseTokenTextSpan;
+        public TextSpan OpenBraceToken, CloseBraceToken;
         public void Resolve() {
             if (ChildList != null) {
                 foreach (var item in ChildList) {
                     item.Resolve();
                 }
             }
+        }
+        public ChildSetSymbol CreateSymbol(ChildSetSymbol baseChildSet, bool isExtension) {
+
+            return null;
         }
     }
 
@@ -809,11 +896,11 @@ namespace XData.Compiler {
             FullName = GlobalElement.FullName;
         }
     }
-    public sealed class StructuralChildrenNode : MemberChildNode {
-        public StructuralChildrenNode(Node parent) : base(parent) { }
+    public sealed class ComplexChildrenNode : MemberChildNode {
+        public ComplexChildrenNode(Node parent) : base(parent) { }
         public bool IsSequence;
         public List<MemberChildNode> ChildList;
-        public TextSpan CloseTokenTextSpan;
+        public TextSpan OpenBraceToken, CloseBraceToken;
         public override void Resolve() {
             if (ChildList != null) {
                 foreach (var item in ChildList) {
@@ -825,17 +912,17 @@ namespace XData.Compiler {
 
 
     public struct OccurrenceNode {
-        public OccurrenceNode(ulong minValue, ulong maxValue, TextSpan textSpan) {
+        public OccurrenceNode(ulong minValue, ulong maxValue, TextSpan token) {
             MinValue = minValue;
             MaxValue = maxValue;
-            TextSpan = textSpan;
+            Token = token;
         }
         public readonly ulong MinValue;
         public readonly ulong MaxValue;
-        public readonly TextSpan TextSpan;
+        public readonly TextSpan Token;
         public bool IsValid {
             get {
-                return TextSpan.IsValid;
+                return Token.IsValid;
             }
         }
     }

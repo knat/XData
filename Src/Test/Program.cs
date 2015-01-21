@@ -1,10 +1,55 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using XData;
 using XData.IO.Text;
 
 namespace Test {
+    public class Int64List : XListType<XInt64> {
+
+        public override ObjectInfo ObjectInfo {
+            get {
+                throw new NotImplementedException();
+            }
+        }
+    }
+    public class Int32List : Int64List, IList<XInt32>, IReadOnlyList<XInt32> {
+
+        public bool Contains(XInt32 item) {
+            return base.Contains(item);
+        }
+        public int IndexOf(XInt32 item) {
+            return base.IndexOf(item);
+        }
+        public void Add(XInt32 item) {
+            base.Add(item);
+        }
+        public void Insert(int index, XInt32 item) {
+            base.Insert(index, item);
+        }
+        new public XInt32 this[int index] {
+            get {
+                return base[index] as XInt32;
+            }
+
+            set {
+                base[index] = value;
+            }
+        }
+        public bool Remove(XInt32 item) {
+            return base.Remove(item);
+        }
+        new public IEnumerator<XInt32> GetEnumerator() {
+            return GetEnumeratorCore<XInt32>();
+        }
+        public void CopyTo(XInt32[] array, int arrayIndex) {
+            CopyToCore(array, arrayIndex);
+        }
+
+
+
+    }
+
     class Program {
         static void Main(string[] args) {
             new System.Data.SqlTypes.SqlDecimal();

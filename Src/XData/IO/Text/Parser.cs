@@ -309,16 +309,16 @@ namespace XData.IO.Text {
             return value;
         }
         protected bool List<T>(int startRawKind, int endRawKind, NodeGetter<T> nodeGetter, string errorMsg, out DelimitedList<T> result) {
-            TextSpan openTokenTextSpan, closeTokenTextSpan;
-            if (Token(startRawKind, out openTokenTextSpan)) {
-                var list = new DelimitedList<T>(openTokenTextSpan);
+            TextSpan openToken, closeToken;
+            if (Token(startRawKind, out openToken)) {
+                var list = new DelimitedList<T>(openToken);
                 while (true) {
                     T item;
                     if (nodeGetter(out item)) {
                         list.Add(item);
                     }
-                    else if (Token(endRawKind, out closeTokenTextSpan)) {
-                        list.CloseTokenTextSpan = closeTokenTextSpan;
+                    else if (Token(endRawKind, out closeToken)) {
+                        list.CloseToken = closeToken;
                         result = list;
                         return true;
                     }
@@ -331,16 +331,16 @@ namespace XData.IO.Text {
             return false;
         }
         protected bool List<T>(int startRawKind, int endRawKind, NodeGetterWithList<T> nodeGetterWithList, string errorMsg, out DelimitedList<T> result) {
-            TextSpan openTokenTextSpan, closeTokenTextSpan;
-            if (Token(startRawKind, out openTokenTextSpan)) {
-                var list = new DelimitedList<T>(openTokenTextSpan);
+            TextSpan openToken, closeToken;
+            if (Token(startRawKind, out openToken)) {
+                var list = new DelimitedList<T>(openToken);
                 while (true) {
                     T item;
                     if (nodeGetterWithList(list, out item)) {
                         list.Add(item);
                     }
-                    else if (Token(endRawKind, out closeTokenTextSpan)) {
-                        list.CloseTokenTextSpan = closeTokenTextSpan;
+                    else if (Token(endRawKind, out closeToken)) {
+                        list.CloseToken = closeToken;
                         result = list;
                         return true;
                     }
@@ -502,9 +502,9 @@ namespace XData.IO.Text {
                 var hasUriAliasingList = UriAliasingList();
                 GetFullName(ref qName);
                 var elementValue = default(ElementValueNode);
-                TextSpan equalsTokenTextSpan;
-                if (Token('=', out equalsTokenTextSpan)) {
-                    if (!ElementValue(equalsTokenTextSpan, out elementValue)) {
+                TextSpan equalsToken;
+                if (Token('=', out equalsToken)) {
+                    if (!ElementValue(equalsToken, out elementValue)) {
                         ErrorDiagAndThrow("Element value expected.");
                     }
                 }
@@ -517,12 +517,12 @@ namespace XData.IO.Text {
             result = default(ElementNode);
             return false;
         }
-        private bool ElementValue(TextSpan equalsTokenTextSpan, out ElementValueNode result) {
+        private bool ElementValue(TextSpan equalsToken, out ElementValueNode result) {
             QualifiableNameNode typeQName;
             var hasTypeQName = TypeIndicator(out typeQName);
             ComplexValueNode complexValue;
             var simpleValue = default(SimpleValueNode);
-            var hasComplexValue = ComplexValue(equalsTokenTextSpan, typeQName, out complexValue);
+            var hasComplexValue = ComplexValue(equalsToken, typeQName, out complexValue);
             var hasSimpleValue = false;
             if (!hasComplexValue) {
                 hasSimpleValue = SimpleValue(typeQName, out simpleValue);
@@ -539,43 +539,43 @@ namespace XData.IO.Text {
                 return false;
             }
         }
-        private bool ComplexValue(TextSpan equalsTokenTextSpan, QualifiableNameNode typeQName, out ComplexValueNode result) {
-            DelimitedList<AttributeNode> attributeList;
-            var hasAttributeList = List('[', ']', _attributeGetter, "Attribute or ] expected.", out attributeList);
-            DelimitedList<ElementNode> elementList = null;
-            var simpleValue = default(SimpleValueNode);
-            TextSpan openTokenTextSpan, closeTokenTextSpan;
-            if (Token('{', out openTokenTextSpan)) {
-                if (SimpleValue(out simpleValue)) {
+        private bool ComplexValue(TextSpan equalsToken, QualifiableNameNode typeQName, out ComplexValueNode result) {
+            DelimitedList<AttributeNode> attributes;
+            var hasAttributes = List('[', ']', _attributeGetter, "Attribute or ] expected.", out attributes);
+            DelimitedList<ElementNode> complexChildren = null;
+            var simpleChild = default(SimpleValueNode);
+            TextSpan openToken, closeToken;
+            if (Token('{', out openToken)) {
+                if (SimpleValue(out simpleChild)) {
                     TokenExpected('}');
                 }
                 else {
-                    elementList = new DelimitedList<ElementNode>(openTokenTextSpan);
+                    complexChildren = new DelimitedList<ElementNode>(openToken);
                     while (true) {
                         ElementNode element;
                         if (Element(out element)) {
-                            elementList.Add(element);
+                            complexChildren.Add(element);
                         }
-                        else if (Token('}', out closeTokenTextSpan)) {
-                            elementList.CloseTokenTextSpan = closeTokenTextSpan;
+                        else if (Token('}', out closeToken)) {
+                            complexChildren.CloseToken = closeToken;
                             break;
                         }
                         else {
-                            ErrorDiagAndThrow(elementList.Count > 0 ? "Element or } expected." :
+                            ErrorDiagAndThrow(complexChildren.Count > 0 ? "Element or } expected." :
                                 "Element, simple value or } expected.");
                         }
                     }
                 }
             }
-            if (hasAttributeList || elementList != null || simpleValue.IsValid) {
-                result = new ComplexValueNode(equalsTokenTextSpan, typeQName, attributeList, elementList, simpleValue, default(TextSpan));
+            if (hasAttributes || complexChildren != null || simpleChild.IsValid) {
+                result = new ComplexValueNode(equalsToken, typeQName, attributes, complexChildren, simpleChild, default(TextSpan));
                 return true;
             }
             else {
-                TextSpan semicolonTokenTextSpan;
-                if (Token(';', out semicolonTokenTextSpan)) {
-                    result = new ComplexValueNode(equalsTokenTextSpan, typeQName, null, null,
-                        default(SimpleValueNode), semicolonTokenTextSpan);
+                TextSpan semicolonToken;
+                if (Token(';', out semicolonToken)) {
+                    result = new ComplexValueNode(equalsToken, typeQName, null, null,
+                        default(SimpleValueNode), semicolonToken);
                     return true;
                 }
             }

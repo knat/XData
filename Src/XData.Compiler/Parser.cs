@@ -312,7 +312,7 @@ namespace XData.Compiler {
         private bool TypeExtension(Node parent, out TypeBodyNode result) {
             if (Keyword(ExtendsKeyword)) {
                 var extension = new TypeExtension(parent);
-                extension.BaseQName = QualifiableNameExpected();
+                extension.BaseTypeQName = QualifiableNameExpected();
                 Attributes(extension, out extension.Attributes);
                 Children(extension, out extension.Children);
                 result = extension;
@@ -324,9 +324,9 @@ namespace XData.Compiler {
         private bool TypeRestriction(Node parent, out TypeBodyNode result) {
             if (Keyword(RestrictsKeyword)) {
                 var restriction = new TypeRestriction(parent);
-                restriction.BaseQName = QualifiableNameExpected();
+                restriction.BaseTypeQName = QualifiableNameExpected();
                 Attributes(restriction, out restriction.Attributes);
-                if (!RootStructuralChildren(restriction, out restriction.StructuralChildren)) {
+                if (!RootComplexChildren(restriction, out restriction.ComplexChildren)) {
                     ValueRestrictions(restriction, out restriction.ValueRestrictions);
                 }
                 result = restriction;
@@ -338,8 +338,8 @@ namespace XData.Compiler {
         private bool Children(Node parent, out ChildrenNode result) {
             if (PeekToken('{', (int)TokenKind.DollarOpenBrace)) {
                 var children = new ChildrenNode(parent);
-                if (!RootStructuralChildren(parent, out children.StructuralChildren)) {
-                    SimpleTypeChild(out children.SimpleTypeChildQName);
+                if (!RootComplexChildren(parent, out children.ComplexChildren)) {
+                    SimpleTypeChild(out children.SimpleChildQName);
                 }
                 result = children;
                 return true;
@@ -357,8 +357,9 @@ namespace XData.Compiler {
             return false;
         }
         private bool ValueRestrictions(Node parent, out ValueRestrictionsNode result) {
-            if (Token(TokenKind.DollarOpenBrace)) {
-                result = new ValueRestrictionsNode(parent);
+            TextSpan openBraceToken;
+            if (Token((int)TokenKind.DollarOpenBrace, out openBraceToken)) {
+                result = new ValueRestrictionsNode(parent) { OpenBraceToken = openBraceToken };
                 bool hasLengths = false, hasDigits = false, hasValues = false, hasEnums = false, hasPattern = false, hasListItemType = false;
                 while (true) {
                     var get = false;
@@ -392,7 +393,7 @@ namespace XData.Compiler {
                             get = true;
                         }
                     }
-                    if (Token('}')) {
+                    if (Token('}', out result.CloseBraceToken)) {
                         return true;
                     }
                     if (!get) {
@@ -550,20 +551,22 @@ namespace XData.Compiler {
 
 
         private bool Attributes(Node parent, out AttributesNode result) {
-            if (Token('[')) {
-                result = new AttributesNode(parent);
+            TextSpan openBracketToken;
+            if (Token('[', out openBracketToken)) {
+                result = new AttributesNode(parent) { OpenBracketToken = openBracketToken };
                 List(result, _memberAttributeGetter, out result.AttributeList);
-                TokenExpected(']', out result.CloseTokenTextSpan);
+                TokenExpected(']', out result.CloseBracketToken);
                 return true;
             }
             result = null;
             return false;
         }
-        private bool RootStructuralChildren(Node parent, out RootStructuralChildrenNode result) {
-            if (Token('{')) {
-                result = new RootStructuralChildrenNode(parent);
+        private bool RootComplexChildren(Node parent, out RootComplexChildrenNode result) {
+            TextSpan openBraceToken;
+            if (Token('{', out openBraceToken)) {
+                result = new RootComplexChildrenNode(parent) { OpenBraceToken = openBraceToken };
                 List(result, _memberChildGetter, out result.ChildList);
-                TokenExpected('}', out result.CloseTokenTextSpan);
+                TokenExpected('}', out result.CloseBraceToken);
                 return true;
             }
             result = null;
@@ -650,7 +653,7 @@ namespace XData.Compiler {
         private bool MemberChild(Node parent, List<MemberChildNode> list, out MemberChildNode result) {
             if (!LocalElement(parent, out result)) {
                 if (!GlobalElementRef(parent, out result)) {
-                    if (!StructuralChildren(parent, out result)) {
+                    if (!ComplexChildren(parent, out result)) {
                         return false;
                     }
                 }
@@ -698,24 +701,25 @@ namespace XData.Compiler {
             result = null;
             return false;
         }
-        private bool StructuralChildren(Node parent, out MemberChildNode result) {
+        private bool ComplexChildren(Node parent, out MemberChildNode result) {
             bool? isSequence = null;
-            if (Token('{')) {
+            TextSpan openBraceToken;
+            if (Token('{', out openBraceToken)) {
                 isSequence = true;
             }
-            else if (Token(TokenKind.QuestionOpenBrace)) {
+            else if (Token((int)TokenKind.QuestionOpenBrace, out openBraceToken)) {
                 isSequence = false;
             }
             if (isSequence != null) {
-                var children = new StructuralChildrenNode(parent) { IsSequence = isSequence.Value };
-                List(children, _memberChildGetter, out children.ChildList);
-                TokenExpected('}', out children.CloseTokenTextSpan);
+                var complexChildren = new ComplexChildrenNode(parent) { IsSequence = isSequence.Value, OpenBraceToken = openBraceToken };
+                List(complexChildren, _memberChildGetter, out complexChildren.ChildList);
+                TokenExpected('}', out complexChildren.CloseBraceToken);
                 Unordered(_occurrenceGetter, _memberNameGetter,
-                    out children.Occurrence, out children.MemberName, "occurrence, membername or > expected.");
-                if (!children.MemberName.IsValid) {
-                    children.MemberName = new NameNode(children.IsSequence ? "Seq" : "Choice", children.CloseTokenTextSpan);
+                    out complexChildren.Occurrence, out complexChildren.MemberName, "occurrence, membername or > expected.");
+                if (!complexChildren.MemberName.IsValid) {
+                    complexChildren.MemberName = new NameNode(complexChildren.IsSequence ? "Seq" : "Choice", complexChildren.CloseBraceToken);
                 }
-                result = children;
+                result = complexChildren;
                 return true;
             }
             result = null;
@@ -755,16 +759,16 @@ namespace XData.Compiler {
         }
         private bool Occurrence(out OccurrenceNode result) {
             ulong minValue = 0, maxValue = 0;
-            TextSpan textSpan;
-            if (Token('?', out textSpan)) {
+            TextSpan token;
+            if (Token('?', out token)) {
                 minValue = 0;
                 maxValue = 1;
             }
-            else if (Token('*', out textSpan)) {
+            else if (Token('*', out token)) {
                 minValue = 0;
                 maxValue = ulong.MaxValue;
             }
-            else if (Token('+', out textSpan)) {
+            else if (Token('+', out token)) {
                 minValue = 1;
                 maxValue = ulong.MaxValue;
             }
@@ -772,7 +776,7 @@ namespace XData.Compiler {
                 AtomValueNode minValueNode;
                 if (IntegerValue(out minValueNode)) {
                     minValue = ToUInt64(minValueNode);
-                    TokenExpected((int)TokenKind.DotDot, ".. expected.", out textSpan);
+                    TokenExpected((int)TokenKind.DotDot, ".. expected.", out token);
                     AtomValueNode maxValueNode;
                     if (IntegerValue(out maxValueNode)) {
                         maxValue = ToUInt64(maxValueNode);
@@ -789,8 +793,8 @@ namespace XData.Compiler {
                     }
                 }
             }
-            if (textSpan.IsValid) {
-                result = new OccurrenceNode(minValue, maxValue, textSpan);
+            if (token.IsValid) {
+                result = new OccurrenceNode(minValue, maxValue, token);
                 return true;
             }
             result = default(OccurrenceNode);

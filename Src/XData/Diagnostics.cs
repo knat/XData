@@ -18,8 +18,8 @@ namespace XData {
         TypeDoesNotEqualToOrDeriveFrom,
         TypeIsAbstract,
         TypeProhibitsAttributes,
-        TypeRequiresSimpleTypeChild,
-        TypeRequiresElementChildren,
+        TypeRequiresSimpleChild,
+        TypeRequiresComplexChildren,
         TypeProhibitsChildren,
         RequiredChildMemberIsNotMatched,
         ChildListCountIsNotGreaterThanOrEqualToMinOccurs,
@@ -67,10 +67,10 @@ namespace XData {
                     return "Type '{0}' is abstract.".InvFormat(_msgArgs);
                 case DiagCode.TypeProhibitsAttributes:
                     return "Type '{0}' prohibits attributes.".InvFormat(_msgArgs);
-                case DiagCode.TypeRequiresSimpleTypeChild:
-                    return "Type '{0}' requires simple type child.".InvFormat(_msgArgs);
-                case DiagCode.TypeRequiresElementChildren:
-                    return "Type '{0}' requires elemment children.".InvFormat(_msgArgs);
+                case DiagCode.TypeRequiresSimpleChild:
+                    return "Type '{0}' requires simple child.".InvFormat(_msgArgs);
+                case DiagCode.TypeRequiresComplexChildren:
+                    return "Type '{0}' requires complex children.".InvFormat(_msgArgs);
                 case DiagCode.TypeProhibitsChildren:
                     return "Type '{0}' prohibits children.".InvFormat(_msgArgs);
                 case DiagCode.RequiredChildMemberIsNotMatched:

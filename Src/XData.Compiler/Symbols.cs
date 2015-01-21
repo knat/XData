@@ -86,7 +86,7 @@ namespace XData.Compiler {
             CreateAndAdd(AtomType, TypeKind.Guid, CS.GuidName);
             CreateAndAdd(AtomType, TypeKind.TimeSpan, CS.TimeSpanName);
             CreateAndAdd(AtomType, TypeKind.DateTimeOffset, CS.DateTimeOffsetName);
-            var ListType = new ListTypeSymbol(System, TypeKind.ListType.ToClassName(), true, false, TypeKind.ListType.ToFullName(), TypeKind.ListType, SimpleType, null, null, null);
+            var ListType = new ListTypeSymbol(System, TypeKind.ListType.ToClassName(), true, false, TypeKind.ListType.ToFullName(), SimpleType, null, null, null);
             objList.Add(ListType);
 
 
@@ -163,38 +163,50 @@ namespace XData.Compiler {
     public class SimpleTypeSymbol : TypeSymbol {
         public SimpleTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
             NameSyntax csBaseFullName, NameSyntax[] csItfNames, FullName fullName, TypeKind kind, TypeSymbol baseType,
-            ValueRestrictionSetInfo restrictionSet)
+            ValueRestrictionSetInfo valueRestrictions)
             : base(parent, csName, isAbstract, isSealed, csBaseFullName, csItfNames, fullName, kind, baseType) {
-            RestrictionSet = restrictionSet;
+            ValueRestrictions = valueRestrictions;
         }
-        public readonly ValueRestrictionSetInfo RestrictionSet;
+        public readonly ValueRestrictionSetInfo ValueRestrictions;
     }
     public sealed class AtomTypeSymbol : SimpleTypeSymbol {
         public AtomTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
-            FullName fullName, TypeKind kind, SimpleTypeSymbol baseType, ValueRestrictionSetInfo restrictionSet,
+            FullName fullName, TypeKind kind, SimpleTypeSymbol baseType, ValueRestrictionSetInfo valueRestrictions,
             TypeSyntax valueCSFullName)
-            : base(parent, csName, isAbstract, isSealed, baseType.CSFullName, null, fullName, kind, baseType, restrictionSet) {
+            : base(parent, csName, isAbstract, isSealed, baseType.CSFullName, null, fullName, kind, baseType, valueRestrictions) {
             ValueCSFullName = valueCSFullName;
         }
         public readonly TypeSyntax ValueCSFullName;
     }
     public sealed class ListTypeSymbol : SimpleTypeSymbol {
         public ListTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
-            FullName fullName, TypeKind kind, SimpleTypeSymbol baseType, ValueRestrictionSetInfo restrictionSet,
+            FullName fullName, SimpleTypeSymbol baseType, ValueRestrictionSetInfo valueRestrictions,
             NameSyntax[] csItfNames, SimpleTypeSymbol itemType)
-            : base(parent, csName, isAbstract, isSealed, baseType.CSFullName, csItfNames, fullName, kind, baseType, restrictionSet) {
+            : base(parent, csName, isAbstract, isSealed, baseType.CSFullName, csItfNames, fullName, TypeKind.ListType, baseType, valueRestrictions) {
             ItemType = itemType;
         }
         public readonly SimpleTypeSymbol ItemType;
     }
     public sealed class ComplexTypeSymbol : TypeSymbol {
         public ComplexTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
-            NameSyntax csBaseFullName, NameSyntax[] csItfNames, FullName fullName, TypeKind kind, TypeSymbol baseType
-            )
-            : base(parent, csName, isAbstract, isSealed, csBaseFullName, csItfNames, fullName, kind, baseType) {
-
+            FullName fullName, ComplexTypeSymbol baseType, AttributeSetSymbol attributes, ObjectSymbol children)
+            : base(parent, csName, isAbstract, isSealed, baseType != null ? baseType.CSFullName : CSEX.XComplexTypeName, null,
+                  fullName, TypeKind.ComplexType, baseType) {
+            Attributes = attributes;
+            Children = children;
         }
-
+        public readonly AttributeSetSymbol Attributes;
+        public readonly ObjectSymbol Children;
+        public SimpleTypeSymbol SimpleChild {
+            get {
+                return Children as SimpleTypeSymbol;
+            }
+        }
+        public ChildSetSymbol ComplexChildren {
+            get {
+                return Children as ChildSetSymbol;
+            }
+        }
     }
     public sealed class AttributeSetSymbol : ObjectSymbol {
         public AttributeSetSymbol(ComplexTypeSymbol parent, NameSyntax csBaseFullName, AttributeSetSymbol baseAttributeSet) :

@@ -27,7 +27,7 @@ namespace XData {
         }
         protected override bool TryValidateCore(Context context) {
             var simpleTypeInfo = (SimpleTypeInfo)ObjectInfo;
-            var restrictionSet = simpleTypeInfo.ValueRestrictionSet;
+            var restrictionSet = simpleTypeInfo.ValueRestrictions;
             if (restrictionSet != null) {
                 var minLength = restrictionSet.MinLength;
                 var maxLength = restrictionSet.MaxLength;
