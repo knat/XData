@@ -58,15 +58,18 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Common.cs" />
+    <Compile Include="AttributeNodes.cs" />
     <Compile Include="Compiler.cs" />
     <Compile Include="CS.cs" />
     <Compile Include="CSEX.cs" />
     <Compile Include="Diagnostics.cs" />
-    <Compile Include="Nodes.cs" />
+    <Compile Include="ElementAndChildrenNodes.cs" />
+    <Compile Include="TopNodes.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Parser.cs" />
     <Compile Include="Symbols.cs" />
+    <Compile Include="TypeNodes.cs" />
+    <Compile Include="ValueRestrictionNodes.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\XData\XData.csproj">

@@ -28,8 +28,8 @@ namespace XData.Compiler {
         CSNamespaceNameNotSpecifiedForNamespace,
         CircularReferenceDetected,
         SimpleTypeRequired,
-        ComplexTypeRequired,
-        ListItemTypeNotAllowed,
+        BaseTypeIsNotAComplexType,
+        BaseTypeIsSealed,
         ThisTypeContainsComplexChildrenButBaseTypeContainsSimpleChild,
         ThisTypeContainsSimpleChildButBaseTypeContainsComplexChildren,
         ExtendingWithSimpleChildRequiresBaseTypeHasNoChildren,
@@ -99,8 +99,10 @@ namespace XData.Compiler {
                     return "Circular reference detected.";
                 case DiagCodeEx.SimpleTypeRequired:
                     return "Simple type required.";
-                case DiagCodeEx.ComplexTypeRequired:
-                    return "Complex type required.";
+                case DiagCodeEx.BaseTypeIsNotAComplexType:
+                    return "Base type '{0}' is not a complex type.".InvFormat(_msgArgs);
+                case DiagCodeEx.BaseTypeIsSealed:
+                    return "Base type '{0}' is sealed.".InvFormat(_msgArgs);
                 case DiagCodeEx.ThisTypeContainsComplexChildrenButBaseTypeContainsSimpleChild:
                     return "This type contains complex children but base type contains simple child.";
                 case DiagCodeEx.ThisTypeContainsSimpleChildButBaseTypeContainsComplexChildren:
