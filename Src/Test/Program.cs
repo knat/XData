@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using XData;
 using XData.IO.Text;
 
@@ -52,9 +53,15 @@ namespace Test {
 
     class Program {
         static void Main(string[] args) {
-            new System.Data.SqlTypes.SqlDecimal();
+            var sb = new StringBuilder(128);
+            for(var i = 0; i < 800; ++i) {
+                sb.Append('a');
+            }
+            //sb.Capacity = 32;
+
+            //new System.Data.SqlTypes.SqlDecimal();
             //TestLexer();
-            TestParser();
+            //TestParser();
         }
 
         static void TestLexer() {

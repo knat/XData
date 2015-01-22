@@ -109,7 +109,7 @@ children:
 simple-child | complex-children
 ;
 simple-child:
-'{' simple-value '}'
+'$' simple-value
 ;
 complex-children:
 '{' element* '}'

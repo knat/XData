@@ -47,7 +47,7 @@ namespace XData.Compiler {
                 }
             }
         }
-        public ChildSetSymbol CreateSymbol(ChildSetSymbol baseChildSet, bool isExtension) {
+        public ChildSetSymbol CreateSymbol(ComplexTypeSymbol parent, ChildSetSymbol baseChildSet, bool isExtension) {
 
             return null;
         }

@@ -4,7 +4,6 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace XData.Compiler {
     public abstract class Symbol {
-
     }
     public sealed class ProgramSymbol : Symbol {
         public ProgramSymbol(bool needGenCode) {
@@ -58,19 +57,19 @@ namespace XData.Compiler {
         //    return null;
         //}
 
-
         //
         public static readonly NamespaceSymbol System;
+        public static readonly SimpleTypeSymbol SystemSimpleType;
+        public static readonly AtomTypeSymbol SystemAtomType;
+        public static readonly ListTypeSymbol SystemListType;
+        public static readonly ComplexTypeSymbol SystemComplexType;
         static NamespaceSymbol() {
             System = new NamespaceSymbol(InfoExtensions.SystemUri, new CSNamespaceNameNode { "XData" }, true);
-            var objList = System.GlobalObjectList;
-            var SimpleType = new SimpleTypeSymbol(System, TypeKind.SimpleType.ToClassName(), true, false, null, null, TypeKind.SimpleType.ToFullName(), TypeKind.SimpleType, null, null);
-            objList.Add(SimpleType);
-            var AtomType = new AtomTypeSymbol(System, TypeKind.AtomType.ToClassName(), true, false, TypeKind.AtomType.ToFullName(), TypeKind.AtomType, SimpleType, null, null);
-            objList.Add(AtomType);
-            CreateAndAdd(AtomType, TypeKind.String, CS.StringType);
-            CreateAndAdd(AtomType, TypeKind.IgnoreCaseString, CS.StringType);
-            var Decimal = CreateAndAdd(AtomType, TypeKind.Decimal, CS.DecimalType);
+            SystemSimpleType = new SimpleTypeSymbol(System, TypeKind.SimpleType.ToClassName(), true, false, null, null, TypeKind.SimpleType.ToFullName(), TypeKind.SimpleType, null, null);
+            SystemAtomType = new AtomTypeSymbol(System, TypeKind.AtomType.ToClassName(), true, false, TypeKind.AtomType.ToFullName(), TypeKind.AtomType, SystemSimpleType, null, null);
+            CreateAndAdd(SystemAtomType, TypeKind.String, CS.StringType);
+            CreateAndAdd(SystemAtomType, TypeKind.IgnoreCaseString, CS.StringType);
+            var Decimal = CreateAndAdd(SystemAtomType, TypeKind.Decimal, CS.DecimalType);
             var Int64 = CreateAndAdd(Decimal, TypeKind.Int64, CS.LongType);
             var Int32 = CreateAndAdd(Int64, TypeKind.Int32, CS.IntType);
             var Int16 = CreateAndAdd(Int32, TypeKind.Int16, CS.ShortType);
@@ -79,17 +78,20 @@ namespace XData.Compiler {
             var UInt32 = CreateAndAdd(UInt64, TypeKind.UInt32, CS.UIntType);
             var UInt16 = CreateAndAdd(UInt32, TypeKind.UInt16, CS.UShortType);
             CreateAndAdd(UInt16, TypeKind.Byte, CS.ByteType);
-            var Double = CreateAndAdd(AtomType, TypeKind.Double, CS.DoubleType);
+            var Double = CreateAndAdd(SystemAtomType, TypeKind.Double, CS.DoubleType);
             CreateAndAdd(Double, TypeKind.Single, CS.FloatType);
-            CreateAndAdd(AtomType, TypeKind.Boolean, CS.BoolType);
-            CreateAndAdd(AtomType, TypeKind.Binary, CS.ByteArrayType);
-            CreateAndAdd(AtomType, TypeKind.Guid, CS.GuidName);
-            CreateAndAdd(AtomType, TypeKind.TimeSpan, CS.TimeSpanName);
-            CreateAndAdd(AtomType, TypeKind.DateTimeOffset, CS.DateTimeOffsetName);
-            var ListType = new ListTypeSymbol(System, TypeKind.ListType.ToClassName(), true, false, TypeKind.ListType.ToFullName(), SimpleType, null, null, null);
-            objList.Add(ListType);
-
-
+            CreateAndAdd(SystemAtomType, TypeKind.Boolean, CS.BoolType);
+            CreateAndAdd(SystemAtomType, TypeKind.Binary, CS.ByteArrayType);
+            CreateAndAdd(SystemAtomType, TypeKind.Guid, CS.GuidName);
+            CreateAndAdd(SystemAtomType, TypeKind.TimeSpan, CS.TimeSpanName);
+            CreateAndAdd(SystemAtomType, TypeKind.DateTimeOffset, CS.DateTimeOffsetName);
+            SystemListType = new ListTypeSymbol(System, TypeKind.ListType.ToClassName(), true, false, TypeKind.ListType.ToFullName(), SystemSimpleType, null, null, null);
+            SystemComplexType = new ComplexTypeSymbol(System, TypeKind.ComplexType.ToClassName(), true, false, TypeKind.ComplexType.ToFullName(), null);
+            var objList = System.GlobalObjectList;
+            objList.Add(SystemSimpleType);
+            objList.Add(SystemAtomType);
+            objList.Add(SystemListType);
+            objList.Add(SystemComplexType);
         }
         private static AtomTypeSymbol CreateAndAdd(AtomTypeSymbol baseType, TypeKind kind, TypeSyntax valueCSFullName) {
             var symbol = new AtomTypeSymbol(System, kind.ToClassName(), false, false, kind.ToFullName(), kind, baseType, null, valueCSFullName);
@@ -162,7 +164,7 @@ namespace XData.Compiler {
     }
     public class SimpleTypeSymbol : TypeSymbol {
         public SimpleTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
-            NameSyntax csBaseFullName, NameSyntax[] csItfNames, FullName fullName, TypeKind kind, TypeSymbol baseType,
+            NameSyntax csBaseFullName, NameSyntax[] csItfNames, FullName fullName, TypeKind kind, SimpleTypeSymbol baseType,
             ValueRestrictionSetInfo valueRestrictions)
             : base(parent, csName, isAbstract, isSealed, csBaseFullName, csItfNames, fullName, kind, baseType) {
             ValueRestrictions = valueRestrictions;
@@ -189,14 +191,12 @@ namespace XData.Compiler {
     }
     public sealed class ComplexTypeSymbol : TypeSymbol {
         public ComplexTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
-            FullName fullName, ComplexTypeSymbol baseType, AttributeSetSymbol attributes, ObjectSymbol children)
+            FullName fullName, ComplexTypeSymbol baseType)
             : base(parent, csName, isAbstract, isSealed, baseType != null ? baseType.CSFullName : CSEX.XComplexTypeName, null,
                   fullName, TypeKind.ComplexType, baseType) {
-            Attributes = attributes;
-            Children = children;
         }
-        public readonly AttributeSetSymbol Attributes;
-        public readonly ObjectSymbol Children;
+        public AttributeSetSymbol Attributes;
+        public ObjectSymbol Children;
         public SimpleTypeSymbol SimpleChild {
             get {
                 return Children as SimpleTypeSymbol;
@@ -209,7 +209,7 @@ namespace XData.Compiler {
         }
     }
     public sealed class AttributeSetSymbol : ObjectSymbol {
-        public AttributeSetSymbol(ComplexTypeSymbol parent, NameSyntax csBaseFullName, AttributeSetSymbol baseAttributeSet) :
+        public AttributeSetSymbol(ComplexTypeSymbol parent, AttributeSetSymbol baseAttributeSet) :
             base(parent, "CLS_AttributeSet", false, false, baseAttributeSet != null,
                 baseAttributeSet != null ? baseAttributeSet.CSFullName : CSEX.XAttributeSetName, null) {
             BaseAttributeSet = baseAttributeSet;

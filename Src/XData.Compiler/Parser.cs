@@ -286,7 +286,7 @@ namespace XData.Compiler {
         private bool TypeList(Node parent, out TypeBodyNode result) {
             if (Keyword(ListsKeyword)) {
                 var list = new TypeListNode(parent);
-                list.ItemQName = QualifiableNameExpected();
+                list.ItemTypeQName = QualifiableNameExpected();
                 ValueRestrictions(list, out list.ValueRestrictions);
 
                 result = list;
@@ -296,11 +296,9 @@ namespace XData.Compiler {
             return false;
         }
         private bool TypeDirectness(Node parent, out TypeBodyNode result) {
-            if (PeekToken('[', '{', (int)TokenKind.DollarOpenBrace, ';')) {
+            if (PeekToken('[', '{', '$', ';')) {
                 var directness = new TypeDirectnessNode(parent);
-                var hasAttributes = Attributes(directness, out directness.Attributes);
-                var hasChildren = Children(directness, out directness.Children);
-                if (!hasAttributes && !hasChildren) {
+                if (!AttributesChildren(directness, out directness.AttributesChildren)) {
                     Token(';');
                 }
                 result = directness;
@@ -313,8 +311,7 @@ namespace XData.Compiler {
             if (Keyword(ExtendsKeyword)) {
                 var extension = new TypeExtension(parent);
                 extension.BaseTypeQName = QualifiableNameExpected();
-                Attributes(extension, out extension.Attributes);
-                Children(extension, out extension.Children);
+                AttributesChildren(extension, out extension.AttributesChildren);
                 result = extension;
                 return true;
             }
@@ -325,8 +322,7 @@ namespace XData.Compiler {
             if (Keyword(RestrictsKeyword)) {
                 var restriction = new TypeRestriction(parent);
                 restriction.BaseTypeQName = QualifiableNameExpected();
-                Attributes(restriction, out restriction.Attributes);
-                if (!RootComplexChildren(restriction, out restriction.ComplexChildren)) {
+                if (!AttributesChildren(restriction, out restriction.AttributesChildren)) {
                     ValueRestrictions(restriction, out restriction.ValueRestrictions);
                 }
                 result = restriction;
@@ -335,25 +331,19 @@ namespace XData.Compiler {
             result = null;
             return false;
         }
-        private bool Children(Node parent, out ChildrenNode result) {
-            if (PeekToken('{', (int)TokenKind.DollarOpenBrace)) {
-                var children = new ChildrenNode(parent);
-                if (!RootComplexChildren(parent, out children.ComplexChildren)) {
-                    SimpleTypeChild(out children.SimpleChildQName);
+        private bool AttributesChildren(Node parent, out AttributesChildrenNode result) {
+            if (PeekToken('[', '{', '$')) {
+                var attributesChildren = new AttributesChildrenNode(parent);
+                Attributes(attributesChildren, out attributesChildren.Attributes);
+                if (!RootComplexChildren(attributesChildren, out attributesChildren.ComplexChildren)) {
+                    if (Token('$')) {
+                        attributesChildren.SimpleChildQName = QualifiableNameExpected();
+                    }
                 }
-                result = children;
+                result = attributesChildren;
                 return true;
             }
             result = null;
-            return false;
-        }
-        private bool SimpleTypeChild(out QualifiableNameNode result) {
-            if (Token(TokenKind.DollarOpenBrace)) {
-                result = QualifiableNameExpected();
-                TokenExpected('}');
-                return true;
-            }
-            result = default(QualifiableNameNode);
             return false;
         }
         private bool ValueRestrictions(Node parent, out ValueRestrictionsNode result) {

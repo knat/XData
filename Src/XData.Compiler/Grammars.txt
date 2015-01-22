@@ -52,23 +52,26 @@ list-item-type:
 ;
 
 type-directness:
-attributes children? | children | ';'
+attributes-children | ';'
 ;
 type-extension:
-'extends' qualifiable-name attributes? children?
+'extends' qualifiable-name attributes-children?
 ;
 type-restriction:
-'restricts' qualifiable-name attributes? (root-complex-children | value-restrictions)?
+'restricts' qualifiable-name (attributes-children | value-restrictions)?
 ;
 
+attributes-children:
+attributes children? | children
+;
 attributes:
 '[' (local-attribute | global-attribute-ref)* ']'
 ;
 children:
-root-complex-children | simple-type-child
+root-complex-children | simple-child
 ;
-simple-type-child:
-'${' qualifiable-name '}''
+simple-child:
+'$' qualifiable-name
 ;
 root-complex-children:
 '{' '}'

@@ -13,11 +13,17 @@ namespace XData.Compiler {
         public QualifiableNameNode ListItemTypeQName;
         public TypeNode ListItemType;
         public TextSpan OpenBraceToken, CloseBraceToken;
+        //public bool HasValues {
+        //    get {
+        //        return Lengths.IsValid || Digits.IsValid || Values.IsValid || Enums != null || Pattern.IsValid || ListItemTypeQName.IsValid;
+        //    }
+        //}
         public void Resolve() {
             if (ListItemTypeQName.IsValid) {
                 ListItemType = NamespaceAncestor.ResolveAsType(ListItemTypeQName);
             }
         }
+
         public void CheckApplicabilities(TypeKind kind) {
             if (Lengths.IsValid && !Contains(_lengthsTypeKinds, kind)) {
                 ContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Lengths.DotDotToken);

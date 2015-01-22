@@ -28,13 +28,19 @@ namespace XData.Compiler {
         CSNamespaceNameNotSpecifiedForNamespace,
         CircularReferenceDetected,
         SimpleTypeRequired,
-        BaseTypeIsNotAComplexType,
+        ComplexTypeRequired,
         BaseTypeIsSealed,
-        ThisTypeContainsComplexChildrenButBaseTypeContainsSimpleChild,
-        ThisTypeContainsSimpleChildButBaseTypeContainsComplexChildren,
-        ExtendingWithSimpleChildRequiresBaseTypeHasNoChildren,
-        AttributesNotAllowedInSimpleTypeRestriction,
-        ComplexChildrenNotAllowedInSimpleTypeRestriction,
+        CannotExtendOrRestrictSysComplexType,
+        CannotRestrictSysSimpleAtomListType,
+        CannotExtendSimpleChildWithComplexChildren,
+        CannotExtendChildrenWithSimpleChild,
+        CannotRestrictSimpleChildWithComplexChildren,
+        CannotRestrictComplexChildrenWithSimpleChild,
+        CannotRestrictNullSimpleChild,
+        CannotRestrictSimpleTypeWithAttributesOrChildren,
+        CannotRestrictComplexTypeWithValueRestrictions,
+        IsNotEqualToOrDeriveFrom,
+
 
         ValueRestrictionNotApplicable,
     }
@@ -99,20 +105,32 @@ namespace XData.Compiler {
                     return "Circular reference detected.";
                 case DiagCodeEx.SimpleTypeRequired:
                     return "Simple type required.";
-                case DiagCodeEx.BaseTypeIsNotAComplexType:
-                    return "Base type '{0}' is not a complex type.".InvFormat(_msgArgs);
+                case DiagCodeEx.ComplexTypeRequired:
+                    return "Complex type required.";
                 case DiagCodeEx.BaseTypeIsSealed:
                     return "Base type '{0}' is sealed.".InvFormat(_msgArgs);
-                case DiagCodeEx.ThisTypeContainsComplexChildrenButBaseTypeContainsSimpleChild:
-                    return "This type contains complex children but base type contains simple child.";
-                case DiagCodeEx.ThisTypeContainsSimpleChildButBaseTypeContainsComplexChildren:
-                    return "This type contains simple child but base type contains complex children.";
-                case DiagCodeEx.ExtendingWithSimpleChildRequiresBaseTypeHasNoChildren:
-                    return "Extending with simple child requires base type has no children.";
-                case DiagCodeEx.AttributesNotAllowedInSimpleTypeRestriction:
-                    return "Attributes not allowed in simple type restriction.";
-                case DiagCodeEx.ComplexChildrenNotAllowedInSimpleTypeRestriction:
-                    return "Complex children not allowed in simple type restriction.";
+                case DiagCodeEx.CannotExtendOrRestrictSysComplexType:
+                    return "Cannot extend or restrict 'sys:ComplexType'.";
+                case DiagCodeEx.CannotRestrictSysSimpleAtomListType:
+                    return "Cannot restrict 'sys:SimpleType', 'sys:AtomType' or 'sys:ListType'.";
+                case DiagCodeEx.CannotExtendSimpleChildWithComplexChildren:
+                    return "Cannot extend simple child with complex children.";
+                case DiagCodeEx.CannotExtendChildrenWithSimpleChild:
+                    return "Cannot extend children with simple child.";
+                case DiagCodeEx.CannotRestrictSimpleChildWithComplexChildren:
+                    return "Cannot restrict simple child with complex children.";
+                case DiagCodeEx.CannotRestrictComplexChildrenWithSimpleChild:
+                    return "Cannot restrict complex children with simple child.";
+                case DiagCodeEx.CannotRestrictNullSimpleChild:
+                    return "Cannot restrict null simple child.";
+                case DiagCodeEx.CannotRestrictSimpleTypeWithAttributesOrChildren:
+                    return "Cannot restrict simple type with attributes or children.";
+                case DiagCodeEx.CannotRestrictComplexTypeWithValueRestrictions:
+                    return "Cannot restrict complex type with value restrictions.";
+                case DiagCodeEx.IsNotEqualToOrDeriveFrom:
+                    return "'{0} is not equal to or derive from '{1}'.";
+
+
 
                 case DiagCodeEx.ValueRestrictionNotApplicable:
                     return "Value restriction not applicable.";

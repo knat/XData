@@ -63,19 +63,18 @@ namespace XData.IO.Text {
         public static Lexer Get(TextReader reader) {
             return (_instance ?? (_instance = new Lexer())).Set(reader);
         }
-        public void Clear() {
-            _reader = null;
-        }
         private Lexer() {
             _buf = new char[_bufLength];
         }
-        private const int _bufLength = 256;
+        private const int _bufLength = 512;
         private TextReader _reader;
         private readonly char[] _buf;
         private int _index, _count;
         private bool _isEOF;
         private int _totalIndex;
         private int _lastLine, _lastColumn, _line, _column;
+        private const int _stringBuilderCapacity = 128;
+        private StringBuilder _stringBuilder;
         private Lexer Set(TextReader reader) {
             if (reader == null) {
                 throw new ArgumentNullException("reader");
@@ -85,7 +84,19 @@ namespace XData.IO.Text {
             _isEOF = false;
             _totalIndex = 0;
             _lastLine = _lastColumn = _line = _column = 1;
+            if (_stringBuilder == null) {
+                _stringBuilder = new StringBuilder(_stringBuilderCapacity);
+            }
             return this;
+        }
+        public void Clear() {
+            _reader = null;
+            if (_stringBuilder != null && _stringBuilder.Capacity > _stringBuilderCapacity * 8) {
+                _stringBuilder = null;
+            }
+        }
+        private StringBuilder GetStringBuilder() {
+            return _stringBuilder.Clear();
         }
         private char GetChar(int offset = 0) {
             if (_index + offset < _count) {
@@ -221,7 +232,7 @@ namespace XData.IO.Text {
                         AdvanceChar();
                     }
                     else {
-                        return CreateToken(stateKind == StateKind.InName ? TokenKind.Name : TokenKind.VerbatimName, state, sb.ToStringAndRelease());
+                        return CreateToken(stateKind == StateKind.InName ? TokenKind.Name : TokenKind.VerbatimName, state, sb.ToString());
                     }
                 }
                 else if (stateKind == StateKind.InStringValue) {
@@ -229,16 +240,14 @@ namespace XData.IO.Text {
                         AdvanceChar();
                         Token errToken;
                         if (!ProcessCharEscSeq(sb, out errToken)) {
-                            sb.ReleaseStringBuilder();
                             return errToken;
                         }
                     }
                     else if (ch == '"') {
                         AdvanceChar();
-                        return CreateToken(TokenKind.StringValue, state, sb.ToStringAndRelease());
+                        return CreateToken(TokenKind.StringValue, state, sb.ToString());
                     }
                     else if (IsNewLine(ch) || ch == char.MaxValue) {
-                        sb.ReleaseStringBuilder();
                         return CreateErrorToken("\" expected.");
                     }
                     else {
@@ -255,11 +264,10 @@ namespace XData.IO.Text {
                             AdvanceChar();
                         }
                         else {
-                            return CreateToken(TokenKind.VerbatimStringValue, state, sb.ToStringAndRelease());
+                            return CreateToken(TokenKind.VerbatimStringValue, state, sb.ToString());
                         }
                     }
                     else if (ch == char.MaxValue) {
-                        sb.ReleaseStringBuilder();
                         return CreateErrorToken("\" expected.");
                     }
                     else {
@@ -272,22 +280,19 @@ namespace XData.IO.Text {
                 //        AdvanceChar();
                 //        Token errToken;
                 //        if (!ProcessCharEscSeq(sb, out errToken)) {
-                //            sb.ReleaseStringBuilder();
                 //            return errToken;
                 //        }
                 //    }
                 //    else if (ch == '\'') {
                 //        if (sb.Length == 1) {
                 //            AdvanceChar();
-                //            return CreateToken(TokenKind.CharValue, state, sb.ToStringAndRelease());
+                //            return CreateToken(TokenKind.CharValue, state, sb.ToString());
                 //        }
                 //        else {
-                //            sb.ReleaseStringBuilder();
                 //            return CreateErrorToken("Character expected.");
                 //        }
                 //    }
                 //    else if (IsNewLine(ch) || ch == char.MaxValue) {
-                //        sb.ReleaseStringBuilder();
                 //        return CreateErrorToken("' expected.");
                 //    }
                 //    else {
@@ -296,7 +301,6 @@ namespace XData.IO.Text {
                 //            AdvanceChar();
                 //        }
                 //        else {
-                //            sb.ReleaseStringBuilder();
                 //            return CreateErrorToken("' expected.");
                 //        }
                 //    }
@@ -316,11 +320,10 @@ namespace XData.IO.Text {
                             AdvanceChar();
                         }
                         else if (nextch == '.') {
-                            return CreateToken(TokenKind.IntegerValue, state, sb.ToStringAndRelease());
+                            return CreateToken(TokenKind.IntegerValue, state, sb.ToString());
                         }
                         else {
                             AdvanceChar();
-                            sb.ReleaseStringBuilder();
                             return CreateErrorToken("Decimal digit expected.");
                         }
                     }
@@ -339,12 +342,11 @@ namespace XData.IO.Text {
                             AdvanceChar();
                         }
                         else {
-                            sb.ReleaseStringBuilder();
                             return CreateErrorToken("Decimal digit expected.");
                         }
                     }
                     else {
-                        return CreateToken(TokenKind.IntegerValue, state, sb.ToStringAndRelease());
+                        return CreateToken(TokenKind.IntegerValue, state, sb.ToString());
                     }
                 }
                 else if (stateKind == StateKind.InNumericValueFraction) {
@@ -367,12 +369,11 @@ namespace XData.IO.Text {
                             AdvanceChar();
                         }
                         else {
-                            sb.ReleaseStringBuilder();
                             return CreateErrorToken("Decimal digit expected.");
                         }
                     }
                     else {
-                        return CreateToken(TokenKind.DecimalValue, state, sb.ToStringAndRelease());
+                        return CreateToken(TokenKind.DecimalValue, state, sb.ToString());
                     }
                 }
                 else if (stateKind == StateKind.InNumericValueExponent) {
@@ -381,7 +382,7 @@ namespace XData.IO.Text {
                         AdvanceChar();
                     }
                     else {
-                        return CreateToken(TokenKind.RealValue, state, sb.ToStringAndRelease());
+                        return CreateToken(TokenKind.RealValue, state, sb.ToString());
                     }
                 }
                 //
@@ -415,13 +416,13 @@ namespace XData.IO.Text {
                         state = CreateState(StateKind.InVerbatimStringValue);
                         AdvanceChar();
                         AdvanceChar();
-                        sb = Extensions.AcquireStringBuilder();
+                        sb = GetStringBuilder();
                     }
                     else if (IsNameStartChar(nextch)) {
                         state = CreateState(StateKind.InVerbatimName);
                         AdvanceChar();
                         AdvanceChar();
-                        sb = Extensions.AcquireStringBuilder();
+                        sb = GetStringBuilder();
                         sb.Append(nextch);
                     }
                     else {
@@ -431,23 +432,23 @@ namespace XData.IO.Text {
                 else if (IsNameStartChar(ch)) {
                     state = CreateState(StateKind.InName);
                     AdvanceChar();
-                    sb = Extensions.AcquireStringBuilder();
+                    sb = GetStringBuilder();
                     sb.Append(ch);
                 }
                 else if (ch == '"') {
                     state = CreateState(StateKind.InStringValue);
                     AdvanceChar();
-                    sb = Extensions.AcquireStringBuilder();
+                    sb = GetStringBuilder();
                 }
                 //else if (ch == '\'') {
                 //    state = CreateState(StateKind.InCharValue);
                 //    AdvanceChar();
-                //    sb = Extensions.AcquireStringBuilder();
+                //    sb = GetStringBuilder();
                 //}
                 else if (IsDecDigit(ch)) {
                     state = CreateState(StateKind.InNumericValueInteger);
                     AdvanceChar();
-                    sb = Extensions.AcquireStringBuilder();
+                    sb = GetStringBuilder();
                     sb.Append(ch);
                 }
                 else if (ch == '+' || ch == '-') {
@@ -456,7 +457,7 @@ namespace XData.IO.Text {
                         state = CreateState(StateKind.InNumericValueInteger);
                         AdvanceChar();
                         AdvanceChar();
-                        sb = Extensions.AcquireStringBuilder();
+                        sb = GetStringBuilder();
                         sb.Append(ch);
                         sb.Append(nextch);
                     }
@@ -467,7 +468,7 @@ namespace XData.IO.Text {
                             AdvanceChar();
                             AdvanceChar();
                             AdvanceChar();
-                            sb = Extensions.AcquireStringBuilder();
+                            sb = GetStringBuilder();
                             sb.Append(ch);
                             sb.Append(nextch);
                             sb.Append(nextnextch);
@@ -486,7 +487,7 @@ namespace XData.IO.Text {
                         state = CreateState(StateKind.InNumericValueFraction);
                         AdvanceChar();
                         AdvanceChar();
-                        sb = Extensions.AcquireStringBuilder();
+                        sb = GetStringBuilder();
                         sb.Append(ch);
                         sb.Append(nextch);
                     }

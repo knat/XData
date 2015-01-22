@@ -17,6 +17,13 @@ namespace XData.Compiler {
             Type = NamespaceAncestor.ResolveAsType(TypeQName);
         }
         protected override NamedObjectSymbol CreateSymbolCore() {
+            var typeSymbol = Type.CreateSymbol();
+            var simpleTypeSymbol = typeSymbol as SimpleTypeSymbol;
+            if (simpleTypeSymbol == null) {
+                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.SimpleTypeRequired, typeSymbol.FullName.ToString()), TypeQName.TextSpan);
+            }
+
+
             throw new NotImplementedException();
         }
     }
@@ -39,7 +46,7 @@ namespace XData.Compiler {
                 }
             }
         }
-        public AttributeSetSymbol CreateSymbol(AttributeSetSymbol baseAttributeSet, bool isExtension) {
+        public AttributeSetSymbol CreateSymbol(ComplexTypeSymbol parent, AttributeSetSymbol baseAttributeSet, bool isExtension) {
 
             return null;
         }
