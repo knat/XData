@@ -128,7 +128,7 @@ namespace XData {
         }
         //
         internal static bool TryCreate(Context context, ProgramInfo programInfo, AttributeSetInfo attributeSetInfo,
-            TextSpan equalsTokenTextSpan, DelimitedList<AttributeNode> attributeListNode, out XAttributeSet result) {
+            TextSpan equalsTokenTextSpan, NodeList<AttributeNode> attributeListNode, out XAttributeSet result) {
             result = null;
 
             return true;

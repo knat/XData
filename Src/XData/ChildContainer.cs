@@ -146,7 +146,7 @@ namespace XData {
         }
         //
         internal static bool TryCreate(Context context, ProgramInfo programInfo, ChildSetInfo childSetInfo,
-            TextSpan closeElementTextSpan, DelimitedList<ElementNode> elementListNode, out XChildSet result) {
+            TextSpan closeElementTextSpan, NodeList<ElementNode> elementListNode, out XChildSet result) {
             result = null;
             new CreationContext(context, programInfo, closeElementTextSpan, elementListNode);
 

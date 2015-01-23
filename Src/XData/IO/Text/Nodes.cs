@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 
 namespace XData.IO.Text {
-    public sealed class DelimitedList<T> : List<T> {
-        public DelimitedList(TextSpan openToken) {
+    public sealed class NodeList<T> : List<T> {
+        public NodeList(TextSpan openToken) {
             OpenToken = openToken;
         }
         public readonly TextSpan OpenToken;
@@ -98,14 +98,14 @@ namespace XData.IO.Text {
         }
     }
     public struct SimpleValueNode {
-        public SimpleValueNode(QualifiableNameNode typeQName, AtomValueNode atom, DelimitedList<SimpleValueNode> list) {
+        public SimpleValueNode(QualifiableNameNode typeQName, AtomValueNode atom, NodeList<SimpleValueNode> list) {
             TypeQName = typeQName;
             Atom = atom;
             List = list;
         }
         public readonly QualifiableNameNode TypeQName;
         public readonly AtomValueNode Atom;
-        public readonly DelimitedList<SimpleValueNode> List;
+        public readonly NodeList<SimpleValueNode> List;
         public bool IsValid {
             get {
                 return Atom.IsValid || List != null;
@@ -178,7 +178,7 @@ namespace XData.IO.Text {
     }
     public struct ComplexValueNode {
         public ComplexValueNode(TextSpan equalsToken, QualifiableNameNode typeQName,
-            DelimitedList<AttributeNode> attributes, DelimitedList<ElementNode> complexChildren,
+            NodeList<AttributeNode> attributes, NodeList<ElementNode> complexChildren,
             SimpleValueNode simpleChild, TextSpan semicolonToken) {
             EqualsToken = equalsToken;
             TypeQName = typeQName;
@@ -189,8 +189,8 @@ namespace XData.IO.Text {
         }
         public readonly TextSpan EqualsToken;
         public readonly QualifiableNameNode TypeQName;
-        public readonly DelimitedList<AttributeNode> Attributes;
-        public readonly DelimitedList<ElementNode> ComplexChildren;
+        public readonly NodeList<AttributeNode> Attributes;
+        public readonly NodeList<ElementNode> ComplexChildren;
         public readonly SimpleValueNode SimpleChild;
         public readonly TextSpan SemicolonToken;
         public bool IsValid {

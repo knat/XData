@@ -347,6 +347,18 @@ namespace XData.Compiler {
     public abstract class NamespaceMemberNode : ObjectNode {
         protected NamespaceMemberNode(Node parent) : base(parent) { }
         public NameNode Name;
+        public NameNode AbstractOrSealed;
+        public bool IsAbstract {
+            get {
+                return AbstractOrSealed.Value == Parser.AbstractKeyword;
+            }
+        }
+        public bool IsSealed {
+            get {
+                return AbstractOrSealed.Value == Parser.SealedKeyword;
+            }
+        }
+
         private string _csName;
         public string CSName {
             get {
@@ -372,14 +384,15 @@ namespace XData.Compiler {
                     ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CircularReferenceDetected), Name.TextSpan);
                 }
                 _isProcessing = true;
-                var objectSymbol = CreateSymbolCore();
-                NamespaceAncestor.LogicalNamespace.NamespaceSymbol.GlobalObjectList.Add(objectSymbol);
+                var parent = NamespaceAncestor.LogicalNamespace.NamespaceSymbol;
+                var objectSymbol = CreateSymbolCore(parent, CSName, FullName);
+                parent.GlobalObjectList.Add(objectSymbol);
                 _objectSymbol = objectSymbol;
                 _isProcessing = false;
             }
             return _objectSymbol;
         }
-        protected abstract NamedObjectSymbol CreateSymbolCore();
+        protected abstract NamedObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName);
     }
 
 }

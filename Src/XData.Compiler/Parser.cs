@@ -540,37 +540,27 @@ namespace XData.Compiler {
         }
 
 
+        private bool GlobalAttribute(Node parent, out NamespaceMemberNode result) {
+            if (Keyword(AttributeKeyword)) {
+                var attribute = new GlobalAttributeNode(parent);
+                attribute.Name = NameExpected();
+                Unordered(_abstractOrSealedGetter, _nullableGetter, _substitutionGetter,
+                    out attribute.AbstractOrSealed, out attribute.Nullable, out attribute.SubstitutedEntityQName,
+                    "Abstract, sealed, nullable, substitutes or > expected.");
+                KeywordExpected(AsKeyword);
+                attribute.TypeQName = QualifiableNameExpected();
+                result = attribute;
+                return true;
+            }
+            result = null;
+            return false;
+        }
         private bool Attributes(Node parent, out AttributesNode result) {
             TextSpan openBracketToken;
             if (Token('[', out openBracketToken)) {
                 result = new AttributesNode(parent) { OpenBracketToken = openBracketToken };
                 List(result, _memberAttributeGetter, out result.AttributeList);
                 TokenExpected(']', out result.CloseBracketToken);
-                return true;
-            }
-            result = null;
-            return false;
-        }
-        private bool RootComplexChildren(Node parent, out RootComplexChildrenNode result) {
-            TextSpan openBraceToken;
-            if (Token('{', out openBraceToken)) {
-                result = new RootComplexChildrenNode(parent) { OpenBraceToken = openBraceToken };
-                List(result, _memberChildGetter, out result.ChildList);
-                TokenExpected('}', out result.CloseBraceToken);
-                return true;
-            }
-            result = null;
-            return false;
-        }
-
-        private bool GlobalAttribute(Node parent, out NamespaceMemberNode result) {
-            if (Keyword(AttributeKeyword)) {
-                var attribute = new GlobalAttributeNode(parent);
-                attribute.Name = NameExpected();
-                Unordered(_nullableGetter, out attribute.Nullable, "nullable or > expected.");
-                KeywordExpected(AsKeyword);
-                attribute.TypeQName = QualifiableNameExpected();
-                result = attribute;
                 return true;
             }
             result = null;
@@ -630,11 +620,22 @@ namespace XData.Compiler {
                 var element = new GlobalElementNode(parent);
                 element.Name = NameExpected();
                 Unordered(_abstractOrSealedGetter, _nullableGetter, _substitutionGetter,
-                    out element.AbstractOrSealed, out element.Nullable, out element.SubstitutedGlobalElementQName,
-                    "abstract, sealed, nullable, substitutes or > expected.");
+                    out element.AbstractOrSealed, out element.Nullable, out element.SubstitutedEntityQName,
+                    "Abstract, sealed, nullable, substitutes or > expected.");
                 KeywordExpected(AsKeyword);
                 element.TypeQName = QualifiableNameExpected();
                 result = element;
+                return true;
+            }
+            result = null;
+            return false;
+        }
+        private bool RootComplexChildren(Node parent, out RootComplexChildrenNode result) {
+            TextSpan openBraceToken;
+            if (Token('{', out openBraceToken)) {
+                result = new RootComplexChildrenNode(parent) { OpenBraceToken = openBraceToken };
+                List(result, _memberChildGetter, out result.ChildList);
+                TokenExpected('}', out result.CloseBraceToken);
                 return true;
             }
             result = null;

@@ -19,29 +19,15 @@ namespace XData.Compiler {
             _dict.TryGetValue(name, out result);
             return result;
         }
-        protected override NamedObjectSymbol CreateSymbolCore() {
-            throw new NotImplementedException();
-        }
     }
     public class TypeNode : NamespaceMemberNode {
         public TypeNode(Node parent) : base(parent) { }
-        public NameNode AbstractOrSealed;
         public TypeBodyNode Body;
-        public bool IsAbstract {
-            get {
-                return AbstractOrSealed.Value == Parser.AbstractKeyword;
-            }
-        }
-        public bool IsSealed {
-            get {
-                return AbstractOrSealed.Value == Parser.SealedKeyword;
-            }
-        }
         public override void Resolve() {
             Body.Resolve();
         }
-        protected override NamedObjectSymbol CreateSymbolCore() {
-            return Body.CreateSymbolCore(NamespaceAncestor.LogicalNamespace.NamespaceSymbol, CSName, FullName, IsAbstract, IsSealed);
+        protected override NamedObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName) {
+            return Body.CreateSymbolCore(parent, csName, fullName, IsAbstract, IsSealed);
         }
     }
     public abstract class TypeBodyNode : Node {
@@ -61,8 +47,7 @@ namespace XData.Compiler {
             }
         }
         public override TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
-            var itemTypeSymbol = ItemType.CreateSymbol();
-            var itemSimpleTypeSymbol = itemTypeSymbol as SimpleTypeSymbol;
+            var itemSimpleTypeSymbol = ItemType.CreateSymbol() as SimpleTypeSymbol;
             if (itemSimpleTypeSymbol == null) {
                 ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.SimpleTypeRequired), ItemTypeQName.TextSpan);
             }
@@ -88,7 +73,7 @@ namespace XData.Compiler {
             }
             return result;
         }
-        public TextSpan OpenTokenTextSpan {
+        public TextSpan OpenToken {
             get {
                 if (Attributes != null) {
                     return Attributes.OpenBracketToken;
@@ -144,16 +129,15 @@ namespace XData.Compiler {
             base.Resolve();
         }
         public override TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
-            var baseTypeSymbol = BaseType.CreateSymbol();
-            var baseComplexTypeSymbol = baseTypeSymbol as ComplexTypeSymbol;
+            var baseComplexTypeSymbol = BaseType.CreateSymbol() as ComplexTypeSymbol;
             if (baseComplexTypeSymbol == null) {
                 ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ComplexTypeRequired), BaseTypeQName.TextSpan);
             }
-            if (baseComplexTypeSymbol == NamespaceSymbol.SystemComplexType) {
-                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotExtendOrRestrictSysComplexType), BaseTypeQName.TextSpan);
-            }
             if (baseComplexTypeSymbol.IsSealed) {
                 ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.BaseTypeIsSealed, baseComplexTypeSymbol.FullName.ToString()), BaseTypeQName.TextSpan);
+            }
+            if (baseComplexTypeSymbol == NamespaceSymbol.SystemComplexType) {
+                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotExtendOrRestrictSysComplexType), BaseTypeQName.TextSpan);
             }
             var complexTypeSymbol = new ComplexTypeSymbol(parent, csName, isAbstract, isSealed, fullName, baseComplexTypeSymbol);
             if (AttributesChildren != null) {
@@ -201,7 +185,7 @@ namespace XData.Compiler {
                     ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotRestrictSysSimpleAtomListType), BaseTypeQName.TextSpan);
                 }
                 if (AttributesChildren != null) {
-                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotRestrictSimpleTypeWithAttributesOrChildren), AttributesChildren.OpenTokenTextSpan);
+                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotRestrictSimpleTypeWithAttributesOrChildren), AttributesChildren.OpenToken);
                 }
                 return null;// CreateSimpleTypeSymbol(parent, csName, fullName, isAbstract, isSealed, baseSimpleTypeSymbol, ValueRestrictions);
             }
@@ -242,6 +226,5 @@ namespace XData.Compiler {
                 return complexTypeSymbol;
             }
         }
-
     }
 }

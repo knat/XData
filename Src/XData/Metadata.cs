@@ -122,6 +122,8 @@ namespace XData {
             FullName = fullName;
         }
         public readonly FullName FullName;
+
+
     }
 
     public abstract class TypeInfo : NamedObjectInfo {
@@ -332,12 +334,13 @@ namespace XData {
     }
     public abstract class EntityInfo : NamedObjectInfo {
         public EntityInfo(Type clrType, bool isAbstract, FullName fullName, string displayName, TypeInfo type,
-            EntityDeclKind declKind, EntityInfo referencedEntity, bool isNullable, bool isOptional)
+            EntityDeclKind declKind, EntityInfo referencedEntity, EntityInfo substitutedEntity, bool isNullable, bool isOptional)
             : base(clrType, isAbstract, fullName) {
             DisplayName = displayName;
             Type = type;
             DeclKind = declKind;
             ReferencedEntity = referencedEntity;
+            SubstitutedEntity = substitutedEntity;
             IsNullable = isNullable;
             IsOptional = isOptional;
         }
@@ -345,6 +348,7 @@ namespace XData {
         public readonly TypeInfo Type;
         public readonly EntityDeclKind DeclKind;
         public readonly EntityInfo ReferencedEntity;
+        public readonly EntityInfo SubstitutedEntity;
         public readonly bool IsNullable;
         public bool IsOptional { get; private set; }
         public bool IsLocal {
@@ -365,8 +369,13 @@ namespace XData {
     }
     public sealed class AttributeInfo : EntityInfo {
         public AttributeInfo(Type clrType, FullName fullName, string displayName, SimpleTypeInfo type,
-            EntityDeclKind declKind, AttributeInfo referencedAttribute, bool isNullable, bool isOptional)
-            : base(clrType, false, fullName, displayName, type, declKind, referencedAttribute, isNullable, isOptional) {
+            EntityDeclKind declKind, AttributeInfo referencedAttribute, AttributeInfo substitutedAttribute, bool isNullable, bool isOptional)
+            : base(clrType, false, fullName, displayName, type, declKind, referencedAttribute, substitutedAttribute, isNullable, isOptional) {
+        }
+        public AttributeInfo SubstitutedAttribute {
+            get {
+                return (AttributeInfo)SubstitutedEntity;
+            }
         }
         new public SimpleTypeInfo Type {
             get {
@@ -388,12 +397,11 @@ namespace XData {
 
     public sealed class ElementInfo : EntityInfo, IChildInfo {
         public ElementInfo(Type clrType, bool isAbstract, FullName fullName, string displayName, TypeInfo type,
-            EntityDeclKind declKind, ElementInfo referencedElement, bool isNullable, bool isOptional,
-            int order, ElementInfo substitutedElement, FullName[] directSubstitutingElementFullNames,
+            EntityDeclKind declKind, ElementInfo referencedElement, ElementInfo substitutedElement, bool isNullable, bool isOptional,
+            int order, FullName[] directSubstitutingElementFullNames,
             ProgramInfo program)
-            : base(clrType, isAbstract, fullName, displayName, type, declKind, referencedElement, isNullable, isOptional) {
+            : base(clrType, isAbstract, fullName, displayName, type, declKind, referencedElement, substitutedElement, isNullable, isOptional) {
             Order = order;
-            SubstitutedElement = substitutedElement;
             _directSubstitutingElementFullNames = directSubstitutingElementFullNames;
             Program = program;
         }
@@ -403,7 +411,11 @@ namespace XData {
                 return (ElementInfo)ReferencedEntity;
             }
         }
-        public readonly ElementInfo SubstitutedElement;//opt, for global element
+        public ElementInfo SubstitutedElement {
+            get {
+                return (ElementInfo)SubstitutedEntity;
+            }
+        }
         private readonly FullName[] _directSubstitutingElementFullNames;//opt, for global element
         public readonly ProgramInfo Program;
         private volatile ElementInfo[] _directSubstitutingElements;

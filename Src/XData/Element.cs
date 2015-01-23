@@ -28,6 +28,9 @@ namespace XData {
             }
             set {
                 if (value != null) {
+                    if (ElementInfo.DeclKind != EntityDeclKind.Reference) {
+                        throw new InvalidOperationException("Cannot set referenced element if the element is not a reference.");
+                    }
                     for (var i = value; i != null; i = i._referencedElement) {
                         if ((object)this == i) {
                             throw new InvalidOperationException("Circular reference detected.");

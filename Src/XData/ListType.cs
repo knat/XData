@@ -6,7 +6,7 @@ using XData.IO.Text;
 namespace XData {
     public abstract class XListType : XSimpleType {
         internal static bool TryCreate(Context context, ProgramInfo programInfo, ListTypeInfo listTypeInfo,
-            DelimitedList<SimpleValueNode> listNode, out XListType result) {
+            NodeList<SimpleValueNode> listNode, out XListType result) {
             result = null;
             var itemInfo = listTypeInfo.ItemType;
             var listType = listTypeInfo.CreateInstance<XListType>();

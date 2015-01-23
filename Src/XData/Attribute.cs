@@ -26,8 +26,11 @@ namespace XData {
             }
             set {
                 if (value != null) {
+                    if (AttributeInfo.DeclKind != EntityDeclKind.Reference) {
+                        throw new InvalidOperationException("Cannot set referenced attribute if the attribute is not a reference.");
+                    }
                     if (value._fullName != _fullName) {
-                        throw new InvalidOperationException("Referenced attribute full name '{0}' not equal to '{1}'.".InvFormat(
+                        throw new InvalidOperationException("Referenced attribute full name '{0}' not equal to this '{1}'.".InvFormat(
                             value._fullName.ToString(), _fullName.ToString()));
                     }
                     for (var i = value; i != null; i = i._referencedAttribute) {
@@ -105,21 +108,6 @@ namespace XData {
         public XSimpleType EnsureType(bool @try = false) {
             return EnsureType<XSimpleType>(@try);
         }
-        //public object Value {
-        //    get {
-        //        var type = Type;
-        //        return type == null ? null : type.Value;
-        //    }
-        //    set { EnsureType().Value = value; }
-        //}
-        //public object GenericValue {
-        //    get {
-        //        return Value;
-        //    }
-        //    set {
-        //        Value = value;
-        //    }
-        //}
         public override XObject DeepClone() {
             var obj = (XAttribute)base.DeepClone();
             obj.SetType(_type);

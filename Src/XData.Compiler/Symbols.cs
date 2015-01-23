@@ -210,7 +210,7 @@ namespace XData.Compiler {
     }
     public sealed class AttributeSetSymbol : ObjectSymbol {
         public AttributeSetSymbol(ComplexTypeSymbol parent, AttributeSetSymbol baseAttributeSet) :
-            base(parent, "CLS_AttributeSet", false, false, baseAttributeSet != null,
+            base(parent, "CLS_Attributes", false, false, baseAttributeSet != null,
                 baseAttributeSet != null ? baseAttributeSet.CSFullName : CSEX.XAttributeSetName, null) {
             BaseAttributeSet = baseAttributeSet;
             AttributeList = new List<AttributeSymbol>();
@@ -221,7 +221,7 @@ namespace XData.Compiler {
     }
     public abstract class EntitySymbol : NamedObjectSymbol {
         protected EntitySymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, bool isCSOverride, NameSyntax csBaseFullName, FullName fullName,
-            EntityDeclKind declKind, EntitySymbol restrictedEntity, EntitySymbol referencedEntity,
+            EntityDeclKind declKind, EntitySymbol restrictedEntity, EntitySymbol substitutedEntity, EntitySymbol referencedEntity,
             string displayName, string memberName, bool isNullable, bool isOptional, TypeSymbol type) :
                 base(parent, csName, isAbstract, isSealed, isCSOverride, csBaseFullName, null, fullName) {
             DeclKind = declKind;
@@ -236,6 +236,7 @@ namespace XData.Compiler {
 
         public readonly EntityDeclKind DeclKind;
         public readonly EntitySymbol RestrictedEntity;
+        public readonly EntitySymbol SubstitutedEntity;
         public readonly EntitySymbol ReferencedEntity;//for ref
         public string DisplayName { get; private set; }
         public string MemberName { get; private set; }
@@ -261,20 +262,32 @@ namespace XData.Compiler {
 
     }
     public sealed class AttributeSymbol : EntitySymbol {
-        protected AttributeSymbol(ObjectBaseSymbol parent, string csName, FullName fullName,
-            EntityDeclKind declKind, AttributeSymbol restrictedAttribute, AttributeSymbol referencedAttribute,
+        public AttributeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, FullName fullName,
+            EntityDeclKind declKind, AttributeSymbol restrictedAttribute, AttributeSymbol substitutedAttribute, AttributeSymbol referencedAttribute,
             string displayName, string memberName, bool isNullable, bool isOptional, SimpleTypeSymbol type) :
-                base(parent, csName, false, false, restrictedAttribute != null, restrictedAttribute != null ? restrictedAttribute.CSFullName : CSEX.XAttributeName, fullName,
-                    declKind, restrictedAttribute, referencedAttribute, displayName, memberName, isNullable, isOptional, type) {
+                base(parent, csName, isAbstract, isSealed, restrictedAttribute != null,
+                    restrictedAttribute != null ? restrictedAttribute.CSFullName : substitutedAttribute != null ? substitutedAttribute.CSFullName : CSEX.XAttributeName,
+                    fullName, declKind, restrictedAttribute, substitutedAttribute, referencedAttribute, displayName, memberName, isNullable, isOptional, type) {
         }
         public AttributeSymbol RestrictedAttribute {
-            get { return (AttributeSymbol)RestrictedEntity; }
+            get {
+                return (AttributeSymbol)RestrictedEntity;
+            }
+        }
+        public AttributeSymbol SubstitutedAttribute {
+            get {
+                return (AttributeSymbol)SubstitutedEntity;
+            }
         }
         public AttributeSymbol ReferencedAttribute {
-            get { return (AttributeSymbol)ReferencedEntity; }
+            get {
+                return (AttributeSymbol)ReferencedEntity;
+            }
         }
         new public SimpleTypeSymbol Type {
-            get { return (SimpleTypeSymbol)base.Type; }
+            get {
+                return (SimpleTypeSymbol)base.Type;
+            }
         }
 
     }
@@ -290,12 +303,25 @@ namespace XData.Compiler {
             string displayName, string memberName, bool isNullable, bool isOptional, TypeSymbol type, int order)
             : base(parent, csName, isAbstract, isSealed, restrictedElement != null,
                  restrictedElement != null ? restrictedElement.CSFullName : substitutedElement != null ? substitutedElement.CSFullName : CSEX.XElementName,
-                 fullName, declKind, restrictedElement, referencedElement, displayName, memberName, isNullable, isOptional, type
+                 fullName, declKind, restrictedElement, substitutedElement, referencedElement, displayName, memberName, isNullable, isOptional, type
                  ) {
-            SubstitutedElement = substitutedElement;
             Order = order;
         }
-        public readonly ElementSymbol SubstitutedElement;
+        public ElementSymbol RestrictedElement {
+            get {
+                return (ElementSymbol)RestrictedEntity;
+            }
+        }
+        public ElementSymbol SubstitutedElement {
+            get {
+                return (ElementSymbol)SubstitutedEntity;
+            }
+        }
+        public ElementSymbol ReferencedElement {
+            get {
+                return (ElementSymbol)ReferencedEntity;
+            }
+        }
         public int Order { get; private set; }
     }
     public abstract class ChildContainerSymbol : ObjectSymbol, IChildSymbol {

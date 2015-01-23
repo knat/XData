@@ -40,7 +40,15 @@ namespace XData.Compiler {
         CannotRestrictSimpleTypeWithAttributesOrChildren,
         CannotRestrictComplexTypeWithValueRestrictions,
         IsNotEqualToOrDeriveFrom,
-
+        CannotFindRestrictedAttribute,
+        AttributeFullNameNotEqualToRestricted,
+        AttributeIsOptionalButRestrictedIsRequired,
+        AttributeIsNullableButRestrictedIsNotNullable,
+        AttributeDeclarationNotEqualToRestricted,
+        AttributeTypeNotEqualToOrDeriveFromRestricted,
+        RequiredAttributeNotRestricting,
+        AttributeIsNullableButSubstitutedIsNotNullable,
+        AttributeTypeNotEqualToOrDeriveFromSubstituted,
 
         ValueRestrictionNotApplicable,
     }
@@ -129,7 +137,24 @@ namespace XData.Compiler {
                     return "Cannot restrict complex type with value restrictions.";
                 case DiagCodeEx.IsNotEqualToOrDeriveFrom:
                     return "'{0} is not equal to or derive from '{1}'.";
-
+                case DiagCodeEx.CannotFindRestrictedAttribute:
+                    return "Cannot find the restricted attribute with member name '{0}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.AttributeFullNameNotEqualToRestricted:
+                    return "Attribute full name '{0}' not equal to the restricted attribute full name '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.AttributeIsOptionalButRestrictedIsRequired:
+                    return "Attribute is optional but the restricted attribute is required.";
+                case DiagCodeEx.AttributeIsNullableButRestrictedIsNotNullable:
+                    return "Attribute is nullable but the restricted attribute is not nullable.";
+                case DiagCodeEx.AttributeDeclarationNotEqualToRestricted:
+                    return "Attribute declaration '{0}' not equal to the restricted attribute '{1}'.";
+                case DiagCodeEx.AttributeTypeNotEqualToOrDeriveFromRestricted:
+                    return "Attribute type '{0}' not equal to or derive from the restricted attribute type '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.RequiredAttributeNotRestricting:
+                    return "Required attribute with member name '{0}' not restricting.".InvFormat(_msgArgs);
+                case DiagCodeEx.AttributeIsNullableButSubstitutedIsNotNullable:
+                    return "Attribute is nullable but the substituted attribute is not nullable.";
+                case DiagCodeEx.AttributeTypeNotEqualToOrDeriveFromSubstituted:
+                    return "Attribute type '{0}' not equal to or derive from the substituted attribute type '{1}'.".InvFormat(_msgArgs);
 
 
                 case DiagCodeEx.ValueRestrictionNotApplicable:

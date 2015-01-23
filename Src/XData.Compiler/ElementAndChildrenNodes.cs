@@ -3,36 +3,16 @@ using System.Collections.Generic;
 using XData.IO.Text;
 
 namespace XData.Compiler {
-    public sealed class GlobalElementNode : NamespaceMemberNode {
+    public sealed class GlobalElementNode : EntityNode {
         public GlobalElementNode(Node parent) : base(parent) { }
-        public NameNode AbstractOrSealed;
-        public TextSpan Nullable;
-        public QualifiableNameNode SubstitutedGlobalElementQName;
-        public QualifiableNameNode TypeQName;
         public GlobalElementNode SubstitutedGlobalElement;
-        public TypeNode Type;
-        public bool IsAbstract {
-            get {
-                return AbstractOrSealed.Value == Parser.AbstractKeyword;
-            }
-        }
-        public bool IsSealed {
-            get {
-                return AbstractOrSealed.Value == Parser.SealedKeyword;
-            }
-        }
-        public bool IsNullable {
-            get {
-                return Nullable.IsValid;
-            }
-        }
         public override void Resolve() {
-            if (SubstitutedGlobalElementQName.IsValid) {
-                SubstitutedGlobalElement = NamespaceAncestor.ResolveAsElement(SubstitutedGlobalElementQName);
+            base.Resolve();
+            if (SubstitutedEntityQName.IsValid) {
+                SubstitutedGlobalElement = NamespaceAncestor.ResolveAsElement(SubstitutedEntityQName);
             }
-            Type = NamespaceAncestor.ResolveAsType(TypeQName);
         }
-        protected override NamedObjectSymbol CreateSymbolCore() {
+        protected override NamedObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName) {
             throw new NotImplementedException();
         }
     }
