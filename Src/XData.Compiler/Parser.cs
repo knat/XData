@@ -9,7 +9,6 @@ namespace XData.Compiler {
         public const string AbstractKeyword = "abstract";
         public const string AliasKeyword = "alias";
         public const string AsKeyword = "as";
-        public const string AttributeKeyword = "attribute";
         public const string DigitsKeyword = "digits";
         public const string ElementKeyword = "element";
         public const string EnumsKeyword = "enums";
@@ -21,7 +20,6 @@ namespace XData.Compiler {
         public const string NamespaceKeyword = "namespace";
         public const string NullableKeyword = "nullable";
         public const string PatternKeyword = "pattern";
-        public const string QualifiedKeyword = "qualified";
         public const string RestrictsKeyword = "restricts";
         public const string SealedKeyword = "sealed";
         public const string SubstitutesKeyword = "substitutes";
@@ -45,12 +43,11 @@ namespace XData.Compiler {
             _csNSIndicatorGetter = CSNSIndicator;
             _importGetter = Import;
             _namespaceMemberGetter = NamespaceMember;
-            _memberAttributeGetter = MemberAttribute;
+            _attributeGetter = Attribute;
             _memberChildGetter = MemberChild;
             _abstractOrSealedGetter = AbstractOrSealed;
-            _qualifiedGetter = Qualified;
             _nullableGetter = Nullable;
-            _optionalGetter = Optional;
+            _optionalOrDeleteGetter = OptionalOrDelete;
             _memberNameGetter = MemberName;
             _substitutionGetter = Substitution;
             _occurrenceGetter = Occurrence;
@@ -62,12 +59,11 @@ namespace XData.Compiler {
         private readonly NodeGetterWithParent<CSNSIndicatorNode> _csNSIndicatorGetter;
         private readonly NodeGetterWithParentList<ImportNode> _importGetter;
         private readonly NodeGetterWithParentList<NamespaceMemberNode> _namespaceMemberGetter;
-        private readonly NodeGetterWithParentList<MemberAttributeNode> _memberAttributeGetter;
+        private readonly NodeGetterWithParentList<AttributeNode> _attributeGetter;
         private readonly NodeGetterWithParentList<MemberChildNode> _memberChildGetter;
         private readonly NodeGetter<NameNode> _abstractOrSealedGetter;
-        private readonly NodeGetter<TextSpan> _qualifiedGetter;
         private readonly NodeGetter<TextSpan> _nullableGetter;
-        private readonly NodeGetter<TextSpan> _optionalGetter;
+        private readonly NodeGetter<OptionalOrDeleteNode> _optionalOrDeleteGetter;
         private readonly NodeGetter<NameNode> _memberNameGetter;
         private readonly NodeGetter<QualifiableNameNode> _substitutionGetter;
         private readonly NodeGetter<OccurrenceNode> _occurrenceGetter;
@@ -248,9 +244,7 @@ namespace XData.Compiler {
         private bool NamespaceMember(Node parent, List<NamespaceMemberNode> list, out NamespaceMemberNode result) {
             if (!Type(parent, out result)) {
                 if (!GlobalElement(parent, out result)) {
-                    if (!GlobalAttribute(parent, out result)) {
-                        return false;
-                    }
+                    return false;
                 }
             }
             if (list != null) {
@@ -287,7 +281,7 @@ namespace XData.Compiler {
             if (Keyword(ListsKeyword)) {
                 var list = new TypeListNode(parent);
                 list.ItemTypeQName = QualifiableNameExpected();
-                ValueRestrictions(list, out list.ValueRestrictions);
+                ValueFacets(list, out list.ValueRestrictions);
 
                 result = list;
                 return true;
@@ -323,7 +317,7 @@ namespace XData.Compiler {
                 var restriction = new TypeRestriction(parent);
                 restriction.BaseTypeQName = QualifiableNameExpected();
                 if (!AttributesChildren(restriction, out restriction.AttributesChildren)) {
-                    ValueRestrictions(restriction, out restriction.ValueRestrictions);
+                    ValueFacets(restriction, out restriction.ValueRestrictions);
                 }
                 result = restriction;
                 return true;
@@ -346,10 +340,10 @@ namespace XData.Compiler {
             result = null;
             return false;
         }
-        private bool ValueRestrictions(Node parent, out ValueRestrictionsNode result) {
+        private bool ValueFacets(Node parent, out ValueFacetsNode result) {
             TextSpan openBraceToken;
             if (Token((int)TokenKind.DollarOpenBrace, out openBraceToken)) {
-                result = new ValueRestrictionsNode(parent) { OpenBraceToken = openBraceToken };
+                result = new ValueFacetsNode(parent) { OpenBraceToken = openBraceToken };
                 bool hasLengths = false, hasDigits = false, hasValues = false, hasEnums = false, hasPattern = false, hasListItemType = false;
                 while (true) {
                     var get = false;
@@ -539,58 +533,30 @@ namespace XData.Compiler {
             return value;
         }
 
-
-        private bool GlobalAttribute(Node parent, out NamespaceMemberNode result) {
-            if (Keyword(AttributeKeyword)) {
-                var attribute = new GlobalAttributeNode(parent);
-                attribute.Name = NameExpected();
-                Unordered(_abstractOrSealedGetter, _nullableGetter, _substitutionGetter,
-                    out attribute.AbstractOrSealed, out attribute.Nullable, out attribute.SubstitutedEntityQName,
-                    "Abstract, sealed, nullable, substitutes or > expected.");
-                KeywordExpected(AsKeyword);
-                attribute.TypeQName = QualifiableNameExpected();
-                result = attribute;
-                return true;
-            }
-            result = null;
-            return false;
-        }
         private bool Attributes(Node parent, out AttributesNode result) {
             TextSpan openBracketToken;
             if (Token('[', out openBracketToken)) {
                 result = new AttributesNode(parent) { OpenBracketToken = openBracketToken };
-                List(result, _memberAttributeGetter, out result.AttributeList);
+                List(result, _attributeGetter, out result.AttributeList);
                 TokenExpected(']', out result.CloseBracketToken);
                 return true;
             }
             result = null;
             return false;
         }
-        private bool MemberAttribute(Node parent, List<MemberAttributeNode> list, out MemberAttributeNode result) {
-            if (!LocalAttribute(parent, out result)) {
-                if (!GlobalAttributeRef(parent, out result)) {
-                    return false;
-                }
-            }
-            if (list != null) {
-                var memberName = result.MemberName;
-                foreach (var item in list) {
-                    if (item.MemberName == memberName) {
-                        ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateMemberName, memberName.ToString()), memberName.TextSpan);
-                    }
-                }
-            }
-            return true;
-        }
-        private bool LocalAttribute(Node parent, out MemberAttributeNode result) {
+        private bool Attribute(Node parent, List<AttributeNode> list, out AttributeNode result) {
             NameNode name;
             if (Name(out name)) {
-                var attribute = new LocalAttributeNode(parent) { Name = name };
-                Unordered(_nullableGetter, _optionalGetter, _memberNameGetter, _qualifiedGetter,
-                    out attribute.Nullable, out attribute.Optional, out attribute.MemberName, out attribute.Qualified,
-                    "nullable, ?, membername, qualified or > expected.");
-                if (!attribute.MemberName.IsValid) {
-                    attribute.MemberName = name;
+                var attribute = new AttributeNode(parent) { Name = name };
+                Unordered(_nullableGetter, _optionalOrDeleteGetter,
+                    out attribute.Nullable, out attribute.OptionalOrDelete,
+                    "nullable, ?, x, or > expected.");
+                if (list != null) {
+                    foreach (var item in list) {
+                        if (item.Name == name) {
+                            ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateAttributeName, name.ToString()), name.TextSpan);
+                        }
+                    }
                 }
                 KeywordExpected(AsKeyword);
                 attribute.TypeQName = QualifiableNameExpected();
@@ -600,27 +566,14 @@ namespace XData.Compiler {
             result = null;
             return false;
         }
-        private bool GlobalAttributeRef(Node parent, out MemberAttributeNode result) {
-            if (Token('&')) {
-                var attribute = new GlobalAttributeRefNode(parent);
-                attribute.GlobalAttributeQName = QualifiableNameExpected();
-                Unordered(_optionalGetter, _memberNameGetter,
-                    out attribute.Optional, out attribute.MemberName, "?, membername or > expected.");
-                if (!attribute.MemberName.IsValid) {
-                    attribute.MemberName = attribute.GlobalAttributeQName.Name;
-                }
-                result = attribute;
-                return true;
-            }
-            result = null;
-            return false;
-        }
+
+
         private bool GlobalElement(Node parent, out NamespaceMemberNode result) {
             if (Keyword(ElementKeyword)) {
                 var element = new GlobalElementNode(parent);
                 element.Name = NameExpected();
                 Unordered(_abstractOrSealedGetter, _nullableGetter, _substitutionGetter,
-                    out element.AbstractOrSealed, out element.Nullable, out element.SubstitutedEntityQName,
+                    out element.AbstractOrSealed, out element.Nullable, out element.SubstitutedGlobalElementQName,
                     "Abstract, sealed, nullable, substitutes or > expected.");
                 KeywordExpected(AsKeyword);
                 element.TypeQName = QualifiableNameExpected();
@@ -723,14 +676,20 @@ namespace XData.Compiler {
             }
             return Keyword(SealedKeyword, out result);
         }
-        private bool Qualified(out TextSpan result) {
-            return Keyword(QualifiedKeyword, out result);
-        }
         private bool Nullable(out TextSpan result) {
             return Keyword(NullableKeyword, out result);
         }
-        private bool Optional(out TextSpan result) {
-            return Token('?', out result);
+        private bool OptionalOrDelete(out OptionalOrDeleteNode result) {
+            TextSpan optional;
+            var delete = default(NameNode);
+            if (!Token('?', out optional)) {
+                if (!Keyword("x", out delete)) {
+                    result = default(OptionalOrDeleteNode);
+                    return false;
+                }
+            }
+            result = new OptionalOrDeleteNode(optional, delete);
+            return true;
         }
         private bool MemberName(out NameNode result) {
             if (Keyword(MemberNameKeyword)) {
@@ -776,7 +735,7 @@ namespace XData.Compiler {
                                 maxValue.ToInvString(), minValue.ToInvString()), maxValueNode.TextSpan);
                         }
                         else if (maxValue == 0) {
-                            ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxValueMustBeGreaterThanZero), maxValueNode.TextSpan);
+                            //ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxValueMustBeGreaterThanZero), maxValueNode.TextSpan);
                         }
                     }
                     else {

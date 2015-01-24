@@ -26,7 +26,7 @@ namespace XData.Compiler {
         public override void Resolve() {
             Body.Resolve();
         }
-        protected override NamedObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName) {
+        protected override IGlobalObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName) {
             return Body.CreateSymbolCore(parent, csName, fullName, IsAbstract, IsSealed);
         }
     }
@@ -39,7 +39,7 @@ namespace XData.Compiler {
         public TypeListNode(Node parent) : base(parent) { }
         public QualifiableNameNode ItemTypeQName;
         public TypeNode ItemType;
-        public ValueRestrictionsNode ValueRestrictions;//opt
+        public ValueFacetsNode ValueRestrictions;//opt
         public override void Resolve() {
             ItemType = NamespaceAncestor.ResolveAsType(ItemTypeQName);
             if (ValueRestrictions != null && ValueRestrictions.ListItemTypeQName.IsValid) {
@@ -162,7 +162,7 @@ namespace XData.Compiler {
     }
     public sealed class TypeRestriction : TypeExtension {
         public TypeRestriction(Node parent) : base(parent) { }
-        public ValueRestrictionsNode ValueRestrictions;
+        public ValueFacetsNode ValueRestrictions;
         public override void Resolve() {
             base.Resolve();
             if (ValueRestrictions != null) {
@@ -175,7 +175,7 @@ namespace XData.Compiler {
         //    return null;
         //}
         public override TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
-            var baseTypeSymbol = BaseType.CreateSymbol();
+            var baseTypeSymbol = (TypeSymbol)BaseType.CreateSymbol();
             if (baseTypeSymbol.IsSealed) {
                 ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.BaseTypeIsSealed, baseTypeSymbol.FullName.ToString()), BaseTypeQName.TextSpan);
             }

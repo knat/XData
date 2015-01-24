@@ -7,7 +7,7 @@ namespace XData {
         None = 0,
         Parsing = -1000,
         AliasSysIsReserved,
-        DuplicateDefaultUri,
+        //DuplicateDefaultUri,
         DuplicateUriAlias,
         InvalidUriAlias,
         ElementIsAbstract,
@@ -45,8 +45,8 @@ namespace XData {
             switch (Code) {
                 case DiagCode.AliasSysIsReserved:
                     return "Alias 'sys' is reserved.";
-                case DiagCode.DuplicateDefaultUri:
-                    return "Duplicate default uri.";
+                //case DiagCode.DuplicateDefaultUri:
+                //    return "Duplicate default uri.";
                 case DiagCode.DuplicateUriAlias:
                     return "Duplicate uri alias '{0}'.".InvFormat(_msgArgs);
                 case DiagCode.InvalidUriAlias:

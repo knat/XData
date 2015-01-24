@@ -85,7 +85,6 @@ uri-aliasing-list:
 ;
 uri-aliasing:
 name '=' string-value
-| name? '==' string-value
 ;
 element-value:
 complex-value | simple-value
@@ -100,7 +99,7 @@ attributes:
 '[' attribute* ']'
 ;
 attribute:
-qualifiable-name ('=' attribute-value)?
+name ('=' attribute-value)?
 ;
 attribute-value:
 simple-value

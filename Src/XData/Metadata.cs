@@ -26,7 +26,7 @@ namespace XData {
             }
             return null;
         }
-        public NamedObjectInfo TryGetGlobalObject(FullName fullName) {
+        public IGlobalObjectInfo TryGetGlobalObject(FullName fullName) {
             var ns = TryGetNamespace(fullName.Uri);
             if (ns != null) {
                 return ns.TryGetGlobalObject(fullName);
@@ -35,20 +35,20 @@ namespace XData {
         }
     }
     public sealed class NamespaceInfo {
-        public NamespaceInfo(string uri, NamedObjectInfo[] globalObjects) {
+        public NamespaceInfo(string uri, IGlobalObjectInfo[] globalObjects) {
             if (uri == null) throw new ArgumentNullException("uri");
             if (globalObjects == null) throw new ArgumentNullException("globalObjects");
             Uri = uri;
             GlobalObjects = globalObjects;
         }
         public readonly string Uri;
-        public readonly NamedObjectInfo[] GlobalObjects;
+        public readonly IGlobalObjectInfo[] GlobalObjects;
         public bool IsSystem {
             get {
                 return Uri == InfoExtensions.SystemUri;
             }
         }
-        public NamedObjectInfo TryGetGlobalObject(FullName fullName) {
+        public IGlobalObjectInfo TryGetGlobalObject(FullName fullName) {
             foreach (var obj in GlobalObjects) {
                 if (obj.FullName == fullName) {
                     return obj;
@@ -57,7 +57,7 @@ namespace XData {
             return null;
         }
         //
-        public static readonly NamespaceInfo System = new NamespaceInfo(InfoExtensions.SystemUri, new NamedObjectInfo[] {
+        public static readonly NamespaceInfo System = new NamespaceInfo(InfoExtensions.SystemUri, new IGlobalObjectInfo[] {
 
 
         });
@@ -116,21 +116,24 @@ namespace XData {
         //    return obj;
         //}
     }
-    public abstract class NamedObjectInfo : ObjectInfo {
-        public NamedObjectInfo(Type clrType, bool isAbstract, FullName fullName)
+    public interface IGlobalObjectInfo {
+        FullName FullName { get; }
+    }
+    //public abstract class NamedObjectInfo : ObjectInfo {
+    //    public NamedObjectInfo(Type clrType, bool isAbstract, FullName fullName)
+    //        : base(clrType, isAbstract) {
+    //        FullName = fullName;
+    //    }
+    //    public readonly FullName FullName;
+    //}
+
+    public abstract class TypeInfo : ObjectInfo, IGlobalObjectInfo {
+        protected TypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeInfo baseType)
             : base(clrType, isAbstract) {
             FullName = fullName;
-        }
-        public readonly FullName FullName;
-
-
-    }
-
-    public abstract class TypeInfo : NamedObjectInfo {
-        protected TypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeInfo baseType)
-            : base(clrType, isAbstract, fullName) {
             BaseType = baseType;
         }
+        public FullName FullName { get; private set; }
         public readonly TypeInfo BaseType;
         public bool IsEqualToOrDeriveFrom(TypeInfo other) {
             if (other == null) throw new ArgumentNullException("other");
@@ -144,8 +147,8 @@ namespace XData {
 
     }
 
-    public sealed class ValueRestrictionSetInfo {
-        public ValueRestrictionSetInfo(
+    public sealed class ValueFacetSetInfo {
+        public ValueFacetSetInfo(
             ulong? minLength = null,
             ulong? maxLength = null,
             byte? totalDigits = null,
@@ -207,7 +210,7 @@ namespace XData {
     }
     public class SimpleTypeInfo : TypeInfo {
         public SimpleTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo baseType,
-            ValueRestrictionSetInfo valueRestrictions)
+            ValueFacetSetInfo valueRestrictions)
             : base(clrType, isAbstract, fullName, baseType) {
             if (baseType == null) throw new ArgumentNullException("baseType");
             //if (valueClrType == null) throw new ArgumentNullException("valueClrType");
@@ -215,7 +218,7 @@ namespace XData {
             ValueRestrictions = valueRestrictions;
         }
         //public Type ValueClrType { get; private set; }
-        public readonly ValueRestrictionSetInfo ValueRestrictions;// { get; private set; }
+        public readonly ValueFacetSetInfo ValueRestrictions;// { get; private set; }
     }
     public enum TypeKind : byte {
         None = 0,
@@ -266,7 +269,7 @@ namespace XData {
 
     public sealed class AtomTypeInfo : SimpleTypeInfo {
         public AtomTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo baseType,
-            ValueRestrictionSetInfo valueRestrictions, TypeKind kind)
+            ValueFacetSetInfo valueRestrictions, TypeKind kind)
             : base(clrType, isAbstract, fullName, baseType, valueRestrictions) {
             Kind = kind;
         }
@@ -276,7 +279,7 @@ namespace XData {
     }
     public sealed class ListTypeInfo : SimpleTypeInfo {
         public ListTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo baseType, SimpleTypeInfo itemType,
-            ValueRestrictionSetInfo valueRestrictions)
+            ValueFacetSetInfo valueRestrictions)
             : base(clrType, isAbstract, fullName, baseType, valueRestrictions) {
             ItemType = itemType;
         }
@@ -314,11 +317,12 @@ namespace XData {
             Attributes = attributes;
         }
         //public readonly AttributeSetInfo BaseAttributeSet;
+        //public readonly bool IsExtension;
         public readonly AttributeInfo[] Attributes;
-        public AttributeInfo TryGetAttribute(FullName fullName) {
+        public AttributeInfo TryGetAttribute(string name) {
             if (Attributes != null) {
                 foreach (var attribute in Attributes) {
-                    if (attribute.FullName == fullName) {
+                    if (attribute.Name == name) {
                         return attribute;
                     }
                 }
@@ -326,96 +330,104 @@ namespace XData {
             return null;
         }
     }
-    public enum EntityDeclKind : byte {
+    public sealed class AttributeInfo : ObjectInfo {
+        public AttributeInfo(Type clrType, string name, string displayName, bool isOptional, bool isNullable,
+            SimpleTypeInfo type/*, AttributeInfo restrictedAttribute*/)
+            : base(clrType, false) {
+            Name = name;
+            DisplayName = displayName;
+            IsOptional = isOptional;
+            IsNullable = isNullable;
+            Type = type;
+            //RestrictedAttribute = restrictedAttribute;
+        }
+        public readonly string Name;
+        public readonly string DisplayName;
+        public readonly bool IsOptional;
+        public readonly bool IsNullable;
+        public readonly SimpleTypeInfo Type;
+        //public readonly AttributeInfo RestrictedAttribute;
+    }
+
+    public abstract class ChildInfo : ObjectInfo {
+        protected ChildInfo(Type clrType, bool isAbstract, string displayName, bool isOptional, int order)
+            : base(clrType, isAbstract) {
+            DisplayName = displayName;
+            IsOptional = isOptional;
+            Order = order;
+        }
+        public readonly string DisplayName;
+        public readonly bool IsOptional;
+        public readonly int Order;
+    }
+
+    //public abstract class EntityInfo : NamedObjectInfo {
+    //    public EntityInfo(Type clrType, bool isAbstract, FullName fullName, string displayName, TypeInfo type,
+    //        ElementKind declKind, EntityInfo referencedEntity, EntityInfo substitutedEntity, bool isNullable, bool isOptional)
+    //        : base(clrType, isAbstract, fullName) {
+    //        DisplayName = displayName;
+    //        Type = type;
+    //        DeclKind = declKind;
+    //        ReferencedEntity = referencedEntity;
+    //        SubstitutedEntity = substitutedEntity;
+    //        IsNullable = isNullable;
+    //        IsOptional = isOptional;
+    //    }
+    //    public string DisplayName { get; private set; }
+    //    public readonly TypeInfo Type;
+    //    public readonly ElementKind DeclKind;
+    //    public readonly EntityInfo ReferencedEntity;
+    //    public readonly EntityInfo SubstitutedEntity;
+    //    public readonly bool IsNullable;
+    //    public bool IsOptional { get; private set; }
+    //    public bool IsLocal {
+    //        get {
+    //            return DeclKind == ElementKind.Local;
+    //        }
+    //    }
+    //    public bool IsGlobal {
+    //        get {
+    //            return DeclKind == ElementKind.Global;
+    //        }
+    //    }
+    //    public bool IsReference {
+    //        get {
+    //            return DeclKind == ElementKind.Reference;
+    //        }
+    //    }
+    //}
+
+    //public interface IChildInfo {
+    //    string DisplayName { get; }
+    //    int Order { get; }
+    //    bool IsOptional { get; }
+    //}
+    public enum ElementKind : byte {
         None = 0,
         Local,
         Global,
         Reference
     }
-    public abstract class EntityInfo : NamedObjectInfo {
-        public EntityInfo(Type clrType, bool isAbstract, FullName fullName, string displayName, TypeInfo type,
-            EntityDeclKind declKind, EntityInfo referencedEntity, EntityInfo substitutedEntity, bool isNullable, bool isOptional)
-            : base(clrType, isAbstract, fullName) {
-            DisplayName = displayName;
-            Type = type;
-            DeclKind = declKind;
-            ReferencedEntity = referencedEntity;
-            SubstitutedEntity = substitutedEntity;
+    public sealed class ElementInfo : ChildInfo, IGlobalObjectInfo {
+        public ElementInfo(Type clrType, bool isAbstract, string displayName, bool isOptional, int order,
+            FullName fullName, ElementKind kind, bool isNullable, TypeInfo type,
+             ElementInfo referencedElement, ElementInfo substitutedElement, FullName[] directSubstitutingElementFullNames, ProgramInfo program)
+            : base(clrType, isAbstract, displayName, isOptional, order) {
+            FullName = fullName;
+            Kind = kind;
             IsNullable = isNullable;
-            IsOptional = isOptional;
-        }
-        public string DisplayName { get; private set; }
-        public readonly TypeInfo Type;
-        public readonly EntityDeclKind DeclKind;
-        public readonly EntityInfo ReferencedEntity;
-        public readonly EntityInfo SubstitutedEntity;
-        public readonly bool IsNullable;
-        public bool IsOptional { get; private set; }
-        public bool IsLocal {
-            get {
-                return DeclKind == EntityDeclKind.Local;
-            }
-        }
-        public bool IsGlobal {
-            get {
-                return DeclKind == EntityDeclKind.Global;
-            }
-        }
-        public bool IsReference {
-            get {
-                return DeclKind == EntityDeclKind.Reference;
-            }
-        }
-    }
-    public sealed class AttributeInfo : EntityInfo {
-        public AttributeInfo(Type clrType, FullName fullName, string displayName, SimpleTypeInfo type,
-            EntityDeclKind declKind, AttributeInfo referencedAttribute, AttributeInfo substitutedAttribute, bool isNullable, bool isOptional)
-            : base(clrType, false, fullName, displayName, type, declKind, referencedAttribute, substitutedAttribute, isNullable, isOptional) {
-        }
-        public AttributeInfo SubstitutedAttribute {
-            get {
-                return (AttributeInfo)SubstitutedEntity;
-            }
-        }
-        new public SimpleTypeInfo Type {
-            get {
-                return (SimpleTypeInfo)base.Type;
-            }
-        }
-        public AttributeInfo ReferencedAttribute {
-            get {
-                return (AttributeInfo)ReferencedEntity;
-            }
-        }
-
-    }
-    public interface IChildInfo {
-        string DisplayName { get; }
-        int Order { get; }
-        bool IsOptional { get; }
-    }
-
-    public sealed class ElementInfo : EntityInfo, IChildInfo {
-        public ElementInfo(Type clrType, bool isAbstract, FullName fullName, string displayName, TypeInfo type,
-            EntityDeclKind declKind, ElementInfo referencedElement, ElementInfo substitutedElement, bool isNullable, bool isOptional,
-            int order, FullName[] directSubstitutingElementFullNames,
-            ProgramInfo program)
-            : base(clrType, isAbstract, fullName, displayName, type, declKind, referencedElement, substitutedElement, isNullable, isOptional) {
-            Order = order;
+            Type = type;
+            ReferencedElement = referencedElement;
+            SubstitutedElement = substitutedElement;
             _directSubstitutingElementFullNames = directSubstitutingElementFullNames;
             Program = program;
         }
-        public int Order { get; private set; }
-        public ElementInfo ReferencedElement {
-            get {
-                return (ElementInfo)ReferencedEntity;
-            }
-        }
-        public ElementInfo SubstitutedElement {
-            get {
-                return (ElementInfo)SubstitutedEntity;
-            }
-        }
+        public FullName FullName { get; private set; }
+        public readonly ElementKind Kind;
+        public readonly bool IsNullable;
+        public readonly TypeInfo Type;
+        public readonly ElementInfo ReferencedElement;
+        public readonly ElementInfo SubstitutedElement;
         private readonly FullName[] _directSubstitutingElementFullNames;//opt, for global element
         public readonly ProgramInfo Program;
         private volatile ElementInfo[] _directSubstitutingElements;
@@ -432,6 +444,21 @@ namespace XData {
                     array[i] = (ElementInfo)Program.TryGetGlobalObject(_directSubstitutingElementFullNames[i]);
                 }
                 return _directSubstitutingElements = array;
+            }
+        }
+        public bool IsLocal {
+            get {
+                return Kind == ElementKind.Local;
+            }
+        }
+        public bool IsGlobal {
+            get {
+                return Kind == ElementKind.Global;
+            }
+        }
+        public bool IsReference {
+            get {
+                return Kind == ElementKind.Reference;
             }
         }
         public bool IsMatch(FullName fullName, out ElementInfo globalElement) {
@@ -466,16 +493,10 @@ namespace XData {
         }
 
     }
-    public abstract class ChildContainerInfo : ObjectInfo, IChildInfo {
-        protected ChildContainerInfo(Type clrType, string displayName, int order, bool isOptional)
-            : base(clrType, false) {
-            DisplayName = displayName;
-            Order = order;
-            IsOptional = isOptional;
+    public abstract class ChildContainerInfo : ChildInfo {
+        protected ChildContainerInfo(Type clrType, string displayName, bool isOptional, int order)
+            : base(clrType, false, displayName, isOptional, order) {
         }
-        public string DisplayName { get; private set; }
-        public int Order { get; private set; }
-        public bool IsOptional { get; private set; }
     }
     public enum ChildSetKind : byte {
         None = 0,
@@ -483,15 +504,15 @@ namespace XData {
         Choice
     }
     public sealed class ChildSetInfo : ChildContainerInfo {
-        public ChildSetInfo(Type clrType, string displayName, int order, bool isOptional,
-            ChildSetKind kind, IChildInfo[] members)
-            : base(clrType, displayName, order, isOptional) {
+        public ChildSetInfo(Type clrType, string displayName, bool isOptional, int order,
+            ChildSetKind kind, ChildInfo[] members)
+            : base(clrType, displayName, isOptional, order) {
             Kind = kind;
             Members = members;
         }
         public readonly ChildSetKind Kind;
-        public readonly IChildInfo[] Members;
-        public IChildInfo TryGetMember(int order) {
+        public readonly ChildInfo[] Members;
+        public ChildInfo TryGetMember(int order) {
             if (Members != null) {
                 foreach (var member in Members) {
                     if (member.Order == order) {
@@ -503,16 +524,16 @@ namespace XData {
         }
     }
     public sealed class ChildListInfo : ChildContainerInfo {
-        public ChildListInfo(Type clrType, string displayName, int order, bool isOptional,
-            ulong minOccurs, ulong maxOccurs, IChildInfo item)
-            : base(clrType, displayName, order, isOptional) {
+        public ChildListInfo(Type clrType, string displayName, bool isOptional, int order,
+            ulong minOccurs, ulong maxOccurs, ChildInfo item)
+            : base(clrType, displayName, isOptional, order) {
             MinOccurs = minOccurs;
             MaxOccurs = maxOccurs;
             Item = item;
         }
         public readonly ulong MinOccurs;
         public readonly ulong MaxOccurs;
-        public readonly IChildInfo Item;
+        public readonly ChildInfo Item;
     }
 
 }

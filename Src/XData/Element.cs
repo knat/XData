@@ -10,7 +10,7 @@ namespace XData {
         Skipped,
         OK
     }
-    public abstract class XElement : XChild, IEntityObject {
+    public abstract class XElement : XChild  {
         protected XElement() {
             _fullName = GetFullName();
         }
@@ -28,7 +28,7 @@ namespace XData {
             }
             set {
                 if (value != null) {
-                    if (ElementInfo.DeclKind != EntityDeclKind.Reference) {
+                    if (ElementInfo.Kind != ElementKind.Reference) {
                         throw new InvalidOperationException("Cannot set referenced element if the element is not a reference.");
                     }
                     for (var i = value; i != null; i = i._referencedElement) {
@@ -101,21 +101,6 @@ namespace XData {
         public XType EnsureType(bool @try = false) {
             return EnsureType<XType>(@try);
         }
-        //public object Value {
-        //    get {
-        //        var type = Type;
-        //        return type == null ? null : type.Value;
-        //    }
-        //    set { EnsureType().Value = value; }
-        //}
-        //public object GenericValue {
-        //    get {
-        //        return Value;
-        //    }
-        //    set {
-        //        Value = value;
-        //    }
-        //}
         public override XObject DeepClone() {
             var obj = (XElement)base.DeepClone();
             obj.SetType(_type);
@@ -124,11 +109,6 @@ namespace XData {
         public ElementInfo ElementInfo {
             get {
                 return (ElementInfo)ObjectInfo;
-            }
-        }
-        EntityInfo IEntityObject.EntityInfo {
-            get {
-                return ElementInfo;
             }
         }
 

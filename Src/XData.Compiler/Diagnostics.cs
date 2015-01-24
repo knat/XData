@@ -15,14 +15,14 @@ namespace XData.Compiler {
         AmbiguousNameReference,
         InvalidNameReference,
         InvalidTypeNameReference,
-        InvalidAttributeNameReference,
+        //InvalidAttributeNameReference,
         InvalidElementNameReference,
         UInt64ValueRequired,
         ByteValueRequired,
         MaxValueMustEqualToOrBeGreaterThanMinValue,
         MaxValueMustBeGreaterThanZero,
         DuplicateMemberName,
-        DuplicateAttributeFullName,
+        DuplicateAttributeName,
         InvalidIndicatorNamespaceName,
         InconsistentCSharpNamespaceName,
         CSNamespaceNameNotSpecifiedForNamespace,
@@ -87,8 +87,8 @@ namespace XData.Compiler {
                     return "Byte value required.";
                 case DiagCodeEx.DuplicateMemberName:
                     return "Duplicate member name '{0}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.DuplicateAttributeFullName:
-                    return "Duplicate attribute full name '{0}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.DuplicateAttributeName:
+                    return "Duplicate attribute name '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.InvalidIndicatorNamespaceName:
                     return "Invalid indicator namespace name '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.InconsistentCSharpNamespaceName:
@@ -105,8 +105,8 @@ namespace XData.Compiler {
                     return "Invalid name reference '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.InvalidTypeNameReference:
                     return "Invalid type name reference '{0}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.InvalidAttributeNameReference:
-                    return "Invalid attribute name reference '{0}'.".InvFormat(_msgArgs);
+                //case DiagCodeEx.InvalidAttributeNameReference:
+                //    return "Invalid attribute name reference '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.InvalidElementNameReference:
                     return "Invalid element name reference '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.CircularReferenceDetected:

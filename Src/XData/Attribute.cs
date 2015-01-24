@@ -1,85 +1,35 @@
 ﻿using System;
 
-
 namespace XData {
-    public interface IEntityObject {//Attribute and Element impl this interface
-        EntityInfo EntityInfo { get; }
-        FullName FullName { get; }
-        XType Type { get; }
-    }
+    //public interface IEntityObject {//Attribute and Element impl this interface
+    //    EntityInfo EntityInfo { get; }
+    //    FullName FullName { get; }
+    //    XType Type { get; }
+    //}
 
-    public abstract class XAttribute : XObject, IEntityObject {
+    public abstract class XAttribute : XObject {
         protected XAttribute() {
-            _fullName = GetFullName();
+            _name = AttributeInfo.Name;
         }
-        private readonly FullName _fullName;
-        public FullName FullName {
+        private readonly string _name;
+        public string Name {
             get {
-                return _fullName;
+                return _name;
             }
         }
-        protected abstract FullName GetFullName();
-        private XAttribute _referencedAttribute;
-        public XAttribute ReferencedAttribute {
-            get {
-                return _referencedAttribute;
-            }
-            set {
-                if (value != null) {
-                    if (AttributeInfo.DeclKind != EntityDeclKind.Reference) {
-                        throw new InvalidOperationException("Cannot set referenced attribute if the attribute is not a reference.");
-                    }
-                    if (value._fullName != _fullName) {
-                        throw new InvalidOperationException("Referenced attribute full name '{0}' not equal to this '{1}'.".InvFormat(
-                            value._fullName.ToString(), _fullName.ToString()));
-                    }
-                    for (var i = value; i != null; i = i._referencedAttribute) {
-                        if ((object)this == i) {
-                            throw new InvalidOperationException("Circular reference detected.");
-                        }
-                    }
-                }
-                _referencedAttribute = value;
-            }
-        }
-        public XAttribute GenericReferencedAttribute {
-            get {
-                return _referencedAttribute;
-            }
-            set {
-                ReferencedAttribute = value;
-            }
-        }
-        public bool IsReference {
-            get {
-                return _referencedAttribute != null;
-            }
-        }
-        public XAttribute EffectiveAttribute {
-            get {
-                return _referencedAttribute == null ? this : _referencedAttribute.EffectiveAttribute;
-            }
-        }
+
         private XSimpleType _type;
-        private void SetType(XSimpleType type) {
-            _type = SetParentTo(type);
-        }
         public XSimpleType Type {
             get {
-                return EffectiveAttribute._type;
+                return _type;
             }
             set {
-                if (_referencedAttribute != null) {
-                    _referencedAttribute.Type = value;
-                }
-                else {
-                    SetType(value);
-                }
+                _type = SetParentTo(value);
             }
         }
         public bool HasType {
             get {
-                return EffectiveAttribute._type != null;
+                return _type != null;
             }
         }
         public XSimpleType GenericType {
@@ -90,19 +40,11 @@ namespace XData {
                 Type = value;
             }
         }
-        XType IEntityObject.Type {
-            get {
-                return Type;
-            }
-        }
         public T EnsureType<T>(bool @try = false) where T : XSimpleType {
-            if (_referencedAttribute != null) {
-                return _referencedAttribute.EnsureType<T>(@try);
-            }
             var obj = _type as T;
             if (obj != null) return obj;
             obj = AttributeInfo.Type.CreateInstance<T>(@try);
-            SetType(obj);
+            Type = obj;
             return obj;
         }
         public XSimpleType EnsureType(bool @try = false) {
@@ -110,17 +52,12 @@ namespace XData {
         }
         public override XObject DeepClone() {
             var obj = (XAttribute)base.DeepClone();
-            obj.SetType(_type);
+            obj.Type = _type;
             return obj;
         }
         public AttributeInfo AttributeInfo {
             get {
                 return (AttributeInfo)ObjectInfo;
-            }
-        }
-        EntityInfo IEntityObject.EntityInfo {
-            get {
-                return AttributeInfo;
             }
         }
 

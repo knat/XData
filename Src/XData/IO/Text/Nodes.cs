@@ -121,45 +121,23 @@ namespace XData.IO.Text {
         }
     }
     public struct UriAliasingNode {
-        public UriAliasingNode(NameNode alias, AtomValueNode uri, bool isDefault) {
+        public UriAliasingNode(NameNode alias, AtomValueNode uri) {
             Alias = alias;
             Uri = uri;
-            IsDefault = isDefault;
         }
         public readonly NameNode Alias;
         public readonly AtomValueNode Uri;
-        public readonly bool IsDefault;
-        //public bool HasAlias {
-        //    get {
-        //        return Alias.IsValid;
-        //    }
-        //}
-        //public bool IsValid {
-        //    get {
-        //        return Uri.IsValid;
-        //    }
-        //}
     }
     public struct AttributeNode {
-        public AttributeNode(QualifiableNameNode qName, SimpleValueNode value) {
-            QName = qName;
+        public AttributeNode(NameNode name, SimpleValueNode value) {
+            Name = name;
             Value = value;
         }
-        public readonly QualifiableNameNode QName;
+        public readonly NameNode Name;
         public readonly SimpleValueNode Value;
-        //public bool HasValue {
-        //    get {
-        //        return Value.IsValid;
-        //    }
-        //}
         public bool IsValid {
             get {
-                return QName.IsValid;
-            }
-        }
-        public FullName FullName {
-            get {
-                return QName.FullName;
+                return Name.IsValid;
             }
         }
     }

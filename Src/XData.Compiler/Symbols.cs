@@ -34,13 +34,13 @@ namespace XData.Compiler {
             Uri = uri;
             CSNamespaceName = csNamespaceName;
             IsCSNamespaceRef = isCSNamespaceRef;
-            GlobalObjectList = new List<NamedObjectSymbol>();
+            GlobalObjectList = new List<IGlobalObjectSymbol>();
         }
         public readonly string Uri;
         public readonly CSNamespaceNameNode CSNamespaceName;
         public readonly bool IsCSNamespaceRef;
-        public readonly List<NamedObjectSymbol> GlobalObjectList;
-        public NamedObjectSymbol TryGetGlobalObject(string name) {
+        public readonly List<IGlobalObjectSymbol> GlobalObjectList;
+        public IGlobalObjectSymbol TryGetGlobalObject(string name) {
             foreach (var obj in GlobalObjectList) {
                 if (obj.FullName.Name == name) {
                     return obj;
@@ -134,21 +134,26 @@ namespace XData.Compiler {
         }
 
     }
-    public abstract class NamedObjectSymbol : ObjectSymbol {
-        protected NamedObjectSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, bool isCSOverride,
-            NameSyntax csBaseFullName, NameSyntax[] csItfNames, FullName fullName)
-            : base(parent, csName, isAbstract, isSealed, isCSOverride, csBaseFullName, csItfNames) {
-            FullName = fullName;
-        }
-        public readonly FullName FullName;
+    //public abstract class NamedObjectSymbol : ObjectSymbol {
+    //    protected NamedObjectSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, bool isCSOverride,
+    //        NameSyntax csBaseFullName, NameSyntax[] csItfNames, FullName fullName)
+    //        : base(parent, csName, isAbstract, isSealed, isCSOverride, csBaseFullName, csItfNames) {
+    //        FullName = fullName;
+    //    }
+    //    public readonly FullName FullName;
+    //}
+    public interface IGlobalObjectSymbol {
+        FullName FullName { get; }
     }
-    public abstract class TypeSymbol : NamedObjectSymbol {
+    public abstract class TypeSymbol : ObjectSymbol, IGlobalObjectSymbol {
         protected TypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
             NameSyntax csBaseFullName, NameSyntax[] csItfNames, FullName fullName, TypeKind kind, TypeSymbol baseType)
-            : base(parent, csName, isAbstract, isSealed, false, csBaseFullName, csItfNames, fullName) {
+            : base(parent, csName, isAbstract, isSealed, false, csBaseFullName, csItfNames) {
+            FullName = fullName;
             Kind = kind;
             BaseType = baseType;
         }
+        public FullName FullName { get; private set; }
         public readonly TypeKind Kind;
         public readonly TypeSymbol BaseType;
         public bool IsEqualToOrDeriveFrom(TypeSymbol other) {
@@ -165,15 +170,15 @@ namespace XData.Compiler {
     public class SimpleTypeSymbol : TypeSymbol {
         public SimpleTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
             NameSyntax csBaseFullName, NameSyntax[] csItfNames, FullName fullName, TypeKind kind, SimpleTypeSymbol baseType,
-            ValueRestrictionSetInfo valueRestrictions)
+            ValueFacetSetInfo valueRestrictions)
             : base(parent, csName, isAbstract, isSealed, csBaseFullName, csItfNames, fullName, kind, baseType) {
             ValueRestrictions = valueRestrictions;
         }
-        public readonly ValueRestrictionSetInfo ValueRestrictions;
+        public readonly ValueFacetSetInfo ValueRestrictions;
     }
     public sealed class AtomTypeSymbol : SimpleTypeSymbol {
         public AtomTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
-            FullName fullName, TypeKind kind, SimpleTypeSymbol baseType, ValueRestrictionSetInfo valueRestrictions,
+            FullName fullName, TypeKind kind, SimpleTypeSymbol baseType, ValueFacetSetInfo valueRestrictions,
             TypeSyntax valueCSFullName)
             : base(parent, csName, isAbstract, isSealed, baseType.CSFullName, null, fullName, kind, baseType, valueRestrictions) {
             ValueCSFullName = valueCSFullName;
@@ -182,7 +187,7 @@ namespace XData.Compiler {
     }
     public sealed class ListTypeSymbol : SimpleTypeSymbol {
         public ListTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
-            FullName fullName, SimpleTypeSymbol baseType, ValueRestrictionSetInfo valueRestrictions,
+            FullName fullName, SimpleTypeSymbol baseType, ValueFacetSetInfo valueRestrictions,
             NameSyntax[] csItfNames, SimpleTypeSymbol itemType)
             : base(parent, csName, isAbstract, isSealed, baseType.CSFullName, csItfNames, fullName, TypeKind.ListType, baseType, valueRestrictions) {
             ItemType = itemType;
@@ -219,149 +224,142 @@ namespace XData.Compiler {
         public readonly List<AttributeSymbol> AttributeList;
 
     }
-    public abstract class EntitySymbol : NamedObjectSymbol {
-        protected EntitySymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, bool isCSOverride, NameSyntax csBaseFullName, FullName fullName,
-            EntityDeclKind declKind, EntitySymbol restrictedEntity, EntitySymbol substitutedEntity, EntitySymbol referencedEntity,
-            string displayName, string memberName, bool isNullable, bool isOptional, TypeSymbol type) :
-                base(parent, csName, isAbstract, isSealed, isCSOverride, csBaseFullName, null, fullName) {
-            DeclKind = declKind;
-            RestrictedEntity = restrictedEntity;
-            ReferencedEntity = referencedEntity;
+    //public abstract class EntitySymbol : NamedObjectSymbol {
+    //    protected EntitySymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, bool isCSOverride, NameSyntax csBaseFullName, FullName fullName,
+    //        ElementKind declKind, EntitySymbol restrictedEntity, EntitySymbol substitutedEntity, EntitySymbol referencedEntity,
+    //        string displayName, string memberName, bool isNullable, bool isOptional, TypeSymbol type) :
+    //            base(parent, csName, isAbstract, isSealed, isCSOverride, csBaseFullName, null, fullName) {
+    //        DeclKind = declKind;
+    //        RestrictedEntity = restrictedEntity;
+    //        ReferencedEntity = referencedEntity;
+    //        DisplayName = displayName;
+    //        MemberName = memberName;
+    //        IsNullable = isNullable;
+    //        IsOptional = isOptional;
+    //        Type = type;
+    //    }
+
+    //    public readonly ElementKind DeclKind;
+    //    public readonly EntitySymbol RestrictedEntity;
+    //    public readonly EntitySymbol SubstitutedEntity;
+    //    public readonly EntitySymbol ReferencedEntity;//for ref
+    //    public string DisplayName { get; private set; }
+    //    public string MemberName { get; private set; }
+
+    //    public readonly bool IsNullable;
+    //    public bool IsOptional { get; private set; }
+    //    public readonly TypeSymbol Type;
+    //    public bool IsLocal {
+    //        get {
+    //            return DeclKind == ElementKind.Local;
+    //        }
+    //    }
+    //    public bool IsGlobal {
+    //        get {
+    //            return DeclKind == ElementKind.Global;
+    //        }
+    //    }
+    //    public bool IsReference {
+    //        get {
+    //            return DeclKind == ElementKind.Reference;
+    //        }
+    //    }
+
+    //}
+    public sealed class AttributeSymbol : ObjectSymbol {
+        public AttributeSymbol(AttributeSetSymbol parent, string csName,
+            string name, string displayName, bool isOptional, bool isNullable, SimpleTypeSymbol type, AttributeSymbol restrictedAttribute) :
+                base(parent, csName, false, false, restrictedAttribute != null,
+                    restrictedAttribute != null ? restrictedAttribute.CSFullName : CSEX.XAttributeName, null) {
+            Name = name;
             DisplayName = displayName;
-            MemberName = memberName;
-            IsNullable = isNullable;
             IsOptional = isOptional;
+            IsNullable = isNullable;
             Type = type;
+            RestrictedAttribute = restrictedAttribute;
         }
-
-        public readonly EntityDeclKind DeclKind;
-        public readonly EntitySymbol RestrictedEntity;
-        public readonly EntitySymbol SubstitutedEntity;
-        public readonly EntitySymbol ReferencedEntity;//for ref
-        public string DisplayName { get; private set; }
-        public string MemberName { get; private set; }
-
+        public readonly string Name;
+        public readonly string DisplayName;
+        public readonly bool IsOptional;
         public readonly bool IsNullable;
-        public bool IsOptional { get; private set; }
-        public readonly TypeSymbol Type;
-        public bool IsLocal {
-            get {
-                return DeclKind == EntityDeclKind.Local;
-            }
-        }
-        public bool IsGlobal {
-            get {
-                return DeclKind == EntityDeclKind.Global;
-            }
-        }
-        public bool IsReference {
-            get {
-                return DeclKind == EntityDeclKind.Reference;
-            }
-        }
-
+        public readonly SimpleTypeSymbol Type;
+        public readonly AttributeSymbol RestrictedAttribute;
     }
-    public sealed class AttributeSymbol : EntitySymbol {
-        public AttributeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, FullName fullName,
-            EntityDeclKind declKind, AttributeSymbol restrictedAttribute, AttributeSymbol substitutedAttribute, AttributeSymbol referencedAttribute,
-            string displayName, string memberName, bool isNullable, bool isOptional, SimpleTypeSymbol type) :
-                base(parent, csName, isAbstract, isSealed, restrictedAttribute != null,
-                    restrictedAttribute != null ? restrictedAttribute.CSFullName : substitutedAttribute != null ? substitutedAttribute.CSFullName : CSEX.XAttributeName,
-                    fullName, declKind, restrictedAttribute, substitutedAttribute, referencedAttribute, displayName, memberName, isNullable, isOptional, type) {
-        }
-        public AttributeSymbol RestrictedAttribute {
-            get {
-                return (AttributeSymbol)RestrictedEntity;
-            }
-        }
-        public AttributeSymbol SubstitutedAttribute {
-            get {
-                return (AttributeSymbol)SubstitutedEntity;
-            }
-        }
-        public AttributeSymbol ReferencedAttribute {
-            get {
-                return (AttributeSymbol)ReferencedEntity;
-            }
-        }
-        new public SimpleTypeSymbol Type {
-            get {
-                return (SimpleTypeSymbol)base.Type;
-            }
-        }
-
-    }
-    public interface IChildSymbol {
-        string DisplayName { get; }
-        string MemberName { get; }
-        int Order { get; }
-        bool IsOptional { get; }
-    }
-    public sealed class ElementSymbol : EntitySymbol, IChildSymbol {
-        public ElementSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, FullName fullName,
-            EntityDeclKind declKind, ElementSymbol restrictedElement, ElementSymbol substitutedElement, ElementSymbol referencedElement,
-            string displayName, string memberName, bool isNullable, bool isOptional, TypeSymbol type, int order)
-            : base(parent, csName, isAbstract, isSealed, restrictedElement != null,
-                 restrictedElement != null ? restrictedElement.CSFullName : substitutedElement != null ? substitutedElement.CSFullName : CSEX.XElementName,
-                 fullName, declKind, restrictedElement, substitutedElement, referencedElement, displayName, memberName, isNullable, isOptional, type
-                 ) {
-            Order = order;
-        }
-        public ElementSymbol RestrictedElement {
-            get {
-                return (ElementSymbol)RestrictedEntity;
-            }
-        }
-        public ElementSymbol SubstitutedElement {
-            get {
-                return (ElementSymbol)SubstitutedEntity;
-            }
-        }
-        public ElementSymbol ReferencedElement {
-            get {
-                return (ElementSymbol)ReferencedEntity;
-            }
-        }
-        public int Order { get; private set; }
-    }
-    public abstract class ChildContainerSymbol : ObjectSymbol, IChildSymbol {
-        protected ChildContainerSymbol(ObjectSymbol parent, string csName, bool isCSOverride, NameSyntax csBaseFullName,
-            ChildContainerSymbol restrictedChildContainer, string displayName, string memberName, bool isOptional, int order)
-            : base(parent, csName, false, false, isCSOverride, csBaseFullName, null) {
-            RestrictedChildContainer = restrictedChildContainer;
+    //public interface IChildSymbol {
+    //    string DisplayName { get; }
+    //    string MemberName { get; }
+    //    int Order { get; }
+    //    bool IsOptional { get; }
+    //}
+    public abstract class ChildSymbol : ObjectSymbol {
+        protected ChildSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, bool isCSOverride, NameSyntax csBaseFullName, NameSyntax[] csItfNames,
+            string displayName, string memberName, bool isOptional, int order, ChildSymbol restrictedChild) :
+                base(parent, csName, isAbstract, isSealed, isCSOverride, csBaseFullName, csItfNames) {
             DisplayName = displayName;
             MemberName = memberName;
             _isOptional = isOptional;
             Order = order;
+            RestrictedChild = restrictedChild;
         }
-        public readonly ChildContainerSymbol RestrictedChildContainer;
-        public string DisplayName { get; private set; }
-        public string MemberName { get; private set; }
+        public readonly string DisplayName;
+        public readonly string MemberName;
         private readonly bool _isOptional;
-        public virtual bool IsOptional {
+        public virtual bool IsOptional { get { return _isOptional; } }
+        public readonly int Order;
+        public readonly ChildSymbol RestrictedChild;
+    }
+
+    public sealed class ElementSymbol : ChildSymbol, IGlobalObjectSymbol {
+        public ElementSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
+            string displayName, string memberName, bool isOptional, int order, ElementSymbol restrictedElement,
+            FullName fullName, ElementKind kind, bool isNullable, TypeSymbol type, ElementSymbol referencedElement, ElementSymbol substitutedElement
+             )
+            : base(parent, csName, isAbstract, isSealed, restrictedElement != null,
+                 restrictedElement != null ? restrictedElement.CSFullName : substitutedElement != null ? substitutedElement.CSFullName : CSEX.XElementName,
+                 null, displayName, memberName, isOptional, order, restrictedElement) {
+            FullName = fullName;
+            Kind = kind;
+            IsNullable = isNullable;
+            Type = type;
+            ReferencedElement = referencedElement;
+            SubstitutedElement = substitutedElement;
+        }
+        public FullName FullName { get; private set; }
+        public readonly ElementKind Kind;
+        public readonly bool IsNullable;
+        public readonly TypeSymbol Type;
+        public ElementSymbol RestrictedElement {
             get {
-                return _isOptional;
+                return (ElementSymbol)RestrictedChild;
             }
         }
-        public int Order { get; private set; }
+        public readonly ElementSymbol ReferencedElement;
+        public readonly ElementSymbol SubstitutedElement;
+
+    }
+    public abstract class ChildContainerSymbol : ChildSymbol {
+        protected ChildContainerSymbol(ObjectSymbol parent, string csName, bool isCSOverride, NameSyntax csBaseFullName, NameSyntax[] csItfNames,
+            string displayName, string memberName, bool isOptional, int order, ChildContainerSymbol restrictedChildContainer)
+            : base(parent, csName, false, false, isCSOverride, csBaseFullName, csItfNames, displayName, memberName, isOptional, order, restrictedChildContainer) {
+        }
     }
 
     public sealed class ChildSetSymbol : ChildContainerSymbol {
-        public ChildSetSymbol(ObjectSymbol parent, string csName, ChildSetSymbol restrictedChildSet,
-            string displayName, string memberName, bool isOptional, int order, ChildSetKind kind, bool isRoot, ChildSetSymbol baseChildSet
-            )
+        public ChildSetSymbol(ObjectSymbol parent, string csName,
+            string displayName, string memberName, bool isOptional, int order, ChildSetSymbol restrictedChildSet,
+            ChildSetKind kind, bool isRoot, ChildSetSymbol baseChildSet)
             : base(parent, csName, restrictedChildSet != null || baseChildSet != null,
-                 restrictedChildSet != null ? restrictedChildSet.CSFullName : baseChildSet != null ? baseChildSet.CSFullName : CSEX.XChildSetName, restrictedChildSet,
-                 displayName, memberName, isOptional, order) {
+                 restrictedChildSet != null ? restrictedChildSet.CSFullName : baseChildSet != null ? baseChildSet.CSFullName : CSEX.XChildSetName, null,
+                 displayName, memberName, isOptional, order, restrictedChildSet) {
             Kind = kind;
             IsRoot = isRoot;
             BaseChildSet = baseChildSet;
-            MemberList = new List<IChildSymbol>();
+            MemberList = new List<ChildSymbol>();
         }
         public readonly ChildSetKind Kind;
         public readonly bool IsRoot;
         public readonly ChildSetSymbol BaseChildSet;//for root
-        public readonly List<IChildSymbol> MemberList;
+        public readonly List<ChildSymbol> MemberList;
         private bool? _isOptional;
         public override bool IsOptional {
             get {
@@ -395,20 +393,25 @@ namespace XData.Compiler {
         }
         public ChildSetSymbol RestrictedChildSet {
             get {
-                return (ChildSetSymbol)RestrictedChildContainer;
+                return (ChildSetSymbol)RestrictedChild;
             }
         }
 
     }
     public sealed class ChildListSymbol : ChildContainerSymbol {
-        public ChildListSymbol(ObjectSymbol parent, string csName, ChildListSymbol restrictedChildList,
-            string displayName, string memberName, bool isOptional, int order, IChildSymbol item) :
-                base(parent, csName, restrictedChildList != null,
-                    restrictedChildList != null ? restrictedChildList.CSFullName : CSEX.XChildListOf((item as ObjectSymbol).CSFullName),
-                    restrictedChildList, displayName, memberName, isOptional, order) {
+        public ChildListSymbol(ObjectSymbol parent, string csName,
+            string displayName, string memberName, bool isOptional, int order, ChildListSymbol restrictedChildList,
+            ulong minOccurs, ulong maxOccurs, ChildSymbol item)
+            : base(parent, csName, restrictedChildList != null,
+                restrictedChildList != null ? restrictedChildList.CSFullName : CSEX.XChildListOf(item.CSFullName),
+                null, displayName, memberName, isOptional, order, restrictedChildList) {
+            MinOccurs = minOccurs;
+            MaxOccurs = maxOccurs;
             Item = item;
         }
-        public readonly IChildSymbol Item;
+        public readonly ulong MinOccurs;
+        public readonly ulong MaxOccurs;
+        public readonly ChildSymbol Item;
     }
 
 

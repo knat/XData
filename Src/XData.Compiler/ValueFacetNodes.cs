@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using XData.IO.Text;
 
 namespace XData.Compiler {
-    public sealed class ValueRestrictionsNode : Node {
-        public ValueRestrictionsNode(Node parent) : base(parent) { }
+    public sealed class ValueFacetsNode : Node {
+        public ValueFacetsNode(Node parent) : base(parent) { }
         public IntegerRangeNode<ulong> Lengths;
         public IntegerRangeNode<byte> Digits;
         public ValueRangeNode Values;

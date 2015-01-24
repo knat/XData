@@ -3,16 +3,28 @@ using System.Collections.Generic;
 using XData.IO.Text;
 
 namespace XData.Compiler {
-    public sealed class GlobalElementNode : EntityNode {
+    public sealed class GlobalElementNode : NamespaceMemberNode {
         public GlobalElementNode(Node parent) : base(parent) { }
+        public TextSpan Nullable;
+        public QualifiableNameNode SubstitutedGlobalElementQName;
         public GlobalElementNode SubstitutedGlobalElement;
-        public override void Resolve() {
-            base.Resolve();
-            if (SubstitutedEntityQName.IsValid) {
-                SubstitutedGlobalElement = NamespaceAncestor.ResolveAsElement(SubstitutedEntityQName);
+        public QualifiableNameNode TypeQName;
+        public TypeNode Type;
+        public bool IsNullable {
+            get {
+                return Nullable.IsValid;
             }
         }
-        protected override NamedObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName) {
+        public override void Resolve() {
+
+            if (SubstitutedGlobalElementQName.IsValid) {
+                SubstitutedGlobalElement = NamespaceAncestor.ResolveAsElement(SubstitutedGlobalElementQName);
+            }
+            if (TypeQName.IsValid) {
+                Type = NamespaceAncestor.ResolveAsType(TypeQName);
+            }
+        }
+        protected override IGlobalObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName) {
             throw new NotImplementedException();
         }
     }
@@ -54,7 +66,9 @@ namespace XData.Compiler {
             }
         }
         public override void Resolve() {
-            Type = NamespaceAncestor.ResolveAsType(TypeQName);
+            if (TypeQName.IsValid) {
+                Type = NamespaceAncestor.ResolveAsType(TypeQName);
+            }
             FullName = new FullName(NamespaceAncestor.Uri, Name.Value);
         }
     }

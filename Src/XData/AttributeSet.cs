@@ -17,10 +17,10 @@ namespace XData {
             }
             return obj;
         }
-        private int IndexOf(FullName fullName) {
+        private int IndexOf(string name) {
             var count = _attributeList.Count;
             for (var i = 0; i < count; ++i) {
-                if (_attributeList[i].FullName == fullName) {
+                if (_attributeList[i].Name == name) {
                     return i;
                 }
             }
@@ -35,7 +35,7 @@ namespace XData {
         }
         public void Add(XAttribute attribute) {
             if (Contains(attribute)) {
-                throw new ArgumentException("Attribute '{0}' already exists.".InvFormat(attribute.FullName.ToString()));
+                throw new ArgumentException("Attribute '{0}' already exists.".InvFormat(attribute.Name));
             }
             _attributeList.Add(SetParentTo(attribute));
         }
@@ -43,7 +43,7 @@ namespace XData {
             if (attribute == null) {
                 throw new ArgumentNullException("attribute");
             }
-            var idx = IndexOf(attribute.FullName);
+            var idx = IndexOf(attribute.Name);
             if (idx == -1) {
                 _attributeList.Add(SetParentTo(attribute));
             }
@@ -51,25 +51,25 @@ namespace XData {
                 _attributeList[idx] = SetParentTo(attribute);
             }
         }
-        public bool Contains(FullName fullName) {
-            return IndexOf(fullName) != -1;
+        public bool Contains(string name) {
+            return IndexOf(name) != -1;
         }
         public bool Contains(XAttribute attribute) {
             if (attribute == null) {
                 throw new ArgumentNullException("attribute");
             }
-            return Contains(attribute.FullName);
+            return Contains(attribute.Name);
         }
-        public XAttribute TryGet(FullName fullName) {
+        public XAttribute TryGet(string name) {
             foreach (var attribute in _attributeList) {
-                if (attribute.FullName == fullName) {
+                if (attribute.Name == name) {
                     return attribute;
                 }
             }
             return null;
         }
-        public bool TryGet(FullName fullName, out XAttribute attribute) {
-            attribute = TryGet(fullName);
+        public bool TryGet(string name, out XAttribute attribute) {
+            attribute = TryGet(name);
             return attribute != null;
         }
         public int Count {
@@ -77,8 +77,8 @@ namespace XData {
                 return _attributeList.Count;
             }
         }
-        public bool Remove(FullName fullName) {
-            var idx = IndexOf(fullName);
+        public bool Remove(string name) {
+            var idx = IndexOf(name);
             if (idx != -1) {
                 _attributeList.RemoveAt(idx);
                 return true;
@@ -89,7 +89,7 @@ namespace XData {
             if (attribute == null) {
                 throw new ArgumentNullException("attribute");
             }
-            return Remove(attribute.FullName);
+            return Remove(attribute.Name);
         }
         public void Clear() {
             _attributeList.Clear();
@@ -116,13 +116,13 @@ namespace XData {
                 return (AttributeSetInfo)ObjectInfo;
             }
         }
-        protected T CreateAttribute<T>(FullName fullName, bool @try = false) where T : XAttribute {
-            var attributeInfo = AttributeSetInfo.TryGetAttribute(fullName);
+        protected T CreateAttribute<T>(string name, bool @try = false) where T : XAttribute {
+            var attributeInfo = AttributeSetInfo.TryGetAttribute(name);
             if (attributeInfo == null) {
                 if (@try) {
                     return null;
                 }
-                throw new InvalidOperationException("Attribute '{0}' not exists in the attribute set.".InvFormat(fullName.ToString()));
+                throw new InvalidOperationException("Attribute '{0}' not exists in the attribute set.".InvFormat(name));
             }
             return attributeInfo.CreateInstance<T>(@try);
         }

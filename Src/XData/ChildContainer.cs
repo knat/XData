@@ -190,7 +190,7 @@ namespace XData {
                 }
                 return _closeElementTextSpan;
             }
-            private CreationResult Create(IChildInfo childInfo, out XChild result) {
+            private CreationResult Create(ChildInfo childInfo, out XChild result) {
                 result = null;
                 if (IsEOF) {
                     return CreationResult.Skipped;
@@ -230,7 +230,7 @@ namespace XData {
                             if (memberList.Count == 0) {
                                 return CreationResult.Skipped;
                             }
-                            var container = ((ObjectInfo)childInfo).CreateInstance<XChildContainer>();
+                            var container = childInfo.CreateInstance<XChildContainer>();
                             foreach (var member in memberList) {
                                 container.InternalAdd(member);
                             }
@@ -253,7 +253,7 @@ namespace XData {
                             if (choice == null) {
                                 return CreationResult.Skipped;
                             }
-                            var container = ((ObjectInfo)childInfo).CreateInstance<XChildContainer>();
+                            var container = childInfo.CreateInstance<XChildContainer>();
                             container.InternalAdd(choice);
                             result = container;
                             return CreationResult.OK;
@@ -292,7 +292,7 @@ namespace XData {
                         if (itemList.Count == 0) {
                             return CreationResult.Skipped;
                         }
-                        var container = ((ObjectInfo)childInfo).CreateInstance<XChildContainer>();
+                        var container = childInfo.CreateInstance<XChildContainer>();
                         foreach (var item in itemList) {
                             container.InternalAdd(item);
                         }

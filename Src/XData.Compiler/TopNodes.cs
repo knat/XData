@@ -283,13 +283,6 @@ namespace XData.Compiler {
             }
             return result;
         }
-        public GlobalAttributeNode ResolveAsAttribute(QualifiableNameNode qName) {
-            var result = Resolve(qName) as GlobalAttributeNode;
-            if (result == null) {
-                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidAttributeNameReference, qName.ToString()), qName.TextSpan);
-            }
-            return result;
-        }
         public GlobalElementNode ResolveAsElement(QualifiableNameNode qName) {
             var result = Resolve(qName) as GlobalElementNode;
             if (result == null) {
@@ -341,10 +334,7 @@ namespace XData.Compiler {
         public readonly NameNode Alias;//opt
         public LogicalNamespaceNode LogicalNamespace;
     }
-    public abstract class ObjectNode : Node {
-        protected ObjectNode(Node parent) : base(parent) { }
-    }
-    public abstract class NamespaceMemberNode : ObjectNode {
+    public abstract class NamespaceMemberNode : Node {
         protected NamespaceMemberNode(Node parent) : base(parent) { }
         public NameNode Name;
         public NameNode AbstractOrSealed;
@@ -376,9 +366,9 @@ namespace XData.Compiler {
         }
         public abstract void Resolve();
         //
-        protected NamedObjectSymbol _objectSymbol;
+        protected IGlobalObjectSymbol _objectSymbol;
         private bool _isProcessing;
-        public NamedObjectSymbol CreateSymbol() {
+        public IGlobalObjectSymbol CreateSymbol() {
             if (_objectSymbol == null) {
                 if (_isProcessing) {
                     ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CircularReferenceDetected), Name.TextSpan);
@@ -392,7 +382,7 @@ namespace XData.Compiler {
             }
             return _objectSymbol;
         }
-        protected abstract NamedObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName);
+        protected abstract IGlobalObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName);
     }
 
 }

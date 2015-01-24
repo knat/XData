@@ -5,7 +5,10 @@ using System.Text;
 using XData;
 using XData.IO.Text;
 
+
 namespace Test {
+
+
     public class Int64List : XListType<XInt64> {
 
         public override ObjectInfo ObjectInfo {
@@ -54,7 +57,7 @@ namespace Test {
     class Program {
         static void Main(string[] args) {
             var sb = new StringBuilder(128);
-            for(var i = 0; i < 800; ++i) {
+            for (var i = 0; i < 800; ++i) {
                 sb.Append('a');
             }
             //sb.Capacity = 32;

@@ -379,7 +379,6 @@ namespace XData.IO.Text {
         private readonly NodeGetter<ElementNode> _elementGetter;
         private readonly Stack<NodeList<UriAliasingNode>> _uriAliasingListStack;
         private bool _getFullName;
-        private bool _resolveNullAlias;
         protected override void Clear() {
             base.Clear();
             _uriAliasingListStack.Clear();
@@ -387,7 +386,6 @@ namespace XData.IO.Text {
         private bool ParsingUnit(string filePath, TextReader reader, Context context, out ElementNode result) {
             Set(filePath, reader, context);
             _uriAliasingListStack.Clear();
-            _resolveNullAlias = true;
             try {
                 if (Element(out result)) {
                     EndOfFileExpected();
@@ -413,39 +411,20 @@ namespace XData.IO.Text {
             return false;
         }
         private bool UriAliasing(List<UriAliasingNode> list, out UriAliasingNode result) {
-            bool? isDefault = null;
             NameNode alias;
             if (Name(out alias)) {
                 if (alias.Value == "sys") {
                     ErrorDiagAndThrow(new DiagMsg(DiagCode.AliasSysIsReserved), alias.TextSpan);
                 }
-                if (Token('=')) {
-                    isDefault = false;
-                }
-                else {
-                    TokenExpected(TokenKind.EqualsEquals, "= or == expected.");
-                    isDefault = true;
-                }
-            }
-            else {
-                if (Token(TokenKind.EqualsEquals)) {
-                    isDefault = true;
-                }
-            }
-            if (isDefault != null) {
-                var uri = StringValueExpected();
-                var isDefaultValue = isDefault.Value;
                 if (list != null) {
                     foreach (var item in list) {
-                        if (item.IsDefault && isDefaultValue) {
-                            ErrorDiagAndThrow(new DiagMsg(DiagCode.DuplicateDefaultUri), uri.TextSpan);
-                        }
-                        else if (item.Alias == alias) {
+                        if (item.Alias == alias) {
                             ErrorDiagAndThrow(new DiagMsg(DiagCode.DuplicateUriAlias, alias.ToString()), alias.TextSpan);
                         }
                     }
                 }
-                result = new UriAliasingNode(alias, uri, isDefaultValue);
+                TokenExpected('=');
+                result = new UriAliasingNode(alias, StringValueExpected());
                 return true;
             }
             result = default(UriAliasingNode);
@@ -470,7 +449,7 @@ namespace XData.IO.Text {
         }
         private void GetFullName(ref QualifiableNameNode qName) {
             string uri = null;
-            if (qName.Alias.IsValid || _resolveNullAlias) {
+            if (qName.Alias.IsValid) {
                 uri = GetUri(qName.Alias);
             }
             qName.FullName = new FullName(uri, qName.Name.Value);
@@ -479,17 +458,14 @@ namespace XData.IO.Text {
             if (alias.Value == "sys") {
                 return InfoExtensions.SystemUri;
             }
-            var isNull = !alias.IsValid;
             foreach (var uaList in _uriAliasingListStack) {
                 foreach (var ua in uaList) {
-                    if (ua.Alias == alias || (isNull && ua.IsDefault)) {
+                    if (ua.Alias == alias) {
                         return ua.Uri.Value;
                     }
                 }
             }
-            if (!isNull) {
-                ErrorDiagAndThrow(new DiagMsg(DiagCode.InvalidUriAlias, alias.ToString()), alias.TextSpan);
-            }
+            ErrorDiagAndThrow(new DiagMsg(DiagCode.InvalidUriAlias, alias.ToString()), alias.TextSpan);
             return null;
         }
         private bool Element(out ElementNode result) {
@@ -555,16 +531,13 @@ namespace XData.IO.Text {
             return true;
         }
         private bool Attribute(out AttributeNode result) {
-            QualifiableNameNode qName;
-            _resolveNullAlias = false;
-            var hasQName = QualifiableName(out qName);
-            _resolveNullAlias = true;
-            if (hasQName) {
+            NameNode name;
+            if (Name(out name)) {
                 var value = default(SimpleValueNode);
                 if (Token('=')) {
                     value = SimpleValueExpected();
                 }
-                result = new AttributeNode(qName, value);
+                result = new AttributeNode(name, value);
                 return true;
             }
             result = default(AttributeNode);

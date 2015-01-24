@@ -27,7 +27,7 @@ namespace-alias:
 name
 ;
 namespace-member:
-type | global-attribute | global-element 
+type | global-element 
 ;
 
 qualifiable-name:
@@ -38,9 +38,11 @@ type:
 'type' name type-annotations? type-body
 ;
 type-annotations:
-'<' ('abstract' | 'sealed')? '>'
+'<' AbstractOrsealed? '>'
 ;
-
+AbstractOrsealed:
+'abstract' | 'sealed'
+;
 type-body:
 type-list | type-directness | type-extension | type-restriction
 ;
@@ -58,14 +60,11 @@ type-extension:
 'extends' qualifiable-name attributes-children?
 ;
 type-restriction:
-'restricts' qualifiable-name (attributes-children | value-restrictions)?
+'restricts' qualifiable-name (attributes-children | value-facets)?
 ;
 
 attributes-children:
 attributes children? | children
-;
-attributes:
-'[' (local-attribute | global-attribute-ref)* ']'
 ;
 children:
 root-complex-children | simple-child
@@ -73,56 +72,71 @@ root-complex-children | simple-child
 simple-child:
 '$' qualifiable-name
 ;
-root-complex-children:
-'{' '}'
-;
-value-restrictions:
+value-facets:
 '${' (lengths | ?? | list-item-type)* '}'
 ;
 
+attributes:
+'[' attribute* ']'
+;
+attribute:
+name attribute-annotations? 'as' qualifiable-name
+;
+attribute-annotations:
+'<' (optional-or-delete | nullable)* '>'
+;
 
-//
-//
-
-global-attribute:
-'attribute' name global-attribute-annotations? 'as' qualifiable-name
-;
-global-attribute-annotations:
-'<' 'nullable'? | 'abstract' | 'sealed' | substitution '>'
+optional-or-delete:
+'?' | 'x'
 ;
 
-local-attribute:
-name local-attribute-annotations? 'as' qualifiable-name
+nullable:
+'nullable'
 ;
-local-attribute-annotations:
-'<' (optional | member-name | qualified)* '>'
-;
-global-attribute-ref:
-'&' qualifiable-name attribute-ref-annotations?
-;
-attribute-ref-annotations:
-'<' (optional | member-name)* '>'
-;
-qualified:
-'qualified'
-;
-optional:
-'?'
-;
-member-name:
-'membername' ':' name
-;
+
+
 
 global-element:
 'element' name global-element-annotations? 'as' qualifiable-name
 ;
 global-element-annotations:
-'<' ('nullable' | 'abstract' | 'sealed' | substitution)* '>'
+'<' (nullable | AbstractOrsealed | substitution)* '>'
 ;
 substitution:
 'substitutes' qualifiable-name
 ;
 
+root-complex-children:
+'{' member-child* '}'
+;
+member-child:
+local-element | global-element-ref | sequence-children | choice-children
+;
+local-element:
+name local-element-annotations? 'as' qualifiable-name
+;
+local-element-annotations:
+'<' (nullable | member-name | occurrence)* '>'
+;
+global-element-ref:
+'&' qualifiable-name member-child-annotations?
+;
+member-child-annotations:
+'<' (member-name | occurrence)* '>'
+;
+
+sequence-children:
+'{' member-child* '}' member-child-annotations?
+;
+choice-children:
+'?{' member-child* '}' member-child-annotations?
+;
+
+
+
+member-name:
+'membername' ':' name
+;
 
 occurrence:
 '?' | '*' | '+' | integer-value '..' integer-value?
