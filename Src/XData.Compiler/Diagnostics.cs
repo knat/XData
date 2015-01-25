@@ -21,6 +21,8 @@ namespace XData.Compiler {
         ByteValueRequired,
         MaxValueMustEqualToOrBeGreaterThanMinValue,
         MaxValueMustBeGreaterThanZero,
+        ValueRestrictionNotApplicable,
+
         DuplicateMemberName,
         DuplicateAttributeName,
         InvalidIndicatorNamespaceName,
@@ -45,12 +47,25 @@ namespace XData.Compiler {
         AttributeIsOptionalButRestrictedIsRequired,
         AttributeIsNullableButRestrictedIsNotNullable,
         AttributeDeclarationNotEqualToRestricted,
-        AttributeTypeNotEqualToOrDeriveFromRestricted,
         RequiredAttributeNotRestricting,
-        AttributeIsNullableButSubstitutedIsNotNullable,
-        AttributeTypeNotEqualToOrDeriveFromSubstituted,
 
-        ValueRestrictionNotApplicable,
+        TypeNotEqualToOrDeriveFromRestricted,
+        TypeNotEqualToOrDeriveFromSubstituted,
+
+        DeletionNotAllowed,
+        CannotDeleteAttributeBecauseItIsNotOptional,
+        SubstitutedElementIsSealed,
+        ElementIsNullableButSubstitutedIsNotNullable,
+        MaxOccurrenceCannotBeZeroInExtension,
+        ChildKindNotEqualToRestricted,
+        MinOccurrenceNotEqualToOrGreaterThanRestricted,
+        MaxOccurrenceNotEqualToOrLessThanRestricted,
+        ElementNameNotEqualToRestricted,
+        ElementIsNullableButRestrictedIsNotNullable,
+        ElementNotEqualToOrSubstituteRestricted,
+        //
+        //
+
     }
     public struct DiagMsgEx {
         public DiagMsgEx(DiagCodeEx code) {
@@ -85,6 +100,10 @@ namespace XData.Compiler {
                     return "UInt64 value required.";
                 case DiagCodeEx.ByteValueRequired:
                     return "Byte value required.";
+                case DiagCodeEx.ValueRestrictionNotApplicable:
+                    return "Value restriction not applicable.";
+
+
                 case DiagCodeEx.DuplicateMemberName:
                     return "Duplicate member name '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.DuplicateAttributeName:
@@ -138,28 +157,45 @@ namespace XData.Compiler {
                 case DiagCodeEx.IsNotEqualToOrDeriveFrom:
                     return "'{0} is not equal to or derive from '{1}'.";
                 case DiagCodeEx.CannotFindRestrictedAttribute:
-                    return "Cannot find the restricted attribute with member name '{0}'.".InvFormat(_msgArgs);
+                    return "Cannot find the restricted attribute '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.AttributeFullNameNotEqualToRestricted:
                     return "Attribute full name '{0}' not equal to the restricted attribute full name '{1}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.AttributeIsOptionalButRestrictedIsRequired:
-                    return "Attribute is optional but the restricted attribute is required.";
+                    return "Attribute is optional but the restricted is required.";
                 case DiagCodeEx.AttributeIsNullableButRestrictedIsNotNullable:
-                    return "Attribute is nullable but the restricted attribute is not nullable.";
+                    return "Attribute is nullable but the restricted is not nullable.";
                 case DiagCodeEx.AttributeDeclarationNotEqualToRestricted:
                     return "Attribute declaration '{0}' not equal to the restricted attribute '{1}'.";
-                case DiagCodeEx.AttributeTypeNotEqualToOrDeriveFromRestricted:
-                    return "Attribute type '{0}' not equal to or derive from the restricted attribute type '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.TypeNotEqualToOrDeriveFromRestricted:
+                    return "Type '{0}' not equal to or derive from the restricted '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.TypeNotEqualToOrDeriveFromSubstituted:
+                    return "Type '{0}' not equal to or derive from the substituted '{1}'.".InvFormat(_msgArgs);
+
+
                 case DiagCodeEx.RequiredAttributeNotRestricting:
                     return "Required attribute with member name '{0}' not restricting.".InvFormat(_msgArgs);
-                case DiagCodeEx.AttributeIsNullableButSubstitutedIsNotNullable:
-                    return "Attribute is nullable but the substituted attribute is not nullable.";
-                case DiagCodeEx.AttributeTypeNotEqualToOrDeriveFromSubstituted:
-                    return "Attribute type '{0}' not equal to or derive from the substituted attribute type '{1}'.".InvFormat(_msgArgs);
-
-
-                case DiagCodeEx.ValueRestrictionNotApplicable:
-                    return "Value restriction not applicable.";
-
+                case DiagCodeEx.DeletionNotAllowed:
+                    return "Deletion not allowed";
+                case DiagCodeEx.CannotDeleteAttributeBecauseItIsNotOptional:
+                    return "Cannot delete attribute '{0}' because it is not optional.".InvFormat(_msgArgs);
+                case DiagCodeEx.SubstitutedElementIsSealed:
+                    return "Substituted element is sealed.";
+                case DiagCodeEx.ElementIsNullableButSubstitutedIsNotNullable:
+                    return "Element is nullable but the substituted element is not nullable.";
+                case DiagCodeEx.MaxOccurrenceCannotBeZeroInExtension:
+                    return "Max occurrence cannot be zero in extension.";
+                case DiagCodeEx.ChildKindNotEqualToRestricted:
+                    return "Child kind '{0}' not equal to the restricted '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.MinOccurrenceNotEqualToOrGreaterThanRestricted:
+                    return "Min occurrence '{0}' not equal to or greater than the restricted '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.MaxOccurrenceNotEqualToOrLessThanRestricted:
+                    return "Max occurrence '{0}' not equal to or less than the restricted '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.ElementNameNotEqualToRestricted:
+                    return "Element name '{0}' not equal to the restricted '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.ElementIsNullableButRestrictedIsNotNullable:
+                    return "Element iss nullable but the restricted is not nullable.";
+                case DiagCodeEx.ElementNotEqualToOrSubstituteRestricted:
+                    return "Element '{0}' not equal to or substitute the restricted '{1}'.".InvFormat(_msgArgs);
 
 
                 default:

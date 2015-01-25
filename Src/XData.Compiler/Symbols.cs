@@ -134,14 +134,6 @@ namespace XData.Compiler {
         }
 
     }
-    //public abstract class NamedObjectSymbol : ObjectSymbol {
-    //    protected NamedObjectSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, bool isCSOverride,
-    //        NameSyntax csBaseFullName, NameSyntax[] csItfNames, FullName fullName)
-    //        : base(parent, csName, isAbstract, isSealed, isCSOverride, csBaseFullName, csItfNames) {
-    //        FullName = fullName;
-    //    }
-    //    public readonly FullName FullName;
-    //}
     public interface IGlobalObjectSymbol {
         FullName FullName { get; }
     }
@@ -158,8 +150,8 @@ namespace XData.Compiler {
         public readonly TypeSymbol BaseType;
         public bool IsEqualToOrDeriveFrom(TypeSymbol other) {
             if (other == null) throw new ArgumentNullException("other");
-            for (var info = this; info != null; info = info.BaseType) {
-                if (info == other) {
+            for (var symbol = this; symbol != null; symbol = symbol.BaseType) {
+                if (symbol == other) {
                     return true;
                 }
             }
@@ -285,22 +277,19 @@ namespace XData.Compiler {
         public readonly SimpleTypeSymbol Type;
         public readonly AttributeSymbol RestrictedAttribute;
     }
-    //public interface IChildSymbol {
-    //    string DisplayName { get; }
-    //    string MemberName { get; }
-    //    int Order { get; }
-    //    bool IsOptional { get; }
-    //}
+
     public abstract class ChildSymbol : ObjectSymbol {
         protected ChildSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, bool isCSOverride, NameSyntax csBaseFullName, NameSyntax[] csItfNames,
-            string displayName, string memberName, bool isOptional, int order, ChildSymbol restrictedChild) :
+            ChildKind kind, string displayName, string memberName, bool isOptional, int order, ChildSymbol restrictedChild) :
                 base(parent, csName, isAbstract, isSealed, isCSOverride, csBaseFullName, csItfNames) {
+            Kind = kind;
             DisplayName = displayName;
             MemberName = memberName;
             _isOptional = isOptional;
             Order = order;
             RestrictedChild = restrictedChild;
         }
+        public readonly ChildKind Kind;
         public readonly string DisplayName;
         public readonly string MemberName;
         private readonly bool _isOptional;
@@ -311,21 +300,19 @@ namespace XData.Compiler {
 
     public sealed class ElementSymbol : ChildSymbol, IGlobalObjectSymbol {
         public ElementSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
-            string displayName, string memberName, bool isOptional, int order, ElementSymbol restrictedElement,
-            FullName fullName, ElementKind kind, bool isNullable, TypeSymbol type, ElementSymbol referencedElement, ElementSymbol substitutedElement
+            ChildKind kind, string displayName, string memberName, bool isOptional, int order, ElementSymbol restrictedElement,
+            FullName fullName, bool isNullable, TypeSymbol type, ElementSymbol referencedElement, ElementSymbol substitutedElement
              )
             : base(parent, csName, isAbstract, isSealed, restrictedElement != null,
                  restrictedElement != null ? restrictedElement.CSFullName : substitutedElement != null ? substitutedElement.CSFullName : CSEX.XElementName,
-                 null, displayName, memberName, isOptional, order, restrictedElement) {
+                 null, kind, displayName, memberName, isOptional, order, restrictedElement) {
             FullName = fullName;
-            Kind = kind;
             IsNullable = isNullable;
             Type = type;
             ReferencedElement = referencedElement;
             SubstitutedElement = substitutedElement;
         }
         public FullName FullName { get; private set; }
-        public readonly ElementKind Kind;
         public readonly bool IsNullable;
         public readonly TypeSymbol Type;
         public ElementSymbol RestrictedElement {
@@ -335,43 +322,66 @@ namespace XData.Compiler {
         }
         public readonly ElementSymbol ReferencedElement;
         public readonly ElementSymbol SubstitutedElement;
+        public bool IsLocal {
+            get {
+                return Kind == ChildKind.LocalElement;
+            }
+        }
+        public bool IsGlobal {
+            get {
+                return Kind == ChildKind.GlobalElement;
+            }
+        }
+        public bool IsReference {
+            get {
+                return Kind == ChildKind.GlobalElementReference;
+            }
+        }
+        public bool IsEqualToOrSubstitute(ElementSymbol other) {
+            if (other == null) throw new ArgumentNullException("other");
+            for (var symbol = this; symbol != null; symbol = symbol.SubstitutedElement) {
+                if (symbol == other) {
+                    return true;
+                }
+            }
+            return false;
+        }
 
     }
     public abstract class ChildContainerSymbol : ChildSymbol {
         protected ChildContainerSymbol(ObjectSymbol parent, string csName, bool isCSOverride, NameSyntax csBaseFullName, NameSyntax[] csItfNames,
-            string displayName, string memberName, bool isOptional, int order, ChildContainerSymbol restrictedChildContainer)
-            : base(parent, csName, false, false, isCSOverride, csBaseFullName, csItfNames, displayName, memberName, isOptional, order, restrictedChildContainer) {
+            ChildKind kind, string displayName, string memberName, bool isOptional, int order, ChildContainerSymbol restrictedChildContainer)
+            : base(parent, csName, false, false, isCSOverride, csBaseFullName, csItfNames, kind, displayName, memberName, isOptional, order, restrictedChildContainer) {
         }
     }
 
     public sealed class ChildSetSymbol : ChildContainerSymbol {
         public ChildSetSymbol(ObjectSymbol parent, string csName,
-            string displayName, string memberName, bool isOptional, int order, ChildSetSymbol restrictedChildSet,
-            ChildSetKind kind, bool isRoot, ChildSetSymbol baseChildSet)
+            ChildKind kind, string displayName, string memberName, bool isOptional, int order, ChildSetSymbol restrictedChildSet,
+            bool isRoot, ChildSetSymbol baseChildSet)
             : base(parent, csName, restrictedChildSet != null || baseChildSet != null,
                  restrictedChildSet != null ? restrictedChildSet.CSFullName : baseChildSet != null ? baseChildSet.CSFullName : CSEX.XChildSetName, null,
-                 displayName, memberName, isOptional, order, restrictedChildSet) {
-            Kind = kind;
+                 kind, displayName, memberName, isOptional, order, restrictedChildSet) {
             IsRoot = isRoot;
             BaseChildSet = baseChildSet;
-            MemberList = new List<ChildSymbol>();
+            ChildList = new List<ChildSymbol>();
         }
-        public readonly ChildSetKind Kind;
         public readonly bool IsRoot;
+        public int NextChildOrder;//for root
         public readonly ChildSetSymbol BaseChildSet;//for root
-        public readonly List<ChildSymbol> MemberList;
+        public readonly List<ChildSymbol> ChildList;
         private bool? _isOptional;
         public override bool IsOptional {
             get {
                 if (_isOptional == null) {
-                    if (base.IsOptional || MemberList.Count == 0) {
+                    if (base.IsOptional || ChildList.Count == 0) {
                         _isOptional = true;
                     }
                     else {
-                        if (Kind == ChildSetKind.Sequence) {
+                        if (IsSequence) {
                             _isOptional = true;
-                            foreach (var member in MemberList) {
-                                if (!member.IsOptional) {
+                            foreach (var child in ChildList) {
+                                if (!child.IsOptional) {
                                     _isOptional = false;
                                     break;
                                 }
@@ -379,8 +389,8 @@ namespace XData.Compiler {
                         }
                         else {//choice
                             _isOptional = false;
-                            foreach (var member in MemberList) {
-                                if (member.IsOptional) {
+                            foreach (var child in ChildList) {
+                                if (child.IsOptional) {
                                     _isOptional = true;
                                     break;
                                 }
@@ -396,21 +406,31 @@ namespace XData.Compiler {
                 return (ChildSetSymbol)RestrictedChild;
             }
         }
+        public bool IsSequence {
+            get {
+                return Kind == ChildKind.Sequence;
+            }
+        }
+        public bool IsChoice {
+            get {
+                return Kind == ChildKind.Choice;
+            }
+        }
 
     }
     public sealed class ChildListSymbol : ChildContainerSymbol {
         public ChildListSymbol(ObjectSymbol parent, string csName,
             string displayName, string memberName, bool isOptional, int order, ChildListSymbol restrictedChildList,
-            ulong minOccurs, ulong maxOccurs, ChildSymbol item)
+            ulong minOccurrence, ulong maxOccurrence, ChildSymbol item)
             : base(parent, csName, restrictedChildList != null,
                 restrictedChildList != null ? restrictedChildList.CSFullName : CSEX.XChildListOf(item.CSFullName),
-                null, displayName, memberName, isOptional, order, restrictedChildList) {
-            MinOccurs = minOccurs;
-            MaxOccurs = maxOccurs;
+                null, ChildKind.List, displayName, memberName, isOptional, order, restrictedChildList) {
+            MinOccurrence = minOccurrence;
+            MaxOccurrence = maxOccurrence;
             Item = item;
         }
-        public readonly ulong MinOccurs;
-        public readonly ulong MaxOccurs;
+        public readonly ulong MinOccurrence;
+        public readonly ulong MaxOccurrence;
         public readonly ChildSymbol Item;
     }
 

@@ -26,8 +26,8 @@ namespace XData.Compiler {
         public override void Resolve() {
             Body.Resolve();
         }
-        protected override IGlobalObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName) {
-            return Body.CreateSymbolCore(parent, csName, fullName, IsAbstract, IsSealed);
+        protected override IGlobalObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
+            return Body.CreateSymbolCore(parent, csName, fullName, isAbstract, isSealed);
         }
     }
     public abstract class TypeBodyNode : Node {
@@ -63,7 +63,7 @@ namespace XData.Compiler {
     public sealed class AttributesChildrenNode : Node {
         public AttributesChildrenNode(Node parent) : base(parent) { }
         public AttributesNode Attributes;
-        public RootComplexChildrenNode ComplexChildren;
+        public ComplexChildrenNode ComplexChildren;
         public QualifiableNameNode SimpleChildQName;
         public TypeNode SimpleChild;
         public SimpleTypeSymbol CreateSimpleChildSymbol() {

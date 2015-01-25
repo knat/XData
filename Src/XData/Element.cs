@@ -10,7 +10,7 @@ namespace XData {
         Skipped,
         OK
     }
-    public abstract class XElement : XChild  {
+    public abstract class XElement : XChild {
         protected XElement() {
             _fullName = GetFullName();
         }
@@ -28,7 +28,7 @@ namespace XData {
             }
             set {
                 if (value != null) {
-                    if (ElementInfo.Kind != ElementKind.Reference) {
+                    if (!ElementInfo.IsReference) {
                         throw new InvalidOperationException("Cannot set referenced element if the element is not a reference.");
                     }
                     for (var i = value; i != null; i = i._referencedElement) {

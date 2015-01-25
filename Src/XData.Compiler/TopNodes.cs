@@ -375,14 +375,14 @@ namespace XData.Compiler {
                 }
                 _isProcessing = true;
                 var parent = NamespaceAncestor.LogicalNamespace.NamespaceSymbol;
-                var objectSymbol = CreateSymbolCore(parent, CSName, FullName);
+                var objectSymbol = CreateSymbolCore(parent, CSName, FullName,IsAbstract, IsSealed);
                 parent.GlobalObjectList.Add(objectSymbol);
                 _objectSymbol = objectSymbol;
                 _isProcessing = false;
             }
             return _objectSymbol;
         }
-        protected abstract IGlobalObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName);
+        protected abstract IGlobalObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed);
     }
 
 }

@@ -146,7 +146,7 @@ namespace XData.IO.Text {
         }
         private enum StateKind : byte {
             None = 0,
-            InWhitespace,
+            InWhitespaceOrNewLine,
             InSingleLineComment,
             InMultiLineComment,
             InName,
@@ -194,7 +194,7 @@ namespace XData.IO.Text {
             while (true) {
                 var ch = GetChar();
                 var stateKind = state.Kind;
-                if (stateKind == StateKind.InWhitespace) {
+                if (stateKind == StateKind.InWhitespaceOrNewLine) {
                     if (IsWhitespace(ch) || IsNewLine(ch)) {
                         AdvanceChar();
                     }
@@ -391,7 +391,7 @@ namespace XData.IO.Text {
                     return CreateTokenAndAdvanceChar(ch);
                 }
                 else if (IsWhitespace(ch) || IsNewLine(ch)) {
-                    state = CreateState(StateKind.InWhitespace);
+                    state = CreateState(StateKind.InWhitespaceOrNewLine);
                     AdvanceChar();
                 }
                 else if (ch == '/') {
@@ -553,7 +553,6 @@ namespace XData.IO.Text {
                     return CreateTokenAndAdvanceChar(ch);
                 }
             }
-
         }
         private bool ProcessCharEscSeq(StringBuilder sb, out Token errToken) {
             var ch = GetChar();

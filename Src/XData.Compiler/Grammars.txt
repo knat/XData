@@ -38,10 +38,7 @@ type:
 'type' name type-annotations? type-body
 ;
 type-annotations:
-'<' AbstractOrsealed? '>'
-;
-AbstractOrsealed:
-'abstract' | 'sealed'
+'<' abstract-or-sealed? '>'
 ;
 type-body:
 type-list | type-directness | type-extension | type-restriction
@@ -67,7 +64,7 @@ attributes-children:
 attributes children? | children
 ;
 children:
-root-complex-children | simple-child
+complex-children | simple-child
 ;
 simple-child:
 '$' qualifiable-name
@@ -86,27 +83,14 @@ attribute-annotations:
 '<' (optional-or-delete | nullable)* '>'
 ;
 
-optional-or-delete:
-'?' | 'x'
-;
-
-nullable:
-'nullable'
-;
-
-
 
 global-element:
 'element' name global-element-annotations? 'as' qualifiable-name
 ;
 global-element-annotations:
-'<' (nullable | AbstractOrsealed | substitution)* '>'
+'<' (nullable | abstract-or-sealed | substitute)* '>'
 ;
-substitution:
-'substitutes' qualifiable-name
-;
-
-root-complex-children:
+complex-children:
 '{' member-child* '}'
 ;
 member-child:
@@ -134,10 +118,21 @@ choice-children:
 
 
 
-member-name:
-'membername' ':' name
+abstract-or-sealed:
+'abstract' | 'sealed'
 ;
-
+optional-or-delete:
+'?' | 'x'
+;
+nullable:
+'nullable'
+;
+substitute:
+'substitutes' qualifiable-name
+;
+member-name:
+'membername' name
+;
 occurrence:
 '?' | '*' | '+' | integer-value '..' integer-value?
 ;

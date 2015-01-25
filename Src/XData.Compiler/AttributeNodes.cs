@@ -58,21 +58,83 @@ namespace XData.Compiler {
         public TextSpan OpenBracketToken, CloseBracketToken;
         public void Resolve() {
             if (AttributeList != null) {
-                var count = AttributeList.Count;
-                for (var i = 0; i < count; ++i) {
-                    var attribute = AttributeList[i];
+                foreach (var attribute in AttributeList) {
                     attribute.Resolve();
-                    for (var j = 0; j < i - 1; ++j) {
-                        if (AttributeList[j].Name == attribute.Name) {
-                            ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateAttributeName, attribute.Name.ToString()),
-                                attribute.Name.TextSpan);
-                        }
-                    }
                 }
             }
         }
         public AttributeSetSymbol CreateSymbol(ComplexTypeSymbol parent, AttributeSetSymbol baseAttributeSetSymbol, bool isExtension) {
-            return null;
+            var baseAttributeSymbolList = baseAttributeSetSymbol != null ? baseAttributeSetSymbol.AttributeList : null;
+            var attributeSetSymbol = new AttributeSetSymbol(parent, baseAttributeSetSymbol);
+            var attributeSymbolList = attributeSetSymbol.AttributeList;
+            var displayNameBase = parent.FullName.ToString() + ".[].";
+            if (baseAttributeSymbolList != null) {
+                attributeSymbolList.AddRange(baseAttributeSymbolList);
+            }
+            if (isExtension) {
+                if (AttributeList != null) {
+                    foreach (var attribute in AttributeList) {
+                        if (baseAttributeSymbolList != null) {
+                            foreach (var baseAttributeSymbol in baseAttributeSymbolList) {
+                                if (baseAttributeSymbol.Name == attribute.Name) {
+                                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateAttributeName, baseAttributeSymbol.Name),
+                                        attribute.NameNode.TextSpan);
+                                }
+                            }
+                        }
+                        if (attribute.IsDelete) {
+                            ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DeletionNotAllowed), attribute.OptionalOrDelete.TextSpan);
+                        }
+                        attributeSymbolList.Add(attribute.CreateSymbol(attributeSetSymbol, null, displayNameBase));
+                    }
+                }
+            }
+            else {//restriction
+                if (AttributeList != null) {
+                    foreach (var attribute in AttributeList) {
+                        AttributeSymbol restrictedAttributeSymbol = null;
+                        int idx;
+                        var attName = attribute.Name;
+                        for (idx = 0; idx < attributeSymbolList.Count; ++idx) {
+                            if (attributeSymbolList[idx].Name == attName) {
+                                restrictedAttributeSymbol = attributeSymbolList[idx];
+                                break;
+                            }
+                        }
+                        if (restrictedAttributeSymbol == null) {
+                            ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotFindRestrictedAttribute, attName),
+                                attribute.NameNode.TextSpan);
+                        }
+                        var isDelete = attribute.IsDelete;
+                        if (isDelete) {
+                            if (!restrictedAttributeSymbol.IsOptional) {
+                                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotDeleteAttributeBecauseItIsNotOptional, attName),
+                                    attribute.NameNode.TextSpan);
+                            }
+                        }
+                        attributeSymbolList.RemoveAt(idx);
+                        if (!isDelete) {
+                            if (attribute.IsOptional && !restrictedAttributeSymbol.IsOptional) {
+                                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AttributeIsOptionalButRestrictedIsRequired),
+                                    attribute.OptionalOrDelete.TextSpan);
+                            }
+                            if (attribute.IsNullable && !restrictedAttributeSymbol.IsNullable) {
+                                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AttributeIsNullableButRestrictedIsNotNullable),
+                                    attribute.Nullable);
+                            }
+                            var attributeSymbol = attribute.CreateSymbol(attributeSetSymbol, restrictedAttributeSymbol, displayNameBase);
+                            if (!attributeSymbol.Type.IsEqualToOrDeriveFrom(restrictedAttributeSymbol.Type)) {
+                                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.TypeNotEqualToOrDeriveFromRestricted,
+                                    attributeSymbol.Type.FullName.ToString(), restrictedAttributeSymbol.Type.FullName.ToString()),
+                                    attribute.TypeQName.TextSpan);
+                            }
+                            attributeSymbolList.Insert(idx, attributeSymbol);
+                        }
+                    }
+                }
+            }
+
+            return attributeSetSymbol;
         }
 
         //public AttributeSetSymbol CreateSymbol(ComplexTypeSymbol parent, AttributeSetSymbol baseAttributeSetSymbol, bool isExtension) {
@@ -179,32 +241,19 @@ namespace XData.Compiler {
     //    public abstract AttributeSymbol CreateSymbol(AttributeSetSymbol parent, AttributeSymbol restrictedAttribute, string displayNameBase);
     //}
 
-    public struct OptionalOrDeleteNode {
-        public OptionalOrDeleteNode(TextSpan optional, NameNode delete) {
-            Optional = optional;
-            Delete = delete;
-        }
-        public readonly TextSpan Optional;
-        public readonly NameNode Delete;
-        public bool IsOptional {
-            get {
-                return Optional.IsValid;
-            }
-        }
-        public bool IsDelete {
-            get {
-                return Delete.IsValid;
-            }
-        }
-    }
     public sealed class AttributeNode : Node {
         public AttributeNode(Node parent) : base(parent) { }
-        public NameNode Name;
+        public NameNode NameNode;
         public TextSpan Nullable;
         public OptionalOrDeleteNode OptionalOrDelete;
         public TextSpan Deletion;
         public QualifiableNameNode TypeQName;
         public TypeNode Type;
+        public string Name {
+            get {
+                return NameNode.Value;
+            }
+        }
         public bool IsNullable {
             get {
                 return Nullable.IsValid;
@@ -223,17 +272,41 @@ namespace XData.Compiler {
         public void Resolve() {
             Type = NamespaceAncestor.ResolveAsType(TypeQName);
         }
-        public AttributeSymbol CreateSymbol(AttributeSetSymbol parent, AttributeSymbol restrictedAttribute, string displayNameBase) {
+        public AttributeSymbol CreateSymbol(AttributeSetSymbol parent, AttributeSymbol restrictedAttributeSymbol, string displayNameBase) {
             var typeSymbol = Type.CreateSymbol() as SimpleTypeSymbol;
             if (typeSymbol == null) {
                 ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.SimpleTypeRequired), TypeQName.TextSpan);
             }
-            return null;
-            //return new AttributeSymbol(parent, "CLS_" + MemberName.Value, false, false, FullName, ElementKind.Local, restrictedAttribute, null, null,
-            //    displayNameBase + "." + MemberName.Value, MemberName.Value, IsNullable, IsOptional, typeSymbol);
+            var name = Name;
+            return new AttributeSymbol(parent, "CLS_" + name, name, displayNameBase + name, IsOptional, IsNullable, typeSymbol, restrictedAttributeSymbol);
         }
     }
-
+    public struct OptionalOrDeleteNode {
+        public OptionalOrDeleteNode(TextSpan optional, NameNode delete) {
+            Optional = optional;
+            Delete = delete;
+        }
+        public readonly TextSpan Optional;
+        public readonly NameNode Delete;
+        public bool IsOptional {
+            get {
+                return Optional.IsValid;
+            }
+        }
+        public bool IsDelete {
+            get {
+                return Delete.IsValid;
+            }
+        }
+        public TextSpan TextSpan {
+            get {
+                if (Delete.IsValid) {
+                    return Delete.TextSpan;
+                }
+                return Optional;
+            }
+        }
+    }
 
     //public sealed class GlobalAttributeRefNode : MemberAttributeNode {
     //    public GlobalAttributeRefNode(Node parent) : base(parent) { }

@@ -206,9 +206,9 @@ namespace XData {
                 else {
                     var childSetInfo = childInfo as ChildSetInfo;
                     if (childSetInfo != null) {
-                        if (childSetInfo.Kind == ChildSetKind.Sequence) {
+                        if (childSetInfo.IsSequence) {
                             var memberList = new List<XChild>();
-                            foreach (var memberInfo in childSetInfo.Members) {
+                            foreach (var memberInfo in childSetInfo.Children) {
                                 XChild member;
                                 var res = Create(memberInfo, out member);
                                 if (res == CreationResult.OK) {
@@ -239,7 +239,7 @@ namespace XData {
                         }
                         else {//choice
                             XChild choice = null;
-                            foreach (var memberInfo in childSetInfo.Members) {
+                            foreach (var memberInfo in childSetInfo.Children) {
                                 XChild member;
                                 var res = Create(memberInfo, out member);
                                 if (res == CreationResult.OK) {
@@ -263,7 +263,7 @@ namespace XData {
                         var childListInfo = childInfo as ChildListInfo;
                         var itemInfo = childListInfo.Item;
                         var itemCount = 0UL;
-                        var maxOccurs = childListInfo.MaxOccurs;
+                        var maxOccurs = childListInfo.MaxOccurrence;
                         var itemList = new List<XChild>();
                         while (itemCount <= maxOccurs) {
                             XChild item;
@@ -276,9 +276,9 @@ namespace XData {
                                 if (itemCount == 0) {
                                     return res;
                                 }
-                                if (itemCount < childListInfo.MinOccurs) {
+                                if (itemCount < childListInfo.MinOccurrence) {
                                     _context.AddErrorDiag(new DiagMsg(DiagCode.ChildListCountIsNotGreaterThanOrEqualToMinOccurs,
-                                        childListInfo.DisplayName, itemCount.ToInvString(), childListInfo.MinOccurs.ToInvString()), GetTextSpan());
+                                        childListInfo.DisplayName, itemCount.ToInvString(), childListInfo.MinOccurrence.ToInvString()), GetTextSpan());
                                     return CreationResult.Error;
                                 }
                                 else {
