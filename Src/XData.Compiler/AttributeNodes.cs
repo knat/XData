@@ -82,9 +82,6 @@ namespace XData.Compiler {
                                 }
                             }
                         }
-                        if (attribute.IsDelete) {
-                            ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DeletionNotAllowed), attribute.OptionalOrDelete.TextSpan);
-                        }
                         attributeSymbolList.Add(attribute.CreateSymbol(attributeSetSymbol, null, displayNameBase));
                     }
                 }
@@ -94,152 +91,35 @@ namespace XData.Compiler {
                     foreach (var attribute in AttributeList) {
                         AttributeSymbol restrictedAttributeSymbol = null;
                         int idx;
-                        var attName = attribute.Name;
+                        var attributeName = attribute.Name;
                         for (idx = 0; idx < attributeSymbolList.Count; ++idx) {
-                            if (attributeSymbolList[idx].Name == attName) {
+                            if (attributeSymbolList[idx].Name == attributeName) {
                                 restrictedAttributeSymbol = attributeSymbolList[idx];
                                 break;
                             }
                         }
                         if (restrictedAttributeSymbol == null) {
-                            ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotFindRestrictedAttribute, attName),
+                            ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotFindRestrictedAttribute, attributeName),
                                 attribute.NameNode.TextSpan);
                         }
                         var isDelete = attribute.IsDelete;
                         if (isDelete) {
                             if (!restrictedAttributeSymbol.IsOptional) {
-                                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotDeleteAttributeBecauseItIsNotOptional, attName),
+                                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotDeleteAttributeBecauseItIsNotOptional, attributeName),
                                     attribute.NameNode.TextSpan);
                             }
                         }
                         attributeSymbolList.RemoveAt(idx);
                         if (!isDelete) {
-                            if (attribute.IsOptional && !restrictedAttributeSymbol.IsOptional) {
-                                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AttributeIsOptionalButRestrictedIsRequired),
-                                    attribute.OptionalOrDelete.TextSpan);
-                            }
-                            if (attribute.IsNullable && !restrictedAttributeSymbol.IsNullable) {
-                                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AttributeIsNullableButRestrictedIsNotNullable),
-                                    attribute.Nullable);
-                            }
-                            var attributeSymbol = attribute.CreateSymbol(attributeSetSymbol, restrictedAttributeSymbol, displayNameBase);
-                            if (!attributeSymbol.Type.IsEqualToOrDeriveFrom(restrictedAttributeSymbol.Type)) {
-                                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.TypeNotEqualToOrDeriveFromRestricted,
-                                    attributeSymbol.Type.FullName.ToString(), restrictedAttributeSymbol.Type.FullName.ToString()),
-                                    attribute.TypeQName.TextSpan);
-                            }
-                            attributeSymbolList.Insert(idx, attributeSymbol);
+                            attributeSymbolList.Insert(idx, attribute.CreateSymbol(attributeSetSymbol, restrictedAttributeSymbol, displayNameBase));
                         }
                     }
                 }
             }
-
             return attributeSetSymbol;
         }
 
-        //public AttributeSetSymbol CreateSymbol(ComplexTypeSymbol parent, AttributeSetSymbol baseAttributeSetSymbol, bool isExtension) {
-        //    var baseAttributeSymbolList = baseAttributeSetSymbol != null ? baseAttributeSetSymbol.AttributeList : null;
-        //    var attributeSetSymbol = new AttributeSetSymbol(parent, baseAttributeSetSymbol);
-        //    var attributeSymbolList = attributeSetSymbol.AttributeList;
-        //    var displayNameBase = parent.FullName.ToString() + ".[]";
-        //    if (isExtension) {
-        //        if (baseAttributeSymbolList != null) {
-        //            attributeSymbolList.AddRange(baseAttributeSymbolList);
-        //        }
-        //        if (AttributeList != null) {
-        //            foreach (var attribute in AttributeList) {
-        //                if (baseAttributeSymbolList != null) {
-        //                    foreach (var baseAttributeSymbol in baseAttributeSymbolList) {
-        //                        if (baseAttributeSymbol.FullName == attribute.FullName) {
-        //                            ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateAttributeName, attribute.FullName.ToString()),
-        //                                attribute.MemberName.TextSpan);
-        //                        }
-        //                        if (baseAttributeSymbol.MemberName == attribute.MemberName.Value) {
-        //                            ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateMemberName, baseAttributeSymbol.MemberName),
-        //                                attribute.MemberName.TextSpan);
-        //                        }
-        //                    }
-        //                }
-        //                attributeSymbolList.Add(attribute.CreateSymbol(attributeSetSymbol, null, displayNameBase));
-        //            }
-        //        }
-        //    }
-        //    else {
-        //        if (AttributeList != null) {
-        //            foreach (var attribute in AttributeList) {
-        //                AttributeSymbol restrictedAttributeSymbol = null;
-        //                if (baseAttributeSymbolList != null) {
-        //                    foreach (var baseAttributeSymbol in baseAttributeSymbolList) {
-        //                        if (baseAttributeSymbol.MemberName == attribute.MemberName.Value) {
-        //                            restrictedAttributeSymbol = baseAttributeSymbol;
-        //                            break;
-        //                        }
-        //                    }
-        //                }
-        //                if (restrictedAttributeSymbol == null) {
-        //                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotFindRestrictedAttribute, attribute.MemberName.ToString()),
-        //                        attribute.MemberName.TextSpan);
-        //                }
-        //                if (attribute.FullName != restrictedAttributeSymbol.FullName) {
-        //                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AttributeFullNameNotEqualToRestricted,
-        //                        attribute.FullName.ToString(), restrictedAttributeSymbol.FullName.ToString()), attribute.MemberName.TextSpan);
-        //                }
-        //                if (attribute.IsOptional && !restrictedAttributeSymbol.IsOptional) {
-        //                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AttributeIsOptionalButRestrictedIsRequired),
-        //                        attribute.Optional);
-        //                }
-        //                if (attribute.IsNullable && !restrictedAttributeSymbol.IsNullable) {
-        //                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AttributeIsNullableButRestrictedIsNotNullable),
-        //                        attribute.MemberName.TextSpan);
-        //                }
-        //                var attributeSymbol = attribute.CreateSymbol(attributeSetSymbol, restrictedAttributeSymbol, displayNameBase);
-        //                if (attributeSymbol.DeclKind != restrictedAttributeSymbol.DeclKind) {
-        //                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AttributeDeclarationNotEqualToRestricted,
-        //                        attributeSymbol.DeclKind.ToString(), restrictedAttributeSymbol.DeclKind.ToString()),
-        //                        attribute.MemberName.TextSpan);
-        //                }
-        //                if (!attributeSymbol.Type.IsEqualToOrDeriveFrom(restrictedAttributeSymbol.Type)) {
-        //                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AttributeTypeNotEqualToOrDeriveFromRestricted,
-        //                        attributeSymbol.Type.FullName.ToString(), restrictedAttributeSymbol.Type.FullName.ToString()),
-        //                        attribute.MemberName.TextSpan);
-        //                }
-        //                attributeSymbolList.Add(attributeSymbol);
-        //            }
-        //        }
-        //        if (baseAttributeSymbolList != null) {
-        //            foreach (var baseAttributeSymbol in baseAttributeSymbolList) {
-        //                if (!baseAttributeSymbol.IsOptional) {
-        //                    var found = false;
-        //                    foreach (var attributeSymbol in attributeSymbolList) {
-        //                        if (baseAttributeSymbol.MemberName == attributeSymbol.MemberName) {
-        //                            found = true;
-        //                            break;
-        //                        }
-        //                    }
-        //                    if (!found) {
-        //                        ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.RequiredAttributeNotRestricting, baseAttributeSymbol.MemberName), CloseBracketToken);
-        //                    }
-        //                }
-        //            }
-        //        }
-        //    }
-        //    return attributeSetSymbol;
-        //}
     }
-    //public abstract class MemberAttributeNode : Node {
-    //    protected MemberAttributeNode(Node parent) : base(parent) { }
-    //    public TextSpan Optional;
-    //    public NameNode MemberName;
-    //    public FullName FullName;
-    //    public bool IsNullable;
-    //    public bool IsOptional {
-    //        get {
-    //            return Optional.IsValid;
-    //        }
-    //    }
-    //    public abstract void Resolve();
-    //    public abstract AttributeSymbol CreateSymbol(AttributeSetSymbol parent, AttributeSymbol restrictedAttribute, string displayNameBase);
-    //}
 
     public sealed class AttributeNode : Node {
         public AttributeNode(Node parent) : base(parent) { }
@@ -273,9 +153,31 @@ namespace XData.Compiler {
             Type = NamespaceAncestor.ResolveAsType(TypeQName);
         }
         public AttributeSymbol CreateSymbol(AttributeSetSymbol parent, AttributeSymbol restrictedAttributeSymbol, string displayNameBase) {
+            if (restrictedAttributeSymbol == null) {
+                if (IsDelete) {
+                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DeletionNotAllowedInExtension), OptionalOrDelete.TextSpan);
+                }
+            }
+            else {
+                if (IsOptional && !restrictedAttributeSymbol.IsOptional) {
+                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AttributeIsOptionalButRestrictedIsRequired),
+                        OptionalOrDelete.TextSpan);
+                }
+                if (IsNullable && !restrictedAttributeSymbol.IsNullable) {
+                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AttributeIsNullableButRestrictedIsNotNullable),
+                        Nullable);
+                }
+            }
             var typeSymbol = Type.CreateSymbol() as SimpleTypeSymbol;
             if (typeSymbol == null) {
                 ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.SimpleTypeRequired), TypeQName.TextSpan);
+            }
+            if (restrictedAttributeSymbol != null) {
+                if (!typeSymbol.IsEqualToOrDeriveFrom(restrictedAttributeSymbol.Type)) {
+                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.TypeNotEqualToOrDeriveFromRestricted,
+                        typeSymbol.FullName.ToString(), restrictedAttributeSymbol.Type.FullName.ToString()),
+                        TypeQName.TextSpan);
+                }
             }
             var name = Name;
             return new AttributeSymbol(parent, "CLS_" + name, name, displayNameBase + name, IsOptional, IsNullable, typeSymbol, restrictedAttributeSymbol);

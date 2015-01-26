@@ -216,48 +216,6 @@ namespace XData.Compiler {
         public readonly List<AttributeSymbol> AttributeList;
 
     }
-    //public abstract class EntitySymbol : NamedObjectSymbol {
-    //    protected EntitySymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, bool isCSOverride, NameSyntax csBaseFullName, FullName fullName,
-    //        ElementKind declKind, EntitySymbol restrictedEntity, EntitySymbol substitutedEntity, EntitySymbol referencedEntity,
-    //        string displayName, string memberName, bool isNullable, bool isOptional, TypeSymbol type) :
-    //            base(parent, csName, isAbstract, isSealed, isCSOverride, csBaseFullName, null, fullName) {
-    //        DeclKind = declKind;
-    //        RestrictedEntity = restrictedEntity;
-    //        ReferencedEntity = referencedEntity;
-    //        DisplayName = displayName;
-    //        MemberName = memberName;
-    //        IsNullable = isNullable;
-    //        IsOptional = isOptional;
-    //        Type = type;
-    //    }
-
-    //    public readonly ElementKind DeclKind;
-    //    public readonly EntitySymbol RestrictedEntity;
-    //    public readonly EntitySymbol SubstitutedEntity;
-    //    public readonly EntitySymbol ReferencedEntity;//for ref
-    //    public string DisplayName { get; private set; }
-    //    public string MemberName { get; private set; }
-
-    //    public readonly bool IsNullable;
-    //    public bool IsOptional { get; private set; }
-    //    public readonly TypeSymbol Type;
-    //    public bool IsLocal {
-    //        get {
-    //            return DeclKind == ElementKind.Local;
-    //        }
-    //    }
-    //    public bool IsGlobal {
-    //        get {
-    //            return DeclKind == ElementKind.Global;
-    //        }
-    //    }
-    //    public bool IsReference {
-    //        get {
-    //            return DeclKind == ElementKind.Reference;
-    //        }
-    //    }
-
-    //}
     public sealed class AttributeSymbol : ObjectSymbol {
         public AttributeSymbol(AttributeSetSymbol parent, string csName,
             string name, string displayName, bool isOptional, bool isNullable, SimpleTypeSymbol type, AttributeSymbol restrictedAttribute) :
@@ -296,6 +254,7 @@ namespace XData.Compiler {
         public virtual bool IsOptional { get { return _isOptional; } }
         public readonly int Order;
         public readonly ChildSymbol RestrictedChild;
+        //public abstract bool HasIntersection(FullName fullName, bool forSeq);
     }
 
     public sealed class ElementSymbol : ChildSymbol, IGlobalObjectSymbol {
@@ -304,7 +263,8 @@ namespace XData.Compiler {
             FullName fullName, bool isNullable, TypeSymbol type, ElementSymbol referencedElement, ElementSymbol substitutedElement
              )
             : base(parent, csName, isAbstract, isSealed, restrictedElement != null,
-                 restrictedElement != null ? restrictedElement.CSFullName : substitutedElement != null ? substitutedElement.CSFullName : CSEX.XElementName,
+                 restrictedElement != null ? restrictedElement.CSFullName : substitutedElement != null ? substitutedElement.CSFullName :
+                    kind == ChildKind.GlobalElementReference ? CSEX.XElementReferenceName : CSEX.XElementName,
                  null, kind, displayName, memberName, isOptional, order, restrictedElement) {
             FullName = fullName;
             IsNullable = isNullable;
@@ -322,6 +282,7 @@ namespace XData.Compiler {
         }
         public readonly ElementSymbol ReferencedElement;
         public readonly ElementSymbol SubstitutedElement;
+        public GlobalElementNode GlobalElementNode;//opt
         public bool IsLocal {
             get {
                 return Kind == ChildKind.LocalElement;
@@ -346,7 +307,12 @@ namespace XData.Compiler {
             }
             return false;
         }
-
+        //public override bool HasIntersection(FullName fullName, bool forSeq) {
+        //    if (IsLocal) {
+        //        return FullName == fullName;
+        //    }
+        //    return ReferencedElement.GlobalElementNode.HasIntersection(fullName);
+        //}
     }
     public abstract class ChildContainerSymbol : ChildSymbol {
         protected ChildContainerSymbol(ObjectSymbol parent, string csName, bool isCSOverride, NameSyntax csBaseFullName, NameSyntax[] csItfNames,
@@ -416,15 +382,33 @@ namespace XData.Compiler {
                 return Kind == ChildKind.Choice;
             }
         }
+        //public override bool HasIntersection(FullName fullName) {
+        //    if (IsSequence) {
+        //        for (var i = ChildList.Count - 1; i >= 0; --i) {
+        //            var child = ChildList[i];
+        //            if (child.IsOptional || child.Kind == ChildKind.List) {
 
+        //            }
+        //        }
+        //    }
+        //    else {
+        //        //foreach (var child in ChildList) {
+        //        //    if (child.HasIntersection(fullName)) {
+        //        //        return true;
+        //        //    }
+        //        //}
+        //    }
+        //    return false;
+        //}
     }
     public sealed class ChildListSymbol : ChildContainerSymbol {
-        public ChildListSymbol(ObjectSymbol parent, string csName,
+        public ChildListSymbol(ChildSetSymbol parent, string csName,
             string displayName, string memberName, bool isOptional, int order, ChildListSymbol restrictedChildList,
             ulong minOccurrence, ulong maxOccurrence, ChildSymbol item)
             : base(parent, csName, restrictedChildList != null,
                 restrictedChildList != null ? restrictedChildList.CSFullName : CSEX.XChildListOf(item.CSFullName),
-                null, ChildKind.List, displayName, memberName, isOptional, order, restrictedChildList) {
+                restrictedChildList != null ? CSEX.IListAndIReadOnlyListOf(item.CSFullName) : null, ChildKind.List,
+                displayName, memberName, isOptional, order, restrictedChildList) {
             MinOccurrence = minOccurrence;
             MaxOccurrence = maxOccurrence;
             Item = item;
@@ -432,6 +416,9 @@ namespace XData.Compiler {
         public readonly ulong MinOccurrence;
         public readonly ulong MaxOccurrence;
         public readonly ChildSymbol Item;
+        //public override bool HasIntersection(FullName fullName) {
+        //    return Item.HasIntersection(fullName);
+        //}
     }
 
 

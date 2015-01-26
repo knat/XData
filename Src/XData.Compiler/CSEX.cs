@@ -48,6 +48,9 @@ namespace XData.Compiler {
         internal static QualifiedNameSyntax XElementName {
             get { return CS.QualifiedName(XDataName, "XElement"); }
         }
+        internal static QualifiedNameSyntax XElementReferenceName {
+            get { return CS.QualifiedName(XDataName, "XElementReference"); }
+        }
         internal static QualifiedNameSyntax XChildSetName {
             get { return CS.QualifiedName(XDataName, "XChildSet"); }
         }

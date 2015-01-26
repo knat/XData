@@ -8,9 +8,21 @@ namespace XData {
         }
         public readonly string Uri;
         public readonly string Name;
-        public bool IsQualified { get { return !IsUnqualified; } }
-        public bool IsUnqualified { get { return string.IsNullOrEmpty(Uri); } }
-        public bool IsValid { get { return !string.IsNullOrEmpty(Name); } }
+        public bool IsQualified {
+            get {
+                return !IsUnqualified;
+            }
+        }
+        public bool IsUnqualified {
+            get {
+                return string.IsNullOrEmpty(Uri);
+            }
+        }
+        public bool IsValid {
+            get {
+                return !string.IsNullOrEmpty(Name);
+            }
+        }
         public override string ToString() {
             if (IsValid) {
                 if (IsUnqualified) {

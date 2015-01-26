@@ -1,11 +1,6 @@
 ﻿using System;
 
 namespace XData {
-    //public interface IEntityObject {//Attribute and Element impl this interface
-    //    EntityInfo EntityInfo { get; }
-    //    FullName FullName { get; }
-    //    XType Type { get; }
-    //}
 
     public abstract class XAttribute : XObject {
         protected XAttribute() {
@@ -34,7 +29,7 @@ namespace XData {
         }
         public XSimpleType GenericType {
             get {
-                return Type;
+                return _type;
             }
             set {
                 Type = value;
@@ -43,8 +38,9 @@ namespace XData {
         public T EnsureType<T>(bool @try = false) where T : XSimpleType {
             var obj = _type as T;
             if (obj != null) return obj;
-            obj = AttributeInfo.Type.CreateInstance<T>(@try);
-            Type = obj;
+            if ((obj = AttributeInfo.Type.CreateInstance<T>(@try)) != null) {
+                Type = obj;
+            }
             return obj;
         }
         public XSimpleType EnsureType(bool @try = false) {

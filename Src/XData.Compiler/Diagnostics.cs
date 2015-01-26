@@ -52,7 +52,7 @@ namespace XData.Compiler {
         TypeNotEqualToOrDeriveFromRestricted,
         TypeNotEqualToOrDeriveFromSubstituted,
 
-        DeletionNotAllowed,
+        DeletionNotAllowedInExtension,
         CannotDeleteAttributeBecauseItIsNotOptional,
         SubstitutedElementIsSealed,
         ElementIsNullableButSubstitutedIsNotNullable,
@@ -63,6 +63,8 @@ namespace XData.Compiler {
         ElementNameNotEqualToRestricted,
         ElementIsNullableButRestrictedIsNotNullable,
         ElementNotEqualToOrSubstituteRestricted,
+        CannotFindRestrictedChild,
+        CannotDeleteChildBecauseItIsNotOptional,
         //
         //
 
@@ -174,8 +176,8 @@ namespace XData.Compiler {
 
                 case DiagCodeEx.RequiredAttributeNotRestricting:
                     return "Required attribute with member name '{0}' not restricting.".InvFormat(_msgArgs);
-                case DiagCodeEx.DeletionNotAllowed:
-                    return "Deletion not allowed";
+                case DiagCodeEx.DeletionNotAllowedInExtension:
+                    return "Deletion not allowed in extension.";
                 case DiagCodeEx.CannotDeleteAttributeBecauseItIsNotOptional:
                     return "Cannot delete attribute '{0}' because it is not optional.".InvFormat(_msgArgs);
                 case DiagCodeEx.SubstitutedElementIsSealed:
@@ -196,7 +198,10 @@ namespace XData.Compiler {
                     return "Element iss nullable but the restricted is not nullable.";
                 case DiagCodeEx.ElementNotEqualToOrSubstituteRestricted:
                     return "Element '{0}' not equal to or substitute the restricted '{1}'.".InvFormat(_msgArgs);
-
+                case DiagCodeEx.CannotFindRestrictedChild:
+                    return "Cannot find restricted child '{0}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.CannotDeleteChildBecauseItIsNotOptional:
+                    return "Cannot delete child '{0}' because it is not optional.".InvFormat(_msgArgs);
 
                 default:
                     throw new InvalidOperationException("Invalid code: " + Code.ToString());

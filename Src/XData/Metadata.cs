@@ -81,52 +81,10 @@ namespace XData {
             return (T)Activator.CreateInstance(ClrType);
         }
 
-
-        //public bool IsAssignableFrom(ObjectInfo other) {
-        //    return ClrType.IsAssignableFrom(other.ClrType);
-        //}
-
-        //public bool IsAssignableFrom(XObject obj) {
-        //    if (obj == null) throw new ArgumentNullException("obj");
-        //    return ClrType.IsAssignableFrom(obj.GetType());
-        //}
-
-        //public bool IsAssignableFrom(Object obj, Context context) {
-        //    if (IsAssignableFrom(obj)) return true;
-        //    new Diagnostic(context, obj, DiagnosticCode.InvalidObjectClrType, obj.GetType().FullName, ClrType.FullName);
-        //    return false;
-        //}
-
-
-        //public T CreateInstance<T>(bool @try = false) where T : XObject {
-        //    if (IsAbstract) {
-        //        if (@try) {
-        //            return null;
-        //        }
-        //        throw new InvalidOperationException("Clr type '{0}' is abstract.".InvariantFormat(ClrType.FullName));
-        //    }
-        //    if (Extensions.IsAssignableTo(typeof(T), ClrType, @try)) {
-        //        return (T)Extensions.CreateInstance(ClrType);
-        //    }
-        //    return null;
-        //}
-        //public T CreateInstance<T>(Location? location, bool @try = false) where T : Object {
-        //    var obj = CreateInstance<T>(@try);
-        //    if (obj != null && location != null) obj.Location = location;
-        //    return obj;
-        //}
     }
     public interface IGlobalObjectInfo {
         FullName FullName { get; }
     }
-    //public abstract class NamedObjectInfo : ObjectInfo {
-    //    public NamedObjectInfo(Type clrType, bool isAbstract, FullName fullName)
-    //        : base(clrType, isAbstract) {
-    //        FullName = fullName;
-    //    }
-    //    public readonly FullName FullName;
-    //}
-
     public abstract class TypeInfo : ObjectInfo, IGlobalObjectInfo {
         protected TypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeInfo baseType)
             : base(clrType, isAbstract) {
@@ -424,29 +382,23 @@ namespace XData {
                 return Kind == ChildKind.GlobalElementReference;
             }
         }
-        public bool IsMatch(FullName fullName, out ElementInfo globalElement) {
-            if (FullName == fullName) {
-                globalElement = ReferencedElement;
-                return true;
+        public ElementInfo TryGetEffectiveElement(FullName fullName) {
+            if (IsLocal) {
+                return FullName == fullName ? this : null;
             }
-            if (!IsLocal) {
-                globalElement = TryGet(fullName);
-                return globalElement != null;
-            }
-            globalElement = null;
-            return false;
-        }
-        private ElementInfo TryGet(FullName fullName) {
             if (IsReference) {
-                return ReferencedElement.TryGet(fullName);
+                return ReferencedElement.TryGetSubstitutor(fullName);
             }
+            return TryGetSubstitutor(fullName);
+        }
+        private ElementInfo TryGetSubstitutor(FullName fullName) {
             if (FullName == fullName) {
                 return this;
             }
             var directSubstitutingElements = DirectSubstitutingElements;
             if (directSubstitutingElements != null) {
                 foreach (var i in directSubstitutingElements) {
-                    var info = i.TryGet(fullName);
+                    var info = i.TryGetSubstitutor(fullName);
                     if (info != null) {
                         return info;
                     }

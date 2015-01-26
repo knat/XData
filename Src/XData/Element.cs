@@ -3,131 +3,47 @@ using XData.IO.Text;
 
 namespace XData {
     public abstract class XChild : XObject {
-        public abstract int Order { get; }
+        protected XChild() {
+            _order = ChildInfo.Order;
+        }
+        private readonly int _order;
+        public int Order {
+            get {
+                return _order;
+            }
+        }
+        public ChildInfo ChildInfo {
+            get {
+                return (ChildInfo)ObjectInfo;
+            }
+        }
     }
     internal enum CreationResult : byte {
         Error,
         Skipped,
         OK
     }
-    public abstract class XElement : XChild {
-        protected XElement() {
-            _fullName = GetFullName();
-        }
-        private readonly FullName _fullName;
-        public FullName FullName {
-            get {
-                return EffectiveElement._fullName;
-            }
-        }
-        protected abstract FullName GetFullName();
-        private XElement _referencedElement;
-        public XElement ReferencedElement {
-            get {
-                return _referencedElement;
-            }
-            set {
-                if (value != null) {
-                    if (!ElementInfo.IsReference) {
-                        throw new InvalidOperationException("Cannot set referenced element if the element is not a reference.");
-                    }
-                    for (var i = value; i != null; i = i._referencedElement) {
-                        if ((object)this == i) {
-                            throw new InvalidOperationException("Circular reference detected.");
-                        }
-                    }
-                }
-                _referencedElement = value;
-            }
-        }
-        public XElement GenericReferentialElement {
-            get {
-                return _referencedElement;
-            }
-            set {
-                ReferencedElement = value;
-            }
-        }
-        public bool IsReference {
-            get {
-                return _referencedElement != null;
-            }
-        }
-        public XElement EffectiveElement {
-            get {
-                return _referencedElement == null ? this : _referencedElement.EffectiveElement;
-            }
-        }
-        private XType _type;
-        private void SetType(XType type) {
-            _type = SetParentTo(type);
-        }
-        public XType Type {
-            get {
-                return EffectiveElement._type;
-            }
-            set {
-                if (_referencedElement != null) {
-                    _referencedElement.Type = value;
-                }
-                else {
-                    SetType(value);
-                }
-            }
-        }
-        public bool HasType {
-            get {
-                return EffectiveElement._type != null;
-            }
-        }
-        public XType GenericType {
-            get {
-                return Type;
-            }
-            set {
-                Type = value;
-            }
-        }
-        public T EnsureType<T>(bool @try = false) where T : XType {
-            if (_referencedElement != null) {
-                return _referencedElement.EnsureType<T>(@try);
-            }
-            var obj = _type as T;
-            if (obj != null) return obj;
-            obj = ElementInfo.Type.CreateInstance<T>(@try);
-            SetType(obj);
-            return obj;
-        }
-        public XType EnsureType(bool @try = false) {
-            return EnsureType<XType>(@try);
-        }
-        public override XObject DeepClone() {
-            var obj = (XElement)base.DeepClone();
-            obj.SetType(_type);
-            return obj;
-        }
+    public abstract class XElementBase : XChild {
+
         public ElementInfo ElementInfo {
             get {
                 return (ElementInfo)ObjectInfo;
             }
         }
-
-        //
         internal static CreationResult TrySkippableCreate(Context context, ElementInfo elementInfo, ElementNode elementNode, out XChild result) {
             result = null;
-            ElementInfo globalElementInfo;
-            if (!elementInfo.IsMatch(elementNode.FullName, out globalElementInfo)) {
+            var effElementInfo = elementInfo.TryGetEffectiveElement(elementNode.FullName);
+            if (effElementInfo == null) {
                 return CreationResult.Skipped;
             }
             var elementNameTextSpan = elementNode.QName.TextSpan;
-            var effElementInfo = globalElementInfo ?? elementInfo;
             if (effElementInfo.IsAbstract) {
                 context.AddErrorDiag(new DiagMsg(DiagCode.ElementIsAbstract, effElementInfo.DisplayName), elementNameTextSpan);
                 return CreationResult.Error;
             }
             XType type = null;
             var elementValueNode = elementNode.Value;
-            var isNullable = elementInfo.IsNullable;
+            var isNullable = effElementInfo.IsNullable;
             if (elementValueNode.IsValid) {
                 var complexTypeInfo = effElementInfo.Type as ComplexTypeInfo;
                 if (complexTypeInfo != null) {
@@ -138,7 +54,7 @@ namespace XData {
                         return CreationResult.Error;
                     }
                     XComplexType complexType;
-                    if (!XComplexType.TryCreate(context, elementInfo.Program, complexTypeInfo, isNullable,
+                    if (!XComplexType.TryCreate(context, effElementInfo.Program, complexTypeInfo, isNullable,
                         complexValueNode, out complexType)) {
                         return CreationResult.Error;
                     }
@@ -153,7 +69,7 @@ namespace XData {
                         return CreationResult.Error;
                     }
                     XSimpleType simpleType;
-                    if (!XSimpleType.TryCreate(context, elementInfo.Program, simpleTypeInfo,
+                    if (!XSimpleType.TryCreate(context, effElementInfo.Program, simpleTypeInfo,
                         simpleValueNode, out simpleType)) {
                         return CreationResult.Error;
                     }
@@ -168,18 +84,69 @@ namespace XData {
             }
             //
             var effElement = effElementInfo.CreateInstance<XElement>();
-            effElement.SetType(type);
+            effElement.Type = type;
             if (elementInfo.IsReference) {
-                var refElement = elementInfo.CreateInstance<XElement>();
-                refElement.ReferencedElement = effElement;
-                result = refElement;
+                var elementRef = elementInfo.CreateInstance<XElementReference>();
+                elementRef.ReferencedElement = effElement;
+                result = elementRef;
             }
             else {
                 result = effElement;
             }
             return CreationResult.OK;
         }
+    }
 
+    public abstract class XElement : XElementBase {
+        protected XElement() {
+            _fullName = ElementInfo.FullName;
+        }
+        private readonly FullName _fullName;
+        public FullName FullName {
+            get {
+                return _fullName;
+            }
+        }
+        private XType _type;
+        public XType Type {
+            get {
+                return _type;
+            }
+            set {
+                _type = SetParentTo(value);
+            }
+        }
+        public bool HasType {
+            get {
+                return _type != null;
+            }
+        }
+        public XType GenericType {
+            get {
+                return _type;
+            }
+            set {
+                Type = value;
+            }
+        }
+        public T EnsureType<T>(bool @try = false) where T : XType {
+            var obj = _type as T;
+            if (obj != null) return obj;
+            if ((obj = ElementInfo.Type.CreateInstance<T>(@try)) != null) {
+                Type = obj;
+            }
+            return obj;
+        }
+        public XType EnsureType(bool @try = false) {
+            return EnsureType<XType>(@try);
+        }
+        public override XObject DeepClone() {
+            var obj = (XElement)base.DeepClone();
+            obj.Type = _type;
+            return obj;
+        }
+
+        //
         private static bool TryLoadAndValidate<T>(Context context, ElementInfo elementInfo, ElementNode elementNode, out T result) where T : XElement {
 
 
@@ -188,5 +155,59 @@ namespace XData {
             return false;
         }
     }
+    public abstract class XElementReference : XElementBase {
+        private XElement _referencedElement;
+        public XElement ReferencedElement {
+            get {
+                return _referencedElement;
+            }
+            set {
+                _referencedElement = value;
+            }
+        }
+        public XElement GenericReferentialElement {
+            get {
+                return _referencedElement;
+            }
+            set {
+                _referencedElement = value;
+            }
+        }
+        public T EnsureReferencedElement<T>(bool @try = false) where T : XElement {
+            var obj = _referencedElement as T;
+            if (obj != null) return obj;
+            _referencedElement = obj = ElementInfo.ReferencedElement.CreateInstance<T>(@try);
+            return obj;
+        }
+        public FullName FullName {
+            get {
+                return _referencedElement != null ? _referencedElement.FullName : default(FullName);
+            }
+        }
+        public XType Type {
+            get {
+                return _referencedElement != null ? _referencedElement.Type : null;
+            }
+            set {
+                EnsureReferencedElement<XElement>().Type = value;
+            }
+        }
+        public XType GenericType {
+            get {
+                return Type;
+            }
+            set {
+                Type = value;
+            }
+        }
+        public T EnsureType<T>(bool @try = false) where T : XType {
+            var referencedElement = EnsureReferencedElement<XElement>(@try);
+            if (referencedElement == null) return null;
+            return referencedElement.EnsureType<T>(@try);
+        }
+        public XType EnsureType(bool @try = false) {
+            return EnsureType<XType>(@try);
+        }
 
+    }
 }
