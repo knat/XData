@@ -26,10 +26,10 @@ namespace XData {
             return false;
         }
 
-        protected override bool TryValidateCore(Context context) {
+        protected override bool TryValidateCore(DiagContext context) {
             return TryValidateFacets(context);
         }
-        protected bool TryValidateFacets(Context context) {
+        protected bool TryValidateFacets(DiagContext context) {
             var facets = SimpleTypeInfo.Facets;
             if (facets != null) {
                 var dMarker = context.MarkDiags();
@@ -61,9 +61,9 @@ namespace XData {
             }
             return true;
         }
-        protected virtual void TryValidateFacetsEx(Context context, FacetSetInfo facets) { }
-        public virtual void WriteValue(IndentedTextWriter writer) {
-            writer.Write(ToString());
+        protected virtual void TryValidateFacetsEx(DiagContext context, FacetSetInfo facets) { }
+        public override void SaveValue(IndentedStringBuilder isb) {
+            isb.Append(ToString());
         }
 
         public SimpleTypeInfo SimpleTypeInfo {
@@ -73,7 +73,7 @@ namespace XData {
         }
         public static readonly SimpleTypeInfo ThisInfo = new SimpleTypeInfo(typeof(XSimpleType), true, TypeKind.SimpleType.ToFullName(), null, null);
         //
-        internal static bool TryCreate(Context context, ProgramInfo programInfo, SimpleTypeInfo simpleTypeInfo,
+        internal static bool TryCreate(DiagContext context, ProgramInfo programInfo, SimpleTypeInfo simpleTypeInfo,
             SimpleValueNode simpleValueNode, out XSimpleType result) {
             result = null;
             var simpleValueTextSpan = simpleValueNode.TextSpan;

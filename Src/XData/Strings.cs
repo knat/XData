@@ -65,18 +65,18 @@ namespace XData {
             result = (ulong)_value.Length;
             return true;
         }
-        public override void WriteValue(IndentedTextWriter writer) {
-            writer.Write("@\"");
-            var textWriter = writer.TextWriter;
+        public override void SaveValue(IndentedStringBuilder isb) {
+            isb.Append("@\"");
+            var sb = isb.StringBuilder;
             foreach (var ch in _value) {
                 if (ch == '"') {
-                    textWriter.Write("\"\"");
+                    sb.Append("\"\"");
                 }
                 else {
-                    textWriter.Write(ch);
+                    sb.Append(ch);
                 }
             }
-            textWriter.Write('"');
+            sb.Append('"');
         }
     }
     public class XString : XStringBase {

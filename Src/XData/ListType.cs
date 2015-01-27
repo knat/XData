@@ -13,7 +13,7 @@ namespace XData {
         }
         new public static readonly ListTypeInfo ThisInfo = new ListTypeInfo(typeof(XListType), true, TypeKind.ListType.ToFullName(),
             XSimpleType.ThisInfo, null, null);
-        internal static bool TryCreate(Context context, ProgramInfo programInfo, ListTypeInfo listTypeInfo,
+        internal static bool TryCreate(DiagContext context, ProgramInfo programInfo, ListTypeInfo listTypeInfo,
             NodeList<SimpleValueNode> listNode, out XListType result) {
             result = null;
             var listType = listTypeInfo.CreateInstance<XListType>();
@@ -192,7 +192,7 @@ namespace XData {
                 array[arrayIndex++] = _itemList[i] as U;
             }
         }
-        protected override bool TryValidateCore(Context context) {
+        protected override bool TryValidateCore(DiagContext context) {
             if (!base.TryValidateCore(context)) {
                 return false;
             }
@@ -210,19 +210,19 @@ namespace XData {
             }
             return !dMarker.HasErrors;
         }
-        public override void WriteValue(IndentedTextWriter writer) {
-            writer.Write("#[");
+        public override void SaveValue(IndentedStringBuilder isb) {
+            isb.Append("#[");
             var count = _itemList.Count;
             for (var i = 0; i < count; ++i) {
                 if (i > 0) {
-                    writer.Write(' ');
+                    isb.Append(' ');
                 }
                 var item = _itemList[i];
                 if (item != null) {
-                    item.WriteValue(writer);
+                    item.SaveValue(isb);
                 }
             }
-            writer.Write(']');
+            isb.Append(']');
         }
     }
 }

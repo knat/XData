@@ -66,10 +66,10 @@ namespace XData {
         public override string ToString() {
             return _value.ToString("c");
         }
-        public override void WriteValue(IndentedTextWriter writer) {
-            writer.Write('"');
-            writer.TextWriter.Write(ToString());
-            writer.TextWriter.Write('"');
+        public override void SaveValue(IndentedStringBuilder isb) {
+            isb.Append('"');
+            isb.StringBuilder.Append(ToString());
+            isb.StringBuilder.Append('"');
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
         new public static readonly AtomTypeInfo ThisInfo = TypeKind.TimeSpan.ToAtomTypeInfo(typeof(XTimeSpan), XAtomType.ThisInfo);

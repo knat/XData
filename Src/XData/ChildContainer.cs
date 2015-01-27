@@ -145,7 +145,7 @@ namespace XData {
             }
         }
         //
-        internal static bool TryCreate(Context context, ProgramInfo programInfo, ChildSetInfo childSetInfo,
+        internal static bool TryCreate(DiagContext context, ProgramInfo programInfo, ChildSetInfo childSetInfo,
             TextSpan closeElementTextSpan, NodeList<ElementNode> elementListNode, out XChildSet result) {
             result = null;
             new CreationContext(context, programInfo, closeElementTextSpan, elementListNode);
@@ -155,7 +155,7 @@ namespace XData {
         }
 
         private struct CreationContext {
-            internal CreationContext(Context context, ProgramInfo programInfo, TextSpan closeElementTextSpan, List<ElementNode> list) {
+            internal CreationContext(DiagContext context, ProgramInfo programInfo, TextSpan closeElementTextSpan, List<ElementNode> list) {
                 _context = context;
                 _programInfo = programInfo;
                 _closeElementTextSpan = closeElementTextSpan;
@@ -164,7 +164,7 @@ namespace XData {
                 _index = 0;
             }
             private static readonly List<ElementNode> emptyList = new List<ElementNode>();
-            private readonly Context _context;
+            private readonly DiagContext _context;
             private readonly ProgramInfo _programInfo;
             private readonly TextSpan _closeElementTextSpan;
             private readonly List<ElementNode> _list;

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
 using XData.IO.Text;
 
 namespace XData {
@@ -222,29 +224,23 @@ namespace XData {
     }
 
 
-    public class Context {
-        public Context() { }
-        private List<Diag> _diagList;
-        public List<Diag> DiagList {
-            get {
-                return _diagList ?? (_diagList = new List<Diag>());
-            }
-        }
+    public class DiagContext : List<Diag> {
+        public DiagContext() { }
         public void AddDiag(DiagSeverity severity, int rawCode, string message, TextSpan textSpan, XObject obj) {
-            DiagList.Add(new Diag(severity, rawCode, message, textSpan, obj));
+            Add(new Diag(severity, rawCode, message, textSpan, obj));
         }
         public void AddDiag(DiagSeverity severity, DiagMsg diagMsg, TextSpan textSpan, XObject obj) {
-            DiagList.Add(new Diag(severity, diagMsg, textSpan, obj));
+            Add(new Diag(severity, diagMsg, textSpan, obj));
         }
         public void AddErrorDiag(DiagMsg diagMsg, TextSpan textSpan) {
-            DiagList.Add(new Diag(DiagSeverity.Error, diagMsg, textSpan, null));
+            Add(new Diag(DiagSeverity.Error, diagMsg, textSpan, null));
         }
         public void AddErrorDiag(DiagMsg diagMsg, XObject obj) {
-            DiagList.Add(new Diag(DiagSeverity.Error, diagMsg, default(TextSpan), obj));
+            Add(new Diag(DiagSeverity.Error, diagMsg, default(TextSpan), obj));
         }
         public bool HasDiags {
             get {
-                return _diagList != null && _diagList.Count > 0;
+                return Count > 0;
             }
         }
         public bool HasErrorDiags {
@@ -253,29 +249,24 @@ namespace XData {
             }
         }
         private bool HasErrorDiagsCore(int index) {
-            if (_diagList != null) {
-                var count = _diagList.Count;
-                for (; index < count; ++index) {
-                    if (_diagList[index].IsError) {
-                        return true;
-                    }
+            var count = Count;
+            for (; index < count; ++index) {
+                if (this[index].IsError) {
+                    return true;
                 }
             }
             return false;
         }
         public virtual void Reset() {
-            if (_diagList != null) {
-                _diagList.Clear();
-            }
+            Clear();
         }
 
-
-        public struct DiagsMarker {
-            internal DiagsMarker(Context context) {
+        public struct DiagMarker {
+            internal DiagMarker(DiagContext context) {
                 Context = context;
-                Index = context._diagList == null ? 0 : context._diagList.Count;
+                Index = context.Count;
             }
-            public readonly Context Context;
+            public readonly DiagContext Context;
             public readonly int Index;
             public bool HasErrors {
                 get {
@@ -283,15 +274,50 @@ namespace XData {
                 }
             }
             public void Restore() {
-                var diagnostics = Context._diagList;
-                if (diagnostics != null) {
-                    diagnostics.RemoveRange(Index, diagnostics.Count - Index);
-                }
+                Context.RemoveRange(Index, Context.Count - Index);
             }
         }
-        public DiagsMarker MarkDiags() {
-            return new DiagsMarker(this);
+        public DiagMarker MarkDiags() {
+            return new DiagMarker(this);
         }
+    }
+
+    public class SavingContext : IndentedStringBuilder {
+        public SavingContext( string indentString = "\t", string newLineString = "\n") :
+            base(new StringBuilder(StringBuilderCapacity), indentString, newLineString) {
+            _aliasUriList = new List<AliasUri>();
+        }
+        public const int StringBuilderCapacity = 1024;
+        private struct AliasUri {
+            public AliasUri(string alias, string uri) {
+                Alias = alias;
+                Uri = uri;
+            }
+            public readonly string Alias, Uri;
+        }
+        private readonly List<AliasUri> _aliasUriList;
+        public string GetAlias(string uri) {
+            if (uri == InfoExtensions.SystemUri) {
+                return "sys";
+            }
+            foreach (var au in _aliasUriList) {
+                if (au.Uri == uri) {
+                    return au.Alias;
+                }
+            }
+            return null;
+        }
+        public string AddUri(string uri) {
+            var alias = GetAlias(uri);
+            if (alias != null) {
+                return alias;
+            }
+            alias = "a" + _aliasUriList.Count.ToInvString();
+            _aliasUriList.Add(new AliasUri(alias, uri));
+            return alias;
+        }
+
+
     }
 
 }

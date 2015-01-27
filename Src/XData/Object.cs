@@ -79,7 +79,7 @@ namespace XData {
         //    return (T)DeepClone();
         //}
         public abstract ObjectInfo ObjectInfo { get; }
-        public bool TryValidate(Context context) {
+        public bool TryValidate(DiagContext context) {
             if (context == null) {
                 throw new ArgumentNullException("context");
             }
@@ -90,7 +90,7 @@ namespace XData {
             //}
             //return TryValidated(context, success);
         }
-        protected abstract bool TryValidateCore(Context context);
+        protected abstract bool TryValidateCore(DiagContext context);
         //protected virtual bool TryValidating(Context context, bool fromValidate) {
         //    return true;
         //}

@@ -29,11 +29,11 @@ namespace XData.Compiler {
         //
         [ThreadStatic]
         private static Parser _instance;
-        public static bool Parse(string filePath, TextReader reader, Context context,
+        public static bool Parse(string filePath, TextReader reader, DiagContext context,
             Node parent, out CompilationUnitNode result) {
             return (_instance ?? (_instance = new Parser())).CompilationUnit(filePath, reader, context, parent, out result);
         }
-        public static bool Parse(string filePath, TextReader reader, Context context,
+        public static bool Parse(string filePath, TextReader reader, DiagContext context,
             Node parent, out CSNSIndicatorCompilationUnitNode result) {
             return (_instance ?? (_instance = new Parser())).CSNSIndicatorCompilationUnit(filePath, reader, context, parent, out result);
         }
@@ -67,7 +67,7 @@ namespace XData.Compiler {
         private readonly NodeGetter<NameNode> _memberNameGetter;
         private readonly NodeGetter<QualifiableNameNode> _substituteGetter;
         private readonly NodeGetter<OccurrenceNode> _occurrenceGetter;
-        private bool CompilationUnit(string filePath, TextReader reader, Context context,
+        private bool CompilationUnit(string filePath, TextReader reader, DiagContext context,
             Node parent, out CompilationUnitNode result) {
             Set(filePath, reader, context);
             try {
@@ -85,7 +85,7 @@ namespace XData.Compiler {
             result = null;
             return false;
         }
-        private bool CSNSIndicatorCompilationUnit(string filePath, TextReader reader, Context context,
+        private bool CSNSIndicatorCompilationUnit(string filePath, TextReader reader, DiagContext context,
             Node parent, out CSNSIndicatorCompilationUnitNode result) {
             Set(filePath, reader, context);
             try {

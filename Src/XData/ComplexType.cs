@@ -87,7 +87,7 @@ namespace XData {
             }
         }
         //
-        internal static bool TryCreate(Context context, ProgramInfo programInfo, ComplexTypeInfo complexTypeInfo, bool isNullable,
+        internal static bool TryCreate(DiagContext context, ProgramInfo programInfo, ComplexTypeInfo complexTypeInfo, bool isNullable,
             ComplexValueNode complexValueNode, out XComplexType result) {
             result = null;
             var equalsTokenTextSpan = complexValueNode.EqualsToken;

@@ -65,10 +65,10 @@ namespace XData {
         public override string ToString() {
             return _value.ToString("D");
         }
-        public override void WriteValue(IndentedTextWriter writer) {
-            writer.Write('"');
-            writer.TextWriter.Write(ToString());
-            writer.TextWriter.Write('"');
+        public override void SaveValue(IndentedStringBuilder sb) {
+            sb.Append('"');
+            sb.StringBuilder.Append(ToString());
+            sb.StringBuilder.Append('"');
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
         new public static readonly AtomTypeInfo ThisInfo = TypeKind.Guid.ToAtomTypeInfo(typeof(XGuid), XAtomType.ThisInfo);

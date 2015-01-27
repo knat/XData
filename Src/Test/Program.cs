@@ -163,12 +163,12 @@ namespace Test {
             }
         }
         static void TestParser() {
-            var ctx = new Context();
+            var ctx = new DiagContext();
             ElementNode element;
             using (var reader = new StreamReader("test.txt")) {
                 Parser.Parse("test.txt", reader, ctx, out element);
             }
-            foreach (var diag in ctx.DiagList) {
+            foreach (var diag in ctx) {
                 Console.WriteLine(diag.ToString());
             }
 

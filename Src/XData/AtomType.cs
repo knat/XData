@@ -58,7 +58,7 @@ namespace XData {
             scale = 0;
             return false;
         }
-        protected override sealed void TryValidateFacetsEx(Context context, FacetSetInfo facets) {
+        protected override sealed void TryValidateFacetsEx(DiagContext context, FacetSetInfo facets) {
             var precision = facets.Precision;
             var scale = facets.Scale;
             if (precision != null || scale != null) {
@@ -144,7 +144,7 @@ namespace XData {
             }
             return str;
         }
-        internal static bool TryCreate(Context context, AtomTypeInfo atomTypeInfo,
+        internal static bool TryCreate(DiagContext context, AtomTypeInfo atomTypeInfo,
             AtomValueNode atomValueNode, out XAtomType result) {
             result = null;
             var atomType = atomTypeInfo.CreateInstance<XAtomType>();

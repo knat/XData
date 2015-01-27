@@ -26,29 +26,29 @@ namespace XData.Compiler {
 
         public void CheckApplicabilities(TypeKind kind) {
             if (Lengths.IsValid && !Contains(_lengthsTypeKinds, kind)) {
-                ContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Lengths.DotDotToken);
+                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Lengths.DotDotToken);
             }
             if (Digits.IsValid) {
                 if (Digits.MinValue != null && !Contains(_totalDigitsTypeKinds, kind)) {
-                    ContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Digits.MinValueNode.TextSpan);
+                    DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Digits.MinValueNode.TextSpan);
                 }
                 if (Digits.MaxValue != null && kind != TypeKind.Decimal) {
-                    ContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Digits.MaxValueNode.TextSpan);
+                    DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Digits.MaxValueNode.TextSpan);
                 }
             }
             if (Values.IsValid && !Contains(_valuesTypeKinds, kind)) {
-                ContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Values.DotDotToken);
+                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Values.DotDotToken);
             }
             if (Enums != null && (!kind.IsConcreteAtomType())) {
-                ContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Enums[0].TextSpan);
+                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Enums[0].TextSpan);
             }
             if (Pattern.IsValid && !kind.IsConcreteAtomType()) {
-                ContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Pattern.TextSpan);
+                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Pattern.TextSpan);
             }
             if (ListItemTypeQName.IsValid && kind != TypeKind.ListType) {
-                ContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), ListItemTypeQName.TextSpan);
+                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), ListItemTypeQName.TextSpan);
             }
-            ContextEx.ThrowIfHasErrors();
+            DiagContextEx.ThrowIfHasErrors();
         }
         private static readonly TypeKind[] _lengthsTypeKinds = new TypeKind[] { TypeKind.ListType, TypeKind.String, TypeKind.IgnoreCaseString, TypeKind.Binary };
         private static readonly TypeKind[] _totalDigitsTypeKinds = new TypeKind[] { TypeKind.Decimal, TypeKind.Int64, TypeKind.Int32, TypeKind.Int16, TypeKind.SByte, TypeKind.UInt64, TypeKind.UInt32, TypeKind.UInt16, TypeKind.Byte };

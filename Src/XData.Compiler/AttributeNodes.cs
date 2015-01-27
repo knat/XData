@@ -77,7 +77,7 @@ namespace XData.Compiler {
                         if (baseAttributeSymbolList != null) {
                             foreach (var baseAttributeSymbol in baseAttributeSymbolList) {
                                 if (baseAttributeSymbol.Name == attribute.Name) {
-                                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateAttributeName, baseAttributeSymbol.Name),
+                                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateAttributeName, baseAttributeSymbol.Name),
                                         attribute.NameNode.TextSpan);
                                 }
                             }
@@ -99,13 +99,13 @@ namespace XData.Compiler {
                             }
                         }
                         if (restrictedAttributeSymbol == null) {
-                            ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotFindRestrictedAttribute, attributeName),
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotFindRestrictedAttribute, attributeName),
                                 attribute.NameNode.TextSpan);
                         }
                         var isDelete = attribute.IsDelete;
                         if (isDelete) {
                             if (!restrictedAttributeSymbol.IsOptional) {
-                                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotDeleteAttributeBecauseItIsNotOptional, attributeName),
+                                DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotDeleteAttributeBecauseItIsNotOptional, attributeName),
                                     attribute.NameNode.TextSpan);
                             }
                         }
@@ -155,26 +155,26 @@ namespace XData.Compiler {
         public AttributeSymbol CreateSymbol(AttributeSetSymbol parent, AttributeSymbol restrictedAttributeSymbol, string displayNameBase) {
             if (restrictedAttributeSymbol == null) {
                 if (IsDelete) {
-                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DeletionNotAllowedInExtension), OptionalOrDelete.TextSpan);
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DeletionNotAllowedInExtension), OptionalOrDelete.TextSpan);
                 }
             }
             else {
                 if (IsOptional && !restrictedAttributeSymbol.IsOptional) {
-                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AttributeIsOptionalButRestrictedIsRequired),
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AttributeIsOptionalButRestrictedIsRequired),
                         OptionalOrDelete.TextSpan);
                 }
                 if (IsNullable && !restrictedAttributeSymbol.IsNullable) {
-                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AttributeIsNullableButRestrictedIsNotNullable),
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AttributeIsNullableButRestrictedIsNotNullable),
                         Nullable);
                 }
             }
             var typeSymbol = Type.CreateSymbol() as SimpleTypeSymbol;
             if (typeSymbol == null) {
-                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.SimpleTypeRequired), TypeQName.TextSpan);
+                DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.SimpleTypeRequired), TypeQName.TextSpan);
             }
             if (restrictedAttributeSymbol != null) {
                 if (!typeSymbol.IsEqualToOrDeriveFrom(restrictedAttributeSymbol.Type)) {
-                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.TypeNotEqualToOrDeriveFromRestricted,
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.TypeNotEqualToOrDeriveFromRestricted,
                         typeSymbol.FullName.ToString(), restrictedAttributeSymbol.Type.FullName.ToString()),
                         TypeQName.TextSpan);
                 }

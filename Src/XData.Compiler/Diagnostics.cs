@@ -214,9 +214,9 @@ namespace XData.Compiler {
         }
     }
 
-    public sealed class ContextEx : Context {
+    public sealed class DiagContextEx : DiagContext {
         [ThreadStatic]
-        public static ContextEx Current;
+        public static DiagContextEx Current;
         public sealed class ContextException : Exception { }
         private static readonly ContextException _contextException = new ContextException();
         public static void ErrorDiag(DiagMsgEx diagMsg, TextSpan textSpan) {

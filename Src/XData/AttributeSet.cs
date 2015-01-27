@@ -127,7 +127,7 @@ namespace XData {
             return attributeInfo.CreateInstance<T>(@try);
         }
         //
-        internal static bool TryCreate(Context context, ProgramInfo programInfo, AttributeSetInfo attributeSetInfo,
+        internal static bool TryCreate(DiagContext context, ProgramInfo programInfo, AttributeSetInfo attributeSetInfo,
             TextSpan equalsTokenTextSpan, NodeList<AttributeNode> attributeListNode, out XAttributeSet result) {
             result = null;
 

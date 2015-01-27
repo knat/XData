@@ -87,10 +87,10 @@ namespace XData {
             result = (ulong)_value.Length;
             return true;
         }
-        public override void WriteValue(IndentedTextWriter writer) {
-            writer.Write('"');
-            writer.TextWriter.Write(ToString());
-            writer.TextWriter.Write('"');
+        public override void SaveValue(IndentedStringBuilder isb) {
+            isb.Append('"');
+            isb.StringBuilder.Append(ToString());
+            isb.StringBuilder.Append('"');
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
         new public static readonly AtomTypeInfo ThisInfo = TypeKind.Binary.ToAtomTypeInfo(typeof(XBinary), XAtomType.ThisInfo);

@@ -10,7 +10,7 @@ namespace XData.Compiler {
         public readonly List<string> CSNSIndicatorFilePathList;
     }
     public struct CompilationOutput {
-        public readonly Context Context;
+        public readonly DiagContext Context;
         public readonly string Code;
         public bool IsValid {
             get {
@@ -28,7 +28,7 @@ namespace XData.Compiler {
             if (!hasSchemaFile && !hasCSNSIndicatorFile) {
                 return default(CompilationOutput);
             }
-            var context = new ContextEx();
+            var context = new DiagContextEx();
             var programNode = new ProgramNode();
             try {
                 if (hasSchemaFile) {
@@ -60,11 +60,11 @@ namespace XData.Compiler {
                     }
                 }
                 //
-                ContextEx.Current = context;
+                DiagContextEx.Current = context;
                 try {
                     programNode.Analyze();
                 }
-                catch (ContextEx.ContextException) { }
+                catch (DiagContextEx.ContextException) { }
             Error:
                 ;
             }

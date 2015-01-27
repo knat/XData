@@ -49,7 +49,7 @@ namespace XData.Compiler {
                 SubstitutedGlobalElement = NamespaceAncestor.ResolveAsElement(SubstitutedGlobalElementQName);
                 for (var i = SubstitutedGlobalElement; i != null; i = i.SubstitutedGlobalElement) {
                     if (i == this) {
-                        ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CircularReferenceDetected), SubstitutedGlobalElementQName.TextSpan);
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CircularReferenceDetected), SubstitutedGlobalElementQName.TextSpan);
                     }
                 }
                 SubstitutedGlobalElement.DirectSubstitutorList.Add(this);
@@ -61,17 +61,17 @@ namespace XData.Compiler {
             if (SubstitutedGlobalElement != null) {
                 substitutedElementSymbol = (ElementSymbol)SubstitutedGlobalElement.CreateSymbol();
                 if (substitutedElementSymbol.IsSealed) {
-                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.SubstitutedElementIsSealed), SubstitutedGlobalElementQName.TextSpan);
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.SubstitutedElementIsSealed), SubstitutedGlobalElementQName.TextSpan);
                 }
             }
             var typeSymbol = (TypeSymbol)Type.CreateSymbol();
             if (substitutedElementSymbol != null) {
                 if (IsNullable && !substitutedElementSymbol.IsNullable) {
-                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ElementIsNullableButSubstitutedIsNotNullable),
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ElementIsNullableButSubstitutedIsNotNullable),
                         Nullable);
                 }
                 if (!typeSymbol.IsEqualToOrDeriveFrom(substitutedElementSymbol.Type)) {
-                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.TypeNotEqualToOrDeriveFromSubstituted,
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.TypeNotEqualToOrDeriveFromSubstituted,
                         typeSymbol.FullName.ToString(), substitutedElementSymbol.Type.FullName.ToString()),
                         TypeQName.TextSpan);
                 }
@@ -107,7 +107,7 @@ namespace XData.Compiler {
                         if (baseChildSymbolList != null) {
                             foreach (var baseChildSymbol in baseChildSymbolList) {
                                 if (baseChildSymbol.MemberName == memberName) {
-                                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateMemberName, memberName),
+                                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateMemberName, memberName),
                                         child.MemberNameNode.TextSpan);
                                 }
                             }
@@ -136,13 +136,13 @@ namespace XData.Compiler {
                         }
                     }
                     if (restrictedChildSymbol == null) {
-                        ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotFindRestrictedChild, memberName),
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotFindRestrictedChild, memberName),
                             child.MemberNameNode.TextSpan);
                     }
                     var isDelete = child.MaxOccurrence == 0;
                     if (isDelete) {
                         if (!restrictedChildSymbol.IsOptional) {
-                            ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotDeleteChildBecauseItIsNotOptional, memberName),
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotDeleteChildBecauseItIsNotOptional, memberName),
                                 child.MemberNameNode.TextSpan);
                         }
                     }
@@ -182,13 +182,13 @@ namespace XData.Compiler {
             ChildSymbol restrictedItemSymbol = restrictedChildSymbol;
             if (restrictedChildSymbol == null) {
                 if (maxOccurrence == 0) {
-                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxOccurrenceCannotBeZeroInExtension), Occurrence.Token);
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxOccurrenceCannotBeZeroInExtension), Occurrence.Token);
                 }
             }
             else {
                 var restrictedKind = restrictedChildSymbol.Kind;
                 if (restrictedKind != Kind) {
-                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ChildKindNotEqualToRestricted, Kind.ToString(),
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ChildKindNotEqualToRestricted, Kind.ToString(),
                         restrictedKind.ToString()), MemberNameNode.TextSpan);
                 }
                 ulong restrictedMinOccurrence = restrictedChildSymbol.IsOptional ? (ulong)0 : 1;
@@ -199,13 +199,13 @@ namespace XData.Compiler {
                     restrictedKind = restrictedItemSymbol.Kind;
                     restrictedMinOccurrence = restrictedListSymbol.MinOccurrence;
                     if (maxOccurrence > restrictedListSymbol.MaxOccurrence) {
-                        ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxOccurrenceNotEqualToOrLessThanRestricted,
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxOccurrenceNotEqualToOrLessThanRestricted,
                             maxOccurrence.ToInvString(), restrictedListSymbol.MaxOccurrence.ToInvString()),
                             Occurrence.Token.IsValid ? Occurrence.Token : MemberNameNode.TextSpan);
                     }
                 }
                 if (minOccurrence < restrictedMinOccurrence) {
-                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MinOccurrenceNotEqualToOrGreaterThanRestricted,
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MinOccurrenceNotEqualToOrGreaterThanRestricted,
                         minOccurrence.ToInvString(), restrictedMinOccurrence.ToInvString()),
                         Occurrence.Token.IsValid ? Occurrence.Token : MemberNameNode.TextSpan);
                 }
@@ -252,22 +252,22 @@ namespace XData.Compiler {
             var fullName = new FullName(null, Name);
             if (restrictedElementSymbol == null) {
                 if (parent.HasIntersection(fullName)) {
-                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AmbiguousElementFullName, fullName.ToString()), NameNode.TextSpan);
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AmbiguousElementFullName, fullName.ToString()), NameNode.TextSpan);
                 }
             }
             else {
                 if (Name != restrictedElementSymbol.FullName.Name) {
-                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ElementNameNotEqualToRestricted,
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ElementNameNotEqualToRestricted,
                         Name, restrictedElementSymbol.FullName.Name), NameNode.TextSpan);
                 }
                 if (IsNullable && !restrictedElementSymbol.IsNullable) {
-                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ElementIsNullableButRestrictedIsNotNullable), Nullable);
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ElementIsNullableButRestrictedIsNotNullable), Nullable);
                 }
             }
             var typeSymbol = (TypeSymbol)Type.CreateSymbol();
             if (restrictedElementSymbol != null) {
                 if (!typeSymbol.IsEqualToOrDeriveFrom(restrictedElementSymbol.Type)) {
-                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.TypeNotEqualToOrDeriveFromRestricted,
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.TypeNotEqualToOrDeriveFromRestricted,
                         typeSymbol.FullName.ToString(), restrictedElementSymbol.Type.FullName.ToString()),
                         TypeQName.TextSpan);
                 }
@@ -295,14 +295,14 @@ namespace XData.Compiler {
                 if (fullNameList != null) {
                     foreach (var fullName in fullNameList) {
                         if (parent.HasIntersection(fullName)) {
-                            ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AmbiguousElementFullName, fullName.ToString()), GlobalElementQName.TextSpan);
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AmbiguousElementFullName, fullName.ToString()), GlobalElementQName.TextSpan);
                         }
                     }
                 }
             }
             else {
                 if (!globalElementSymbol.IsEqualToOrSubstitute(restrictedElementSymbol.ReferencedElement)) {
-                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ElementNotEqualToOrSubstituteRestricted,
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ElementNotEqualToOrSubstituteRestricted,
                         globalElementSymbol.FullName.ToString(), restrictedElementSymbol.ReferencedElement.FullName.ToString()),
                         GlobalElementQName.TextSpan);
                 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using XData.IO.Text;
 
 namespace XData {
     public class XDouble : XAtomType {
@@ -75,14 +76,37 @@ namespace XData {
             return SetDoubleValue(r);
         }
         public override string ToString() {
+            string result;
+            GetString(out result);
+            return result;
+        }
+        private bool GetString(out string result) {
             var value = Value;
             if (double.IsPositiveInfinity(value)) {
-                return "INF";
+                result = "INF";
             }
-            if (double.IsNegativeInfinity(value)) {
-                return "-INF";
+            else if (double.IsNegativeInfinity(value)) {
+                result = "-INF";
             }
-            return value.ToString(NumberFormatInfo.InvariantInfo);
+            else if (double.IsNaN(value)) {
+                result = "NaN";
+            }
+            else {
+                result = value.ToString(NumberFormatInfo.InvariantInfo);
+                return true;
+            }
+            return false;
+        }
+        public override void SaveValue(IndentedStringBuilder isb) {
+            string result;
+            if (GetString(out result)) {
+                isb.Append(result);
+            }
+            else {
+                isb.Append('"');
+                isb.StringBuilder.Append(result);
+                isb.StringBuilder.Append('"');
+            }
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
         new public static readonly AtomTypeInfo ThisInfo = TypeKind.Double.ToAtomTypeInfo(typeof(XDouble), XAtomType.ThisInfo);
@@ -182,14 +206,37 @@ namespace XData {
             return SetSingleValue(r);
         }
         public override string ToString() {
+            string result;
+            GetString(out result);
+            return result;
+        }
+        private bool GetString(out string result) {
             var value = Value;
             if (float.IsPositiveInfinity(value)) {
-                return "INF";
+                result = "INF";
             }
-            if (float.IsNegativeInfinity(value)) {
-                return "-INF";
+            else if (float.IsNegativeInfinity(value)) {
+                result = "-INF";
             }
-            return value.ToString(NumberFormatInfo.InvariantInfo);
+            else if (float.IsNaN(value)) {
+                result = "NaN";
+            }
+            else {
+                result = value.ToString(NumberFormatInfo.InvariantInfo);
+                return true;
+            }
+            return false;
+        }
+        public override void SaveValue(IndentedStringBuilder isb) {
+            string result;
+            if (GetString(out result)) {
+                isb.Append(result);
+            }
+            else {
+                isb.Append('"');
+                isb.StringBuilder.Append(result);
+                isb.StringBuilder.Append('"');
+            }
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
         new public static readonly AtomTypeInfo ThisInfo = TypeKind.Single.ToAtomTypeInfo(typeof(XSingle), XDouble.ThisInfo);

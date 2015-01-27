@@ -10,7 +10,7 @@ namespace XData {
             }
         }
         //
-        internal static TypeInfo GetEffectiveTypeInfo(Context context, ProgramInfo programInfo, QualifiableNameNode typeQName,
+        internal static TypeInfo GetEffectiveTypeInfo(DiagContext context, ProgramInfo programInfo, QualifiableNameNode typeQName,
             TypeInfo declTypeInfo, TextSpan declTypeTextSpan) {
             TypeInfo typeInfo = null;
             if (typeQName.IsValid) {
@@ -35,7 +35,7 @@ namespace XData {
             }
             return effTypeInfo;
         }
-        public bool CheckObjectType(Context context, TypeInfo baseTypeInfo) {
+        public bool CheckObjectType(DiagContext context, TypeInfo baseTypeInfo) {
             var typeInfo = TypeInfo;
             if (!TypeInfo.IsEqualToOrDeriveFrom(baseTypeInfo)) {
                 context.AddErrorDiag(new DiagMsg(DiagCode.TypeNotEqualToOrDeriveFrom,
@@ -44,6 +44,20 @@ namespace XData {
             }
             return true;
         }
+        public void Save(SavingContext context, TypeInfo declTypeInfo) {
+            var typeInfo = TypeInfo;
+            if (typeInfo != declTypeInfo) {
+                context.Append('(');
+                var sb = context.StringBuilder;
+                sb.Append(context.AddUri(typeInfo.FullName.Uri));
+                sb.Append(':');
+                sb.Append(typeInfo.FullName.Name);
+                sb.Append(')');
+            }
+            SaveValue(context);
+        }
+        public abstract void SaveValue(IndentedStringBuilder isb);
+
 
     }
 }

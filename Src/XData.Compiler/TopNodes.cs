@@ -46,7 +46,7 @@ namespace XData.Compiler {
                 foreach (var nsIndicator in nsIndicatorList) {
                     LogicalNamespaceNode logicalNS;
                     if (!nsDict.TryGetValue(nsIndicator.Uri, out logicalNS)) {
-                        ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidIndicatorNamespaceName, nsIndicator.Uri),
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidIndicatorNamespaceName, nsIndicator.Uri),
                             nsIndicator.UriNode.TextSpan);
                     }
                     if (logicalNS.CSNamespaceName == null) {
@@ -54,7 +54,7 @@ namespace XData.Compiler {
                         logicalNS.IsCSNamespaceRef = nsIndicator.IsRef;
                     }
                     else if (logicalNS.IsCSNamespaceRef != nsIndicator.IsRef || logicalNS.CSNamespaceName != nsIndicator.CSNamespaceName) {
-                        ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InconsistentCSharpNamespaceName,
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InconsistentCSharpNamespaceName,
                             logicalNS.IsCSNamespaceRef ? "&" : "=", logicalNS.CSNamespaceName.ToString(), nsIndicator.IsRef ? "&" : "=", nsIndicator.CSNamespaceName.ToString()),
                             nsIndicator.CSNamespaceName.TextSpan);
                     }
@@ -62,7 +62,7 @@ namespace XData.Compiler {
                 }
                 foreach (var logicalNS in nsDict.Values) {
                     if (logicalNS.CSNamespaceName == null) {
-                        ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CSNamespaceNameNotSpecifiedForNamespace, logicalNS.Uri),
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CSNamespaceNameNotSpecifiedForNamespace, logicalNS.Uri),
                             nsIndicatorList[0].TextSpan);
                     }
                 }
@@ -198,7 +198,7 @@ namespace XData.Compiler {
                 for (var i = 0; i < ImportList.Count; ++i) {
                     var import = ImportList[i];
                     if (!nsDict.TryGetValue(import.Uri.Value, out import.LogicalNamespace)) {
-                        ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidImportUri, import.Uri.Value), import.Uri.TextSpan);
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidImportUri, import.Uri.Value), import.Uri.TextSpan);
                     }
                 }
             }
@@ -208,7 +208,7 @@ namespace XData.Compiler {
                 foreach (var thisMember in MemberList) {
                     foreach (var otherMember in otherList) {
                         if (thisMember.Name == otherMember.Name) {
-                            ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateNamespaceMember, otherMember.Name.ToString()),
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateNamespaceMember, otherMember.Name.ToString()),
                                 otherMember.Name.TextSpan);
                         }
                     }
@@ -249,7 +249,7 @@ namespace XData.Compiler {
                         }
                     }
                     if (import == null) {
-                        ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidQualifiableNameAlias, alias.ToString()), alias.TextSpan);
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidQualifiableNameAlias, alias.ToString()), alias.TextSpan);
                     }
                     result = import.Value.LogicalNamespace.TryGetMember(name);
                 }
@@ -263,7 +263,7 @@ namespace XData.Compiler {
                             var member = item.LogicalNamespace.TryGetMember(name);
                             if (member != null) {
                                 if (result != null) {
-                                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AmbiguousNameReference, name.ToString()), name.TextSpan);
+                                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AmbiguousNameReference, name.ToString()), name.TextSpan);
                                 }
                                 result = member;
                             }
@@ -272,21 +272,21 @@ namespace XData.Compiler {
                 }
             }
             if (result == null) {
-                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidNameReference, name.ToString()), name.TextSpan);
+                DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidNameReference, name.ToString()), name.TextSpan);
             }
             return result;
         }
         public TypeNode ResolveAsType(QualifiableNameNode qName) {
             var result = Resolve(qName) as TypeNode;
             if (result == null) {
-                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidTypeNameReference, qName.ToString()), qName.TextSpan);
+                DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidTypeNameReference, qName.ToString()), qName.TextSpan);
             }
             return result;
         }
         public GlobalElementNode ResolveAsElement(QualifiableNameNode qName) {
             var result = Resolve(qName) as GlobalElementNode;
             if (result == null) {
-                ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidElementNameReference, qName.ToString()), qName.TextSpan);
+                DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidElementNameReference, qName.ToString()), qName.TextSpan);
             }
             return result;
         }
@@ -371,7 +371,7 @@ namespace XData.Compiler {
         public IGlobalObjectSymbol CreateSymbol() {
             if (_objectSymbol == null) {
                 if (_isProcessing) {
-                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CircularReferenceDetected), Name.TextSpan);
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CircularReferenceDetected), Name.TextSpan);
                 }
                 _isProcessing = true;
                 var parent = NamespaceAncestor.LogicalNamespace.NamespaceSymbol;

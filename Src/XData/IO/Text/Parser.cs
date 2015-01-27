@@ -10,7 +10,7 @@ namespace XData.IO.Text {
         protected delegate bool NodeGetter<T>(out T node);
         protected delegate bool NodeGetterWithList<T>(List<T> list, out T node);
         protected readonly NodeGetter<SimpleValueNode> _simpleValueGetter;
-        protected void Set(string filePath, TextReader reader, Context context) {
+        protected void Set(string filePath, TextReader reader, DiagContext context) {
             if (filePath == null) {
                 throw new ArgumentNullException("filePath");
             }
@@ -33,7 +33,7 @@ namespace XData.IO.Text {
         private Lexer _lexer;
         private Token? _token;
         protected string _filePath;
-        protected Context _context;
+        protected DiagContext _context;
         protected sealed class ParsingException : Exception { }
         protected static readonly ParsingException _parsingException = new ParsingException();
         protected void ErrorDiagAndThrow(string errMsg, TextSpan textSpan) {
@@ -365,7 +365,7 @@ namespace XData.IO.Text {
     public sealed class Parser : ParserBase {
         [ThreadStatic]
         private static Parser _instance;
-        public static bool Parse(string filePath, TextReader reader, Context context, out ElementNode result) {
+        public static bool Parse(string filePath, TextReader reader, DiagContext context, out ElementNode result) {
             return (_instance ?? (_instance = new Parser())).ParsingUnit(filePath, reader, context, out result);
         }
         private Parser() {
@@ -383,7 +383,7 @@ namespace XData.IO.Text {
             base.Clear();
             _uriAliasingListStack.Clear();
         }
-        private bool ParsingUnit(string filePath, TextReader reader, Context context, out ElementNode result) {
+        private bool ParsingUnit(string filePath, TextReader reader, DiagContext context, out ElementNode result) {
             Set(filePath, reader, context);
             _uriAliasingListStack.Clear();
             try {

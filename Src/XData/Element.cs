@@ -30,7 +30,7 @@ namespace XData {
                 return (ElementInfo)ObjectInfo;
             }
         }
-        internal static CreationResult TrySkippableCreate(Context context, ElementInfo elementInfo, ElementNode elementNode, out XChild result) {
+        internal static CreationResult TrySkippableCreate(DiagContext context, ElementInfo elementInfo, ElementNode elementNode, out XChild result) {
             result = null;
             var effElementInfo = elementInfo.TryGetEffectiveElement(elementNode.FullName);
             if (effElementInfo == null) {
@@ -147,7 +147,7 @@ namespace XData {
         }
 
         //
-        private static bool TryLoadAndValidate<T>(Context context, ElementInfo elementInfo, ElementNode elementNode, out T result) where T : XElement {
+        private static bool TryLoadAndValidate<T>(DiagContext context, ElementInfo elementInfo, ElementNode elementNode, out T result) where T : XElement {
 
 
 

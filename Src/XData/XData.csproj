@@ -47,7 +47,7 @@
     <Compile Include="Diagnostics.cs" />
     <Compile Include="Element.cs" />
     <Compile Include="FullName.cs" />
-    <Compile Include="IO\Text\IndentedTextWriter.cs" />
+    <Compile Include="IndentedTextWriter.cs" />
     <Compile Include="Metadata.cs" />
     <Compile Include="Type.cs" />
     <None Include="Metah.X.cs" />
