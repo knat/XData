@@ -25,48 +25,60 @@ namespace XData {
             result = 0;
             return false;
         }
+
         protected override bool TryValidateCore(Context context) {
-            var simpleTypeInfo = (SimpleTypeInfo)ObjectInfo;
-            var restrictionSet = simpleTypeInfo.ValueRestrictions;
-            if (restrictionSet != null) {
-                var minLength = restrictionSet.MinLength;
-                var maxLength = restrictionSet.MaxLength;
+            return TryValidateFacets(context);
+        }
+        protected bool TryValidateFacets(Context context) {
+            var facets = SimpleTypeInfo.Facets;
+            if (facets != null) {
+                var dMarker = context.MarkDiags();
+                //
+                var minLength = facets.MinLength;
+                var maxLength = facets.MaxLength;
                 if (minLength != null || maxLength != null) {
                     ulong length;
                     if (!TryGetValueLength(out length)) {
                         throw new InvalidOperationException("!TryGetValueLength()");
                     }
-
-                }
-                var n_enumerations = restrictionSet.Enums;
-                if (n_enumerations != null) {
-                    var enumerations = n_enumerations.Value;
-                    var found = false;
-                    foreach (var item in enumerations.Items) {
-                        if (ValueEquals(item.Value)) {
-                            found = true;
-                            break;
+                    if (minLength == maxLength) {
+                        if (length != minLength) {
+                            context.AddErrorDiag(new DiagMsg(DiagCode.LengthNotEqualTo,
+                                length.ToInvString(), minLength.Value.ToInvString()), this);
                         }
                     }
-                    if (!found) {
-
+                    else if (length < minLength) {
+                        context.AddErrorDiag(new DiagMsg(DiagCode.LengthNotGreaterThanOrEqualTo,
+                            length.ToInvString(), minLength.Value.ToInvString()), this);
+                    }
+                    else if (length > maxLength) {
+                        context.AddErrorDiag(new DiagMsg(DiagCode.LengthNotLessThanOrEqualTo,
+                            length.ToInvString(), maxLength.Value.ToInvString()), this);
                     }
                 }
+                TryValidateFacetsEx(context, facets);
+                return !dMarker.HasErrors;
             }
             return true;
         }
+        protected virtual void TryValidateFacetsEx(Context context, FacetSetInfo facets) { }
+        public virtual void WriteValue(IndentedTextWriter writer) {
+            writer.Write(ToString());
+        }
 
-        //public SimpleTypeInfo SimpleTypeInfo {
-        //    get {
-        //        return (SimpleTypeInfo)ObjectInfo;
-        //    }
-        //}
+        public SimpleTypeInfo SimpleTypeInfo {
+            get {
+                return (SimpleTypeInfo)ObjectInfo;
+            }
+        }
         public static readonly SimpleTypeInfo ThisInfo = new SimpleTypeInfo(typeof(XSimpleType), true, TypeKind.SimpleType.ToFullName(), null, null);
         //
         internal static bool TryCreate(Context context, ProgramInfo programInfo, SimpleTypeInfo simpleTypeInfo,
             SimpleValueNode simpleValueNode, out XSimpleType result) {
             result = null;
-            var effSimpleTypeInfo = (SimpleTypeInfo)GetTypeInfo(context, programInfo, simpleValueNode.TypeQName, simpleTypeInfo, simpleValueNode.TextSpan);
+            var simpleValueTextSpan = simpleValueNode.TextSpan;
+            var effSimpleTypeInfo = (SimpleTypeInfo)GetEffectiveTypeInfo(context, programInfo, simpleValueNode.TypeQName,
+                simpleTypeInfo, simpleValueTextSpan);
             if (effSimpleTypeInfo == null) {
                 return false;
             }
@@ -74,7 +86,7 @@ namespace XData {
             if (atomTypeInfo != null) {
                 var atomicValueNode = simpleValueNode.Atom;
                 if (!atomicValueNode.IsValid) {
-                    //context.AddErrorDiagnostic()
+                    context.AddErrorDiag(new DiagMsg(DiagCode.TypeRequiresAtomValue, effSimpleTypeInfo.FullName.ToString()), simpleValueTextSpan);
                     return false;
                 }
                 XAtomType atomicType;
@@ -86,7 +98,7 @@ namespace XData {
             else {
                 var listNode = simpleValueNode.List;
                 if (listNode == null) {
-                    //context.AddErrorDiagnostic()
+                    context.AddErrorDiag(new DiagMsg(DiagCode.TypeRequiresListValue, effSimpleTypeInfo.FullName.ToString()), simpleValueTextSpan);
                     return false;
                 }
                 XListType listType;

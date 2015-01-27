@@ -162,15 +162,15 @@ namespace XData.Compiler {
     public class SimpleTypeSymbol : TypeSymbol {
         public SimpleTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
             NameSyntax csBaseFullName, NameSyntax[] csItfNames, FullName fullName, TypeKind kind, SimpleTypeSymbol baseType,
-            ValueFacetSetInfo valueRestrictions)
+            FacetSetInfo valueRestrictions)
             : base(parent, csName, isAbstract, isSealed, csBaseFullName, csItfNames, fullName, kind, baseType) {
             ValueRestrictions = valueRestrictions;
         }
-        public readonly ValueFacetSetInfo ValueRestrictions;
+        public readonly FacetSetInfo ValueRestrictions;
     }
     public sealed class AtomTypeSymbol : SimpleTypeSymbol {
         public AtomTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
-            FullName fullName, TypeKind kind, SimpleTypeSymbol baseType, ValueFacetSetInfo valueRestrictions,
+            FullName fullName, TypeKind kind, SimpleTypeSymbol baseType, FacetSetInfo valueRestrictions,
             TypeSyntax valueCSFullName)
             : base(parent, csName, isAbstract, isSealed, baseType.CSFullName, null, fullName, kind, baseType, valueRestrictions) {
             ValueCSFullName = valueCSFullName;
@@ -179,7 +179,7 @@ namespace XData.Compiler {
     }
     public sealed class ListTypeSymbol : SimpleTypeSymbol {
         public ListTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
-            FullName fullName, SimpleTypeSymbol baseType, ValueFacetSetInfo valueRestrictions,
+            FullName fullName, SimpleTypeSymbol baseType, FacetSetInfo valueRestrictions,
             NameSyntax[] csItfNames, SimpleTypeSymbol itemType)
             : base(parent, csName, isAbstract, isSealed, baseType.CSFullName, csItfNames, fullName, TypeKind.ListType, baseType, valueRestrictions) {
             ItemType = itemType;
@@ -238,34 +238,43 @@ namespace XData.Compiler {
 
     public abstract class ChildSymbol : ObjectSymbol {
         protected ChildSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, bool isCSOverride, NameSyntax csBaseFullName, NameSyntax[] csItfNames,
-            ChildKind kind, string displayName, string memberName, bool isOptional, int order, ChildSymbol restrictedChild) :
+            ChildKind kind, string displayName, string memberName, ulong minOccurrence, ulong maxOccurrence, int order, ChildSymbol restrictedChild) :
                 base(parent, csName, isAbstract, isSealed, isCSOverride, csBaseFullName, csItfNames) {
             Kind = kind;
             DisplayName = displayName;
             MemberName = memberName;
-            _isOptional = isOptional;
+            MinOccurrence = minOccurrence;
+            MaxOccurrence = maxOccurrence;
             Order = order;
             RestrictedChild = restrictedChild;
         }
         public readonly ChildKind Kind;
         public readonly string DisplayName;
         public readonly string MemberName;
-        private readonly bool _isOptional;
-        public virtual bool IsOptional { get { return _isOptional; } }
+        public readonly ulong MinOccurrence;
+        public readonly ulong MaxOccurrence;
+        public virtual bool IsOptional {
+            get {
+                return MinOccurrence == 0;
+            }
+        }
         public readonly int Order;
         public readonly ChildSymbol RestrictedChild;
-        //public abstract bool HasIntersection(FullName fullName, bool forSeq);
+        public bool HasIntersection(FullName fullName) {
+            return HasIntersection(fullName, false);
+        }
+        public abstract bool HasIntersection(FullName fullName, bool forChoice);
     }
 
     public sealed class ElementSymbol : ChildSymbol, IGlobalObjectSymbol {
         public ElementSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
-            ChildKind kind, string displayName, string memberName, bool isOptional, int order, ElementSymbol restrictedElement,
+            ChildKind kind, string displayName, string memberName, ulong minOccurrence, ulong maxOccurrence, int order, ElementSymbol restrictedElement,
             FullName fullName, bool isNullable, TypeSymbol type, ElementSymbol referencedElement, ElementSymbol substitutedElement
              )
             : base(parent, csName, isAbstract, isSealed, restrictedElement != null,
                  restrictedElement != null ? restrictedElement.CSFullName : substitutedElement != null ? substitutedElement.CSFullName :
                     kind == ChildKind.GlobalElementReference ? CSEX.XElementReferenceName : CSEX.XElementName,
-                 null, kind, displayName, memberName, isOptional, order, restrictedElement) {
+                 null, kind, displayName, memberName, minOccurrence, maxOccurrence, order, restrictedElement) {
             FullName = fullName;
             IsNullable = isNullable;
             Type = type;
@@ -307,27 +316,30 @@ namespace XData.Compiler {
             }
             return false;
         }
-        //public override bool HasIntersection(FullName fullName, bool forSeq) {
-        //    if (IsLocal) {
-        //        return FullName == fullName;
-        //    }
-        //    return ReferencedElement.GlobalElementNode.HasIntersection(fullName);
-        //}
+        public override bool HasIntersection(FullName fullName, bool forChoice) {
+            if (MaxOccurrence > MinOccurrence || forChoice) {
+                if (IsLocal) {
+                    return FullName == fullName;
+                }
+                return ReferencedElement.GlobalElementNode.HasIntersection(fullName);
+            }
+            return false;
+        }
     }
     public abstract class ChildContainerSymbol : ChildSymbol {
-        protected ChildContainerSymbol(ObjectSymbol parent, string csName, bool isCSOverride, NameSyntax csBaseFullName, NameSyntax[] csItfNames,
-            ChildKind kind, string displayName, string memberName, bool isOptional, int order, ChildContainerSymbol restrictedChildContainer)
-            : base(parent, csName, false, false, isCSOverride, csBaseFullName, csItfNames, kind, displayName, memberName, isOptional, order, restrictedChildContainer) {
+        public ChildContainerSymbol(ObjectSymbol parent, string csName, bool isCSOverride, NameSyntax csBaseFullName, NameSyntax[] csItfNames,
+            ChildKind kind, string displayName, string memberName, ulong minOccurrence, ulong maxOccurrence, int order, ChildContainerSymbol restrictedChildContainer)
+            : base(parent, csName, false, false, isCSOverride, csBaseFullName, csItfNames, kind, displayName, memberName, minOccurrence, maxOccurrence, order, restrictedChildContainer) {
         }
     }
 
     public sealed class ChildSetSymbol : ChildContainerSymbol {
         public ChildSetSymbol(ObjectSymbol parent, string csName,
-            ChildKind kind, string displayName, string memberName, bool isOptional, int order, ChildSetSymbol restrictedChildSet,
+            ChildKind kind, string displayName, string memberName, ulong minOccurrence, ulong maxOccurrence, int order, ChildSetSymbol restrictedChildSet,
             bool isRoot, ChildSetSymbol baseChildSet)
             : base(parent, csName, restrictedChildSet != null || baseChildSet != null,
                  restrictedChildSet != null ? restrictedChildSet.CSFullName : baseChildSet != null ? baseChildSet.CSFullName : CSEX.XChildSetName, null,
-                 kind, displayName, memberName, isOptional, order, restrictedChildSet) {
+                 kind, displayName, memberName, minOccurrence, maxOccurrence, order, restrictedChildSet) {
             IsRoot = isRoot;
             BaseChildSet = baseChildSet;
             ChildList = new List<ChildSymbol>();
@@ -382,43 +394,61 @@ namespace XData.Compiler {
                 return Kind == ChildKind.Choice;
             }
         }
-        //public override bool HasIntersection(FullName fullName) {
-        //    if (IsSequence) {
-        //        for (var i = ChildList.Count - 1; i >= 0; --i) {
-        //            var child = ChildList[i];
-        //            if (child.IsOptional || child.Kind == ChildKind.List) {
-
-        //            }
-        //        }
-        //    }
-        //    else {
-        //        //foreach (var child in ChildList) {
-        //        //    if (child.HasIntersection(fullName)) {
-        //        //        return true;
-        //        //    }
-        //        //}
-        //    }
-        //    return false;
-        //}
+        public override bool HasIntersection(FullName fullName, bool forChoice) {
+            if (IsSequence) {
+                if (forChoice) {
+                    foreach (var child in ChildList) {
+                        if (child.HasIntersection(fullName, true)) {
+                            return true;
+                        }
+                        if (child.MinOccurrence == child.MaxOccurrence) {
+                            break;
+                        }
+                    }
+                    return false;
+                }
+                else {
+                    for (var i = ChildList.Count - 1; i >= 0; --i) {
+                        var child = ChildList[i];
+                        if (child.HasIntersection(fullName, false)) {
+                            return true;
+                        }
+                        if (child.MinOccurrence == child.MaxOccurrence) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            else {//choice
+                foreach (var child in ChildList) {
+                    if (child.HasIntersection(fullName, true)) {
+                        return true;
+                    }
+                }
+            }
+            if (!forChoice) {
+                var parentChildSet = Parent as ChildSetSymbol;
+                if (parentChildSet != null) {
+                    return parentChildSet.HasIntersection(fullName, false);
+                }
+            }
+            return false;
+        }
     }
     public sealed class ChildListSymbol : ChildContainerSymbol {
         public ChildListSymbol(ChildSetSymbol parent, string csName,
-            string displayName, string memberName, bool isOptional, int order, ChildListSymbol restrictedChildList,
-            ulong minOccurrence, ulong maxOccurrence, ChildSymbol item)
+            string displayName, string memberName, ulong minOccurrence, ulong maxOccurrence, int order, ChildListSymbol restrictedChildList,
+             ChildSymbol item)
             : base(parent, csName, restrictedChildList != null,
                 restrictedChildList != null ? restrictedChildList.CSFullName : CSEX.XChildListOf(item.CSFullName),
                 restrictedChildList != null ? CSEX.IListAndIReadOnlyListOf(item.CSFullName) : null, ChildKind.List,
-                displayName, memberName, isOptional, order, restrictedChildList) {
-            MinOccurrence = minOccurrence;
-            MaxOccurrence = maxOccurrence;
+                displayName, memberName, minOccurrence, maxOccurrence, order, restrictedChildList) {
             Item = item;
         }
-        public readonly ulong MinOccurrence;
-        public readonly ulong MaxOccurrence;
         public readonly ChildSymbol Item;
-        //public override bool HasIntersection(FullName fullName) {
-        //    return Item.HasIntersection(fullName);
-        //}
+        public override bool HasIntersection(FullName fullName, bool forChoice) {
+            return Item.HasIntersection(fullName, forChoice);
+        }
     }
 
 

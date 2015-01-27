@@ -47,17 +47,57 @@ namespace XData {
         public static string InvFormat(this string format, params string[] args) {
             return AcquireStringBuilder().AppendFormat(CultureInfo.InvariantCulture, format, args).ToStringAndRelease();
         }
+        //
+        public static string ToInvString(this decimal i) {
+            return i.ToString(CultureInfo.InvariantCulture);
+        }
+        public static string ToInvString(this long i) {
+            return i.ToString(CultureInfo.InvariantCulture);
+        }
         public static string ToInvString(this int i) {
+            return i.ToString(CultureInfo.InvariantCulture);
+        }
+        public static string ToInvString(this short i) {
+            return i.ToString(CultureInfo.InvariantCulture);
+        }
+        public static string ToInvString(this sbyte i) {
             return i.ToString(CultureInfo.InvariantCulture);
         }
         public static string ToInvString(this ulong i) {
             return i.ToString(CultureInfo.InvariantCulture);
         }
+        public static string ToInvString(this uint i) {
+            return i.ToString(CultureInfo.InvariantCulture);
+        }
+        public static string ToInvString(this ushort i) {
+            return i.ToString(CultureInfo.InvariantCulture);
+        }
         public static string ToInvString(this byte i) {
             return i.ToString(CultureInfo.InvariantCulture);
         }
+        public static bool TryToInvDecimal(this string s, out decimal result) {
+            return decimal.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, NumberFormatInfo.InvariantInfo, out result);
+        }
+        public static bool TryToInvInt64(this string s, out long result) {
+            return long.TryParse(s, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
+        }
+        public static bool TryToInvInt32(this string s, out int result) {
+            return int.TryParse(s, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
+        }
+        public static bool TryToInvInt16(this string s, out short result) {
+            return short.TryParse(s, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
+        }
+        public static bool TryToInvSByte(this string s, out sbyte result) {
+            return sbyte.TryParse(s, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
+        }
         public static bool TryToInvUInt64(this string s, out ulong result) {
             return ulong.TryParse(s, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
+        }
+        public static bool TryToInvUInt32(this string s, out uint result) {
+            return uint.TryParse(s, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
+        }
+        public static bool TryToInvUInt16(this string s, out ushort result) {
+            return ushort.TryParse(s, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
         }
         public static bool TryToInvByte(this string s, out byte result) {
             return byte.TryParse(s, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);

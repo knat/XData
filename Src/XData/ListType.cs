@@ -5,11 +5,20 @@ using XData.IO.Text;
 
 namespace XData {
     public abstract class XListType : XSimpleType {
+        internal abstract void InternalAdd(XSimpleType item);
+        public ListTypeInfo ListTypeInfo {
+            get {
+                return (ListTypeInfo)ObjectInfo;
+            }
+        }
+        new public static readonly ListTypeInfo ThisInfo = new ListTypeInfo(typeof(XListType), true, TypeKind.ListType.ToFullName(),
+            XSimpleType.ThisInfo, null, null);
         internal static bool TryCreate(Context context, ProgramInfo programInfo, ListTypeInfo listTypeInfo,
             NodeList<SimpleValueNode> listNode, out XListType result) {
             result = null;
-            var itemInfo = listTypeInfo.ItemType;
             var listType = listTypeInfo.CreateInstance<XListType>();
+            listType.TextSpan = listNode.OpenToken;
+            var itemInfo = listTypeInfo.ItemType;
             foreach (var itemNode in listNode) {
                 XSimpleType item;
                 if (!TryCreate(context, programInfo, itemInfo, itemNode, out item)) {
@@ -17,16 +26,12 @@ namespace XData {
                 }
                 listType.InternalAdd(item);
             }
-            if (!listType.TryValidate(context)) {
+            if (!listType.TryValidateFacets(context)) {
                 return false;
             }
             result = listType;
             return true;
         }
-        internal abstract void InternalAdd(XSimpleType item);
-
-        new public static readonly ListTypeInfo ThisInfo = new ListTypeInfo(typeof(XListType), true, TypeKind.ListType.ToFullName(),
-            XSimpleType.ThisInfo, null, null);
     }
     public abstract class XListType<T> : XListType, IList<T>, IReadOnlyList<T> where T : XSimpleType {
         protected XListType() {
@@ -96,7 +101,7 @@ namespace XData {
                 return "#[]";
             }
             if (count == 1) {
-                return "[#" + _itemList[0].ToString() + "]";
+                return "#[" + _itemList[0].ToString() + "]";
             }
             var sb = Extensions.AcquireStringBuilder();
             sb.Append("#[");
@@ -186,6 +191,38 @@ namespace XData {
             for (var i = 0; i < count; ++i) {
                 array[arrayIndex++] = _itemList[i] as U;
             }
+        }
+        protected override bool TryValidateCore(Context context) {
+            if (!base.TryValidateCore(context)) {
+                return false;
+            }
+            var dMarker = context.MarkDiags();
+            var itemTypeInfo = ListTypeInfo.ItemType;
+            var count = _itemList.Count;
+            for (var i = 0; i < count; ++i) {
+                var item = _itemList[i];
+                if ((object)item == null) {
+                    context.AddErrorDiag(new DiagMsg(DiagCode.ListItemIsNull, i.ToInvString()), this);
+                }
+                else if (item.CheckObjectType(context, itemTypeInfo)) {
+                    item.TryValidate(context);
+                }
+            }
+            return !dMarker.HasErrors;
+        }
+        public override void WriteValue(IndentedTextWriter writer) {
+            writer.Write("#[");
+            var count = _itemList.Count;
+            for (var i = 0; i < count; ++i) {
+                if (i > 0) {
+                    writer.Write(' ');
+                }
+                var item = _itemList[i];
+                if (item != null) {
+                    item.WriteValue(writer);
+                }
+            }
+            writer.Write(']');
         }
     }
 }

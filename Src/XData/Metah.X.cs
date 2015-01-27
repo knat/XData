@@ -85,7 +85,7 @@ namespace Metah.X {
         SimpleTypeValueNotMatchWithAnyUnionMemberTypes,
         CannotResolveFullNameValue,
         InvalidSimpleTypeLiteral,
-        //facet
+        //facets
         LengthNotEqualTo,
         LengthNotGreaterThanOrEqualTo,
         LengthNotLessThanOrEqualTo,

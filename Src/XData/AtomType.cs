@@ -53,35 +53,120 @@ namespace XData {
             }
             return false;
         }
-        protected override sealed bool TryValidateCore(Context context) {
-            if (!base.TryValidateCore(context)) {
-                return false;
+        public virtual bool TryGetValuePrecisionAndScale(out byte precision, out byte scale) {
+            precision = 0;
+            scale = 0;
+            return false;
+        }
+        protected override sealed void TryValidateFacetsEx(Context context, FacetSetInfo facets) {
+            var precision = facets.Precision;
+            var scale = facets.Scale;
+            if (precision != null || scale != null) {
+                byte valuePrecision, valueScale;
+                if (!TryGetValuePrecisionAndScale(out valuePrecision, out valueScale)) {
+                    throw new InvalidOperationException("!TryGetValuePrecisionAndScale()");
+                }
+                if (precision != null) {
+                    if (valuePrecision > precision) {
+                        context.AddErrorDiag(new DiagMsg(DiagCode.PrecisionNotLessThanOrEqualTo,
+                            valuePrecision.ToInvString(), precision.Value.ToInvString()), this);
+                    }
+                }
+                if (scale != null) {
+                    if (valueScale > scale) {
+                        context.AddErrorDiag(new DiagMsg(DiagCode.ScaleNotLessThanOrEqualTo,
+                            valueScale.ToInvString(), scale.Value.ToInvString()), this);
+                    }
+                }
             }
-            var atomTypeInfo = (AtomTypeInfo)ObjectInfo;
-            var restrictionSet = atomTypeInfo.ValueRestrictions;
-            if (restrictionSet != null) {
-
+            string str = null;
+            if (facets.MinValue != null) {
+                var minValue = facets.MinValue.Value;
+                int result;
+                if (!TryCompareValueTo(minValue.ValueText.Value, out result)) {
+                    throw new InvalidOperationException("!TryCompareValueTo()");
+                }
+                if (minValue.IsInclusive) {
+                    if (result < 0) {
+                        context.AddErrorDiag(new DiagMsg(DiagCode.ValueNotGreaterThanOrEqualTo,
+                            GetString(ref str), minValue.ValueText.Text), this);
+                    }
+                }
+                else if (result <= 0) {
+                    context.AddErrorDiag(new DiagMsg(DiagCode.ValueNotGreaterThan,
+                        GetString(ref str), minValue.ValueText.Text), this);
+                }
             }
-            return true;
+            if (facets.MaxValue != null) {
+                var maxValue = facets.MaxValue.Value;
+                int result;
+                if (!TryCompareValueTo(maxValue.ValueText.Value, out result)) {
+                    throw new InvalidOperationException("!TryCompareValueTo()");
+                }
+                if (maxValue.IsInclusive) {
+                    if (result > 0) {
+                        context.AddErrorDiag(new DiagMsg(DiagCode.ValueNotLessThanOrEqualTo,
+                            GetString(ref str), maxValue.ValueText.Text), this);
+                    }
+                }
+                else if (result >= 0) {
+                    context.AddErrorDiag(new DiagMsg(DiagCode.ValueNotLessThan,
+                        GetString(ref str), maxValue.ValueText.Text), this);
+                }
+            }
+            if (facets.Enum != null) {
+                var @enum = facets.Enum.Value;
+                var found = false;
+                foreach (var item in @enum.Items) {
+                    if (ValueEquals(item.Value)) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    context.AddErrorDiag(new DiagMsg(DiagCode.ValueNotInEnumeration,
+                        GetString(ref str), @enum.TotalText), this);
+                }
+            }
+            if (facets.Patterns != null) {
+                GetString(ref str);
+                foreach (var pattern in facets.Patterns) {
+                    var match = pattern.Regex.Match(str);
+                    if (!(match.Success && match.Index == 0 && match.Length == str.Length)) {
+                        context.AddErrorDiag(new DiagMsg(DiagCode.LiteralNotMatchWithPattern, str, pattern.Pattern), this);
+                    }
+                }
+            }
+        }
+        private string GetString(ref string str) {
+            if (str == null) {
+                str = ToString();
+            }
+            return str;
         }
         internal static bool TryCreate(Context context, AtomTypeInfo atomTypeInfo,
             AtomValueNode atomValueNode, out XAtomType result) {
             result = null;
             var atomType = atomTypeInfo.CreateInstance<XAtomType>();
-            if (!atomType.TryParseAndSet(atomValueNode.Value)) {
-                //context.AddErrorDiagnostic()
+            atomType.TextSpan = atomValueNode.TextSpan;
+            var literal = atomValueNode.Value;
+            if (!atomType.TryParseAndSet(literal)) {
+                context.AddErrorDiag(new DiagMsg(DiagCode.InvalidAtomTypeLiteral, atomTypeInfo.Kind.ToString(), literal), atomValueNode.TextSpan);
                 return false;
             }
-            if (!atomType.TryValidate(context)) {
+            if (!atomType.TryValidateFacets(context)) {
                 return false;
             }
             result = atomType;
             return true;
         }
-
+        public AtomTypeInfo AtomTypeInfo {
+            get {
+                return (AtomTypeInfo)ObjectInfo;
+            }
+        }
         new public static readonly AtomTypeInfo ThisInfo = new AtomTypeInfo(typeof(XAtomType), true, TypeKind.AtomType.ToFullName(),
             XSimpleType.ThisInfo, null, TypeKind.AtomType);
-
     }
 
 }

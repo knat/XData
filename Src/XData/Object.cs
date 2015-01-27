@@ -1,9 +1,24 @@
 ﻿using System;
+using XData.IO.Text;
 
 namespace XData {
     public abstract class XObject {
         protected XObject() { }
         private XObject _parent;
+        private TextSpan _textSpan;
+        public TextSpan TextSpan {
+            get {
+                return _textSpan;
+            }
+            set {
+                _textSpan = value;
+            }
+        }
+        public bool HasTextSpan {
+            get {
+                return _textSpan.IsValid;
+            }
+        }
         public XObject Parent {
             get {
                 return _parent;
@@ -64,12 +79,6 @@ namespace XData {
         //    return (T)DeepClone();
         //}
         public abstract ObjectInfo ObjectInfo { get; }
-        //public static readonly ObjectInfo ThisInfo = new ObjectInfo(typeof(XObject));
-        //public bool IsSpecific {
-        //    get {
-        //        return ObjectInfo != null;
-        //    }
-        //}
         public bool TryValidate(Context context) {
             if (context == null) {
                 throw new ArgumentNullException("context");

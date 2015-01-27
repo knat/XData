@@ -61,15 +61,42 @@ namespace XData {
             result = 0;
             return false;
         }
+        public override bool TryGetValuePrecisionAndScale(out byte precision, out byte scale) {
+            precision = 0;
+            scale = 0;
+            var inFraction = false;
+            var inLeadingZero = true;
+            foreach (var ch in Value.ToInvString()) {
+                if (inFraction) {
+                    ++precision;
+                    ++scale;
+                }
+                else if (ch == '.') {
+                    inLeadingZero = false;
+                    inFraction = true;
+                }
+                else if (ch >= '1' && ch <= '9') {
+                    inLeadingZero = false;
+                    ++precision;
+                }
+                else if (ch == '0' && !inLeadingZero) {
+                    ++precision;
+                }
+            }
+            if (inLeadingZero) {
+                ++precision;
+            }
+            return true;
+        }
         public override bool TryParseAndSet(string literal) {
             decimal r;
-            if (!decimal.TryParse(literal, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, NumberFormatInfo.InvariantInfo, out r)) {
+            if (!literal.TryToInvDecimal(out r)) {
                 return false;
             }
             return SetDecimalValue(r, true);
         }
         public override string ToString() {
-            return Value.ToString(NumberFormatInfo.InvariantInfo);
+            return Value.ToInvString();
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
         new public static readonly AtomTypeInfo ThisInfo = TypeKind.Decimal.ToAtomTypeInfo(typeof(XDecimal), XAtomType.ThisInfo);
@@ -147,13 +174,13 @@ namespace XData {
         }
         public override bool TryParseAndSet(string literal) {
             long r;
-            if (!long.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out r)) {
+            if (!literal.TryToInvInt64(out r)) {
                 return false;
             }
             return SetInt64Value(r, true);
         }
         public override string ToString() {
-            return Value.ToString(NumberFormatInfo.InvariantInfo);
+            return Value.ToInvString();
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
         new public static readonly AtomTypeInfo ThisInfo = TypeKind.Int64.ToAtomTypeInfo(typeof(XInt64), XDecimal.ThisInfo);
@@ -243,13 +270,13 @@ namespace XData {
         }
         public override bool TryParseAndSet(string literal) {
             int r;
-            if (!int.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out r)) {
+            if (!literal.TryToInvInt32(out r)) {
                 return false;
             }
             return SetInt32Value(r, true);
         }
         public override string ToString() {
-            return Value.ToString(NumberFormatInfo.InvariantInfo);
+            return Value.ToInvString();
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
         new public static readonly AtomTypeInfo ThisInfo = TypeKind.Int32.ToAtomTypeInfo(typeof(XInt32), XInt64.ThisInfo);
@@ -351,13 +378,13 @@ namespace XData {
         }
         public override bool TryParseAndSet(string literal) {
             short r;
-            if (!short.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out r)) {
+            if (!literal.TryToInvInt16(out r)) {
                 return false;
             }
             return SetInt16Value(r, true);
         }
         public override string ToString() {
-            return Value.ToString(NumberFormatInfo.InvariantInfo);
+            return Value.ToInvString();
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
         new public static readonly AtomTypeInfo ThisInfo = TypeKind.Int16.ToAtomTypeInfo(typeof(XInt16), XInt32.ThisInfo);
@@ -471,13 +498,13 @@ namespace XData {
         }
         public override bool TryParseAndSet(string literal) {
             sbyte r;
-            if (!sbyte.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out r)) {
+            if (!literal.TryToInvSByte(out r)) {
                 return false;
             }
             return SetSByteValue(r, true);
         }
         public override string ToString() {
-            return Value.ToString(NumberFormatInfo.InvariantInfo);
+            return Value.ToInvString();
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
         new public static readonly AtomTypeInfo ThisInfo = TypeKind.SByte.ToAtomTypeInfo(typeof(XSByte), XInt16.ThisInfo);
@@ -556,13 +583,13 @@ namespace XData {
         }
         public override bool TryParseAndSet(string literal) {
             ulong r;
-            if (!ulong.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out r)) {
+            if (!literal.TryToInvUInt64(out r)) {
                 return false;
             }
             return SetUInt64Value(r, true);
         }
         public override string ToString() {
-            return Value.ToString(NumberFormatInfo.InvariantInfo);
+            return Value.ToInvString();
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
         new public static readonly AtomTypeInfo ThisInfo = TypeKind.UInt64.ToAtomTypeInfo(typeof(XUInt64), XDecimal.ThisInfo);
@@ -652,13 +679,13 @@ namespace XData {
         }
         public override bool TryParseAndSet(string literal) {
             uint r;
-            if (!uint.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out r)) {
+            if (!literal.TryToInvUInt32(out r)) {
                 return false;
             }
             return SetUInt32Value(r, true);
         }
         public override string ToString() {
-            return Value.ToString(NumberFormatInfo.InvariantInfo);
+            return Value.ToInvString();
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
         new public static readonly AtomTypeInfo ThisInfo = TypeKind.UInt32.ToAtomTypeInfo(typeof(XUInt32), XUInt64.ThisInfo);
@@ -760,13 +787,13 @@ namespace XData {
         }
         public override bool TryParseAndSet(string literal) {
             ushort r;
-            if (!ushort.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out r)) {
+            if (!literal.TryToInvUInt16(out r)) {
                 return false;
             }
             return SetUInt16Value(r, true);
         }
         public override string ToString() {
-            return Value.ToString(NumberFormatInfo.InvariantInfo);
+            return Value.ToInvString();
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
         new public static readonly AtomTypeInfo ThisInfo = TypeKind.UInt16.ToAtomTypeInfo(typeof(XUInt16), XUInt32.ThisInfo);
@@ -880,13 +907,13 @@ namespace XData {
         }
         public override bool TryParseAndSet(string literal) {
             byte r;
-            if (!byte.TryParse(literal, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out r)) {
+            if (!literal.TryToInvByte(out r)) {
                 return false;
             }
             return SetByteValue(r, true);
         }
         public override string ToString() {
-            return Value.ToString(NumberFormatInfo.InvariantInfo);
+            return Value.ToInvString();
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
         new public static readonly AtomTypeInfo ThisInfo = TypeKind.Byte.ToAtomTypeInfo(typeof(XByte), XUInt16.ThisInfo);

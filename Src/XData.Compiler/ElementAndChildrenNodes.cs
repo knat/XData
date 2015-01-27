@@ -22,7 +22,7 @@ namespace XData.Compiler {
             }
         }
         public bool HasIntersection(FullName fullName) {
-            if (FullName == fullName && !IsAbstract) {
+            if (!IsAbstract && FullName == fullName) {
                 return true;
             }
             if (_directSubstitutorList != null) {
@@ -33,6 +33,16 @@ namespace XData.Compiler {
                 }
             }
             return false;
+        }
+        public void GetNonAbstractFullNames(ref List<FullName> list) {
+            if (!IsAbstract) {
+                Extensions.CreateAndAdd(ref list, FullName);
+            }
+            if (_directSubstitutorList != null) {
+                foreach (var i in _directSubstitutorList) {
+                    i.GetNonAbstractFullNames(ref list);
+                }
+            }
         }
         public override void Resolve() {
             if (SubstitutedGlobalElementQName.IsValid) {
@@ -66,7 +76,7 @@ namespace XData.Compiler {
                         TypeQName.TextSpan);
                 }
             }
-            return new ElementSymbol(parent, csName, isAbstract, isSealed, ChildKind.GlobalElement, fullName.ToString(), null, false, -1, null, fullName,
+            return new ElementSymbol(parent, csName, isAbstract, isSealed, ChildKind.GlobalElement, fullName.ToString(), null, 1, 1, -1, null, fullName,
                 IsNullable, typeSymbol, null, substitutedElementSymbol) { GlobalElementNode = this };
         }
     }
@@ -85,7 +95,7 @@ namespace XData.Compiler {
             var baseChildSymbolList = baseChildSetSymbol != null ? baseChildSetSymbol.ChildList : null;
             var nextChildOrder = baseChildSetSymbol != null ? baseChildSetSymbol.NextChildOrder : 0;
             var displayNameBase = parent.FullName.ToString() + ".{}";
-            var childSetSymbol = new ChildSetSymbol(parent, "CLS_Children", ChildKind.Sequence, displayNameBase, null, false, -1, null,
+            var childSetSymbol = new ChildSetSymbol(parent, "CLS_Children", ChildKind.Sequence, displayNameBase, null, 1, 1, -1, null,
                 true, baseChildSetSymbol);
             if (baseChildSymbolList != null) {
                 childSetSymbol.ChildList.AddRange(baseChildSymbolList);
@@ -201,16 +211,15 @@ namespace XData.Compiler {
                 }
             }
             var memberName = MemberName;
-            var ipOptional = minOccurrence == 0;
             var displayName = displayNameBase + "." + memberName;
-            var childSymbol = CreateSymbolCore(parent, restrictedItemSymbol, ipOptional, order,
+            var childSymbol = CreateSymbolCore(parent, restrictedItemSymbol, order,
                 displayName, (isList ? "CLSITEM_" : "CLS_") + memberName);
             if (!isList) return childSymbol;
-            return new ChildListSymbol(parent, "CLS_" + memberName, displayName, memberName, ipOptional,
-                order, (ChildListSymbol)restrictedChildSymbol, minOccurrence, maxOccurrence, childSymbol);
+            return new ChildListSymbol(parent, "CLS_" + memberName, displayName, memberName, minOccurrence, maxOccurrence,
+                order, (ChildListSymbol)restrictedChildSymbol, childSymbol);
         }
         protected abstract ChildSymbol CreateSymbolCore(ChildSetSymbol parent, ChildSymbol restrictedChildSymbol,
-            bool isOptional, int order, string displayName, string csName);
+            int order, string displayName, string csName);
 
     }
     public abstract class MemberElementNode : MemberChildNode {
@@ -238,10 +247,15 @@ namespace XData.Compiler {
             Type = NamespaceAncestor.ResolveAsType(TypeQName);
         }
         protected override ChildSymbol CreateSymbolCore(ChildSetSymbol parent, ChildSymbol restrictedChildSymbol,
-            bool isOptional, int order, string displayName, string csName) {
-            var typeSymbol = (TypeSymbol)Type.CreateSymbol();
+            int order, string displayName, string csName) {
             var restrictedElementSymbol = (ElementSymbol)restrictedChildSymbol;
-            if (restrictedElementSymbol != null) {
+            var fullName = new FullName(null, Name);
+            if (restrictedElementSymbol == null) {
+                if (parent.HasIntersection(fullName)) {
+                    ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AmbiguousElementFullName, fullName.ToString()), NameNode.TextSpan);
+                }
+            }
+            else {
                 if (Name != restrictedElementSymbol.FullName.Name) {
                     ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ElementNameNotEqualToRestricted,
                         Name, restrictedElementSymbol.FullName.Name), NameNode.TextSpan);
@@ -249,6 +263,9 @@ namespace XData.Compiler {
                 if (IsNullable && !restrictedElementSymbol.IsNullable) {
                     ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ElementIsNullableButRestrictedIsNotNullable), Nullable);
                 }
+            }
+            var typeSymbol = (TypeSymbol)Type.CreateSymbol();
+            if (restrictedElementSymbol != null) {
                 if (!typeSymbol.IsEqualToOrDeriveFrom(restrictedElementSymbol.Type)) {
                     ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.TypeNotEqualToOrDeriveFromRestricted,
                         typeSymbol.FullName.ToString(), restrictedElementSymbol.Type.FullName.ToString()),
@@ -256,7 +273,7 @@ namespace XData.Compiler {
                 }
             }
             return new ElementSymbol(parent, csName, false, false, ChildKind.LocalElement, displayName, MemberName,
-                isOptional, order, restrictedElementSymbol, new FullName(null, Name), IsNullable, typeSymbol, null, null);
+                MinOccurrence, MaxOccurrence, order, restrictedElementSymbol, fullName, IsNullable, typeSymbol, null, null);
         }
     }
     public sealed class GlobalElementRefNode : MemberElementNode {
@@ -269,10 +286,21 @@ namespace XData.Compiler {
             GlobalElement = NamespaceAncestor.ResolveAsElement(GlobalElementQName);
         }
         protected override ChildSymbol CreateSymbolCore(ChildSetSymbol parent, ChildSymbol restrictedChildSymbol,
-            bool isOptional, int order, string displayName, string csName) {
-            var globalElementSymbol = (ElementSymbol)GlobalElement.CreateSymbol();
+            int order, string displayName, string csName) {
             var restrictedElementSymbol = (ElementSymbol)restrictedChildSymbol;
-            if (restrictedElementSymbol != null) {
+            var globalElementSymbol = (ElementSymbol)GlobalElement.CreateSymbol();
+            if (restrictedElementSymbol == null) {
+                List<FullName> fullNameList = null;
+                GlobalElement.GetNonAbstractFullNames(ref fullNameList);
+                if (fullNameList != null) {
+                    foreach (var fullName in fullNameList) {
+                        if (parent.HasIntersection(fullName)) {
+                            ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AmbiguousElementFullName, fullName.ToString()), GlobalElementQName.TextSpan);
+                        }
+                    }
+                }
+            }
+            else {
                 if (!globalElementSymbol.IsEqualToOrSubstitute(restrictedElementSymbol.ReferencedElement)) {
                     ContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ElementNotEqualToOrSubstituteRestricted,
                         globalElementSymbol.FullName.ToString(), restrictedElementSymbol.ReferencedElement.FullName.ToString()),
@@ -280,7 +308,7 @@ namespace XData.Compiler {
                 }
             }
             return new ElementSymbol(parent, csName, false, false, ChildKind.GlobalElementReference, displayName, MemberName,
-                isOptional, order, restrictedElementSymbol, GlobalElement.FullName, GlobalElement.IsNullable,
+                MinOccurrence, MaxOccurrence, order, restrictedElementSymbol, GlobalElement.FullName, GlobalElement.IsNullable,
                 globalElementSymbol.Type, globalElementSymbol, null);
         }
     }
@@ -306,9 +334,9 @@ namespace XData.Compiler {
             }
         }
         protected override ChildSymbol CreateSymbolCore(ChildSetSymbol parent, ChildSymbol restrictedChildSymbol,
-            bool isOptional, int order, string displayName, string csName) {
+            int order, string displayName, string csName) {
             var restrictedChildSetSymbol = (ChildSetSymbol)restrictedChildSymbol;
-            var childSetSymbol = new ChildSetSymbol(parent, csName, Kind, displayName, MemberName, isOptional, order, restrictedChildSetSymbol,
+            var childSetSymbol = new ChildSetSymbol(parent, csName, Kind, displayName, MemberName, MinOccurrence, MaxOccurrence, order, restrictedChildSetSymbol,
                 false, null);
             if (restrictedChildSetSymbol == null) {
                 if (ChildList != null) {

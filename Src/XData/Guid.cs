@@ -1,4 +1,5 @@
 ﻿using System;
+using XData.IO.Text;
 
 namespace XData {
     public class XGuid : XAtomType {
@@ -63,6 +64,11 @@ namespace XData {
         }
         public override string ToString() {
             return _value.ToString("D");
+        }
+        public override void WriteValue(IndentedTextWriter writer) {
+            writer.Write('"');
+            writer.TextWriter.Write(ToString());
+            writer.TextWriter.Write('"');
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
         new public static readonly AtomTypeInfo ThisInfo = TypeKind.Guid.ToAtomTypeInfo(typeof(XGuid), XAtomType.ThisInfo);

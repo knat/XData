@@ -1,5 +1,5 @@
 ﻿using System;
-
+using XData.IO.Text;
 
 namespace XData {
     public abstract class XStringBase : XAtomType {
@@ -64,6 +64,19 @@ namespace XData {
         public override bool TryGetValueLength(out ulong result) {
             result = (ulong)_value.Length;
             return true;
+        }
+        public override void WriteValue(IndentedTextWriter writer) {
+            writer.Write("@\"");
+            var textWriter = writer.TextWriter;
+            foreach (var ch in _value) {
+                if (ch == '"') {
+                    textWriter.Write("\"\"");
+                }
+                else {
+                    textWriter.Write(ch);
+                }
+            }
+            textWriter.Write('"');
         }
     }
     public class XString : XStringBase {

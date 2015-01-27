@@ -7,23 +7,42 @@ namespace XData {
         None = 0,
         Parsing = -1000,
         AliasSysIsReserved,
-        //DuplicateDefaultUri,
         DuplicateUriAlias,
         InvalidUriAlias,
         ElementIsAbstract,
         ElementIsNotNullable,
         ElementRequiresComplexTypeValue,
         ElementRequiresSimpleTypeValue,
-        InvalidTypeName,
-        TypeDoesNotEqualToOrDeriveFrom,
-        TypeIsAbstract,
-        TypeProhibitsAttributes,
-        TypeRequiresSimpleChild,
-        TypeRequiresComplexChildren,
-        TypeProhibitsChildren,
         RequiredChildMemberIsNotMatched,
         ChildListCountIsNotGreaterThanOrEqualToMinOccurs,
+        //
+        //types
+        InvalidTypeName,
+        TypeNotEqualToOrDeriveFrom,
+        TypeIsAbstract,
 
+        //simple types
+        TypeRequiresAtomValue,
+        TypeRequiresListValue,
+        InvalidAtomTypeLiteral,
+        ListItemIsNull,
+        //facets
+        LengthNotEqualTo,
+        LengthNotGreaterThanOrEqualTo,
+        LengthNotLessThanOrEqualTo,
+        PrecisionNotLessThanOrEqualTo,
+        ScaleNotLessThanOrEqualTo,
+        ValueNotGreaterThanOrEqualTo,
+        ValueNotGreaterThan,
+        ValueNotLessThanOrEqualTo,
+        ValueNotLessThan,
+        ValueNotInEnumeration,
+        LiteralNotMatchWithPattern,
+        //complex types
+        TypeProhibitsAttributes,
+        TypeProhibitsChildren,
+        TypeRequiresSimpleChild,
+        TypeRequiresComplexChildren,
 
 
         //DuplicateAttributeFullName,
@@ -59,28 +78,60 @@ namespace XData {
                     return "Element '{0}' requires complex type value.".InvFormat(_msgArgs);
                 case DiagCode.ElementRequiresSimpleTypeValue:
                     return "Element '{0}' requires simple type value.".InvFormat(_msgArgs);
-                case DiagCode.InvalidTypeName:
-                    return "Invalid type name '{0}'.".InvFormat(_msgArgs);
-                case DiagCode.TypeDoesNotEqualToOrDeriveFrom:
-                    return "Type '{0}' does not equal to or derive from '{1}'.".InvFormat(_msgArgs);
-                case DiagCode.TypeIsAbstract:
-                    return "Type '{0}' is abstract.".InvFormat(_msgArgs);
-                case DiagCode.TypeProhibitsAttributes:
-                    return "Type '{0}' prohibits attributes.".InvFormat(_msgArgs);
-                case DiagCode.TypeRequiresSimpleChild:
-                    return "Type '{0}' requires simple child.".InvFormat(_msgArgs);
-                case DiagCode.TypeRequiresComplexChildren:
-                    return "Type '{0}' requires complex children.".InvFormat(_msgArgs);
-                case DiagCode.TypeProhibitsChildren:
-                    return "Type '{0}' prohibits children.".InvFormat(_msgArgs);
                 case DiagCode.RequiredChildMemberIsNotMatched:
                     return "Required child member '{0}' is not matched.".InvFormat(_msgArgs);
                 case DiagCode.ChildListCountIsNotGreaterThanOrEqualToMinOccurs:
                     return "Child list '{0}' count '{1}' is not greater than or equal to min occurs '{2}'.".InvFormat(_msgArgs);
+                //
+                //types
+                case DiagCode.InvalidTypeName:
+                    return "Invalid type name '{0}'.".InvFormat(_msgArgs);
+                case DiagCode.TypeNotEqualToOrDeriveFrom:
+                    return "Type '{0}' not equal to or derive from '{1}'.".InvFormat(_msgArgs);
+                case DiagCode.TypeIsAbstract:
+                    return "Type '{0}' is abstract.".InvFormat(_msgArgs);
+                //simple types
+                case DiagCode.TypeRequiresAtomValue:
+                    return "Type '{0}' requires atom value.".InvFormat(_msgArgs);
+                case DiagCode.TypeRequiresListValue:
+                    return "Type '{0}' requires list value.".InvFormat(_msgArgs);
+                case DiagCode.InvalidAtomTypeLiteral:
+                    return "Invalid atom type '{0}' literal '{1}'.".InvFormat(_msgArgs);
+                case DiagCode.ListItemIsNull:
+                    return "List item #{0} is null.".InvFormat(_msgArgs);
+                //facets
+                case DiagCode.LengthNotEqualTo:
+                    return "Length '{0}' not equal to '{1}'.".InvFormat(_msgArgs);
+                case DiagCode.LengthNotGreaterThanOrEqualTo:
+                    return "Length '{0}' not greater than or equal to '{1}'.".InvFormat(_msgArgs);
+                case DiagCode.LengthNotLessThanOrEqualTo:
+                    return "Length '{0}' not less than or equal to '{1}'.".InvFormat(_msgArgs);
+                case DiagCode.PrecisionNotLessThanOrEqualTo:
+                    return "Precision '{0}' not less than or equal to '{1}'.".InvFormat(_msgArgs);
+                case DiagCode.ScaleNotLessThanOrEqualTo:
+                    return "Scale '{0}' not less than or equal to '{1}'.".InvFormat(_msgArgs);
+                case DiagCode.ValueNotGreaterThanOrEqualTo:
+                    return "Value '{0}' not greater than or equal to '{1}'.".InvFormat(_msgArgs);
+                case DiagCode.ValueNotGreaterThan:
+                    return "Value '{0}' not greater than '{1}'.".InvFormat(_msgArgs);
+                case DiagCode.ValueNotLessThanOrEqualTo:
+                    return "Value '{0}' not less than or equal to '{1}'.".InvFormat(_msgArgs);
+                case DiagCode.ValueNotLessThan:
+                    return "Value '{0}' not less than '{1}'.".InvFormat(_msgArgs);
+                case DiagCode.ValueNotInEnumeration:
+                    return "Value '{0}' not in enumeration '{1}'.".InvFormat(_msgArgs);
+                case DiagCode.LiteralNotMatchWithPattern:
+                    return "Literal '{0}' not match with pattern '{1}'.".InvFormat(_msgArgs);
 
-
-
-
+                //complex types
+                case DiagCode.TypeProhibitsAttributes:
+                    return "Type '{0}' prohibits attributes.".InvFormat(_msgArgs);
+                case DiagCode.TypeProhibitsChildren:
+                    return "Type '{0}' prohibits children.".InvFormat(_msgArgs);
+                case DiagCode.TypeRequiresSimpleChild:
+                    return "Type '{0}' requires simple child.".InvFormat(_msgArgs);
+                case DiagCode.TypeRequiresComplexChildren:
+                    return "Type '{0}' requires complex children.".InvFormat(_msgArgs);
 
 
 
@@ -105,13 +156,12 @@ namespace XData {
             Message = message;
             TextSpan = textSpan;
             Object = obj;
+            if (!textSpan.IsValid && obj != null) {
+                TextSpan = obj.TextSpan;
+            }
         }
-        public Diag(DiagSeverity severity, DiagMsg diagMsg, TextSpan textSpan, XObject obj) {
-            Severity = severity;
-            RawCode = (int)diagMsg.Code;
-            Message = diagMsg.GetMessage();
-            TextSpan = textSpan;
-            Object = obj;
+        public Diag(DiagSeverity severity, DiagMsg diagMsg, TextSpan textSpan, XObject obj)
+            : this(severity, (int)diagMsg.Code, diagMsg.GetMessage(), textSpan, obj) {
         }
         public readonly DiagSeverity Severity;
         public readonly int RawCode;

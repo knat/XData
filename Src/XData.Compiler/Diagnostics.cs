@@ -65,6 +65,8 @@ namespace XData.Compiler {
         ElementNotEqualToOrSubstituteRestricted,
         CannotFindRestrictedChild,
         CannotDeleteChildBecauseItIsNotOptional,
+        AmbiguousElementFullName,
+
         //
         //
 
@@ -202,6 +204,9 @@ namespace XData.Compiler {
                     return "Cannot find restricted child '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.CannotDeleteChildBecauseItIsNotOptional:
                     return "Cannot delete child '{0}' because it is not optional.".InvFormat(_msgArgs);
+                case DiagCodeEx.AmbiguousElementFullName:
+                    return "Ambiguous element full name '{0}'.".InvFormat(_msgArgs);
+
 
                 default:
                     throw new InvalidOperationException("Invalid code: " + Code.ToString());

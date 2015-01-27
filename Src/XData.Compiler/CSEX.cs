@@ -33,6 +33,10 @@ namespace XData.Compiler {
         internal static QualifiedNameSyntax ObjectInfoName {
             get { return CS.QualifiedName(XDataName, "ObjectInfo"); }
         }
+        internal static QualifiedNameSyntax ValueFacetSetInfoName {
+            get { return CS.QualifiedName(XDataName, "ValueFacetSetInfo"); }
+        }
+
         internal static QualifiedNameSyntax ContextName {
             get { return CS.QualifiedName(XDataName, "Context"); }
         }

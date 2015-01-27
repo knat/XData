@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Text.RegularExpressions;
 
 namespace XData {
     public abstract class ProgramInfo {
@@ -85,6 +82,8 @@ namespace XData {
     public interface IGlobalObjectInfo {
         FullName FullName { get; }
     }
+
+
     public abstract class TypeInfo : ObjectInfo, IGlobalObjectInfo {
         protected TypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeInfo baseType)
             : base(clrType, isAbstract) {
@@ -105,33 +104,29 @@ namespace XData {
 
     }
 
-    public sealed class ValueFacetSetInfo {
-        public ValueFacetSetInfo(
-            ulong? minLength = null,
-            ulong? maxLength = null,
-            byte? totalDigits = null,
-            byte? fractionDigits = null,
-            ValueBoundaryInfo? minValue = null,
-            ValueBoundaryInfo? maxValue = null,
-            EnumsInfo? enums = null,
-            PatternInfo? pattern = null) {
+    public sealed class FacetSetInfo {
+        public FacetSetInfo(
+            ulong? minLength = null, ulong? maxLength = null,
+            byte? precision = null, byte? scale = null,
+            ValueBoundaryInfo? minValue = null, ValueBoundaryInfo? maxValue = null,
+            EnumInfo? @enum = null, PatternInfo[] patterns = null) {
             MinLength = minLength;
             MaxLength = maxLength;
-            TotalDigits = totalDigits;
-            FractionDigits = fractionDigits;
+            Precision = precision;
+            Scale = scale;
             MinValue = minValue;
             MaxValue = maxValue;
-            Enums = enums;
-            Pattern = pattern;
+            Enum = @enum;
+            Patterns = patterns;
         }
         public readonly ulong? MinLength;
         public readonly ulong? MaxLength;
-        public readonly byte? TotalDigits;
-        public readonly byte? FractionDigits;
+        public readonly byte? Precision;
+        public readonly byte? Scale;
         public readonly ValueBoundaryInfo? MinValue;
         public readonly ValueBoundaryInfo? MaxValue;
-        public readonly EnumsInfo? Enums;
-        public readonly PatternInfo? Pattern;
+        public readonly EnumInfo? Enum;
+        public readonly PatternInfo[] Patterns;
     }
     public struct ValueBoundaryInfo {
         public ValueBoundaryInfo(ValueTextInfo valueText, bool isInclusive) {
@@ -149,8 +144,8 @@ namespace XData {
         public readonly object Value;
         public readonly string Text;
     }
-    public struct EnumsInfo {
-        public EnumsInfo(ValueTextInfo[] items, string totalText) {
+    public struct EnumInfo {
+        public EnumInfo(ValueTextInfo[] items, string totalText) {
             Items = items;
             TotalText = totalText;
         }
@@ -163,20 +158,29 @@ namespace XData {
             Pattern = pattern;
         }
         public readonly string Pattern;
-        //private static readonly ConcurrentDictionary<string, Regex> _regexDict = new ConcurrentDictionary<string, Regex>();
-        //public Regex Regex { get { return _regexDict.GetOrAdd(Pattern, p => new Regex(p)); } }
+        private static readonly Dictionary<string, System.Text.RegularExpressions.Regex> _regexDict = new Dictionary<string, System.Text.RegularExpressions.Regex>();
+        public System.Text.RegularExpressions.Regex Regex {
+            get {
+                lock (_regexDict) {
+                    System.Text.RegularExpressions.Regex regex;
+                    if (_regexDict.TryGetValue(Pattern, out regex)) {
+                        return regex;
+                    }
+                    regex = new System.Text.RegularExpressions.Regex(Pattern, System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+                    _regexDict.Add(Pattern, regex);
+                    return regex;
+                }
+            }
+        }
     }
     public class SimpleTypeInfo : TypeInfo {
         public SimpleTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo baseType,
-            ValueFacetSetInfo valueRestrictions)
+            FacetSetInfo facets)
             : base(clrType, isAbstract, fullName, baseType) {
             if (baseType == null) throw new ArgumentNullException("baseType");
-            //if (valueClrType == null) throw new ArgumentNullException("valueClrType");
-            //ValueClrType = valueClrType;
-            ValueRestrictions = valueRestrictions;
+            Facets = facets;
         }
-        //public Type ValueClrType { get; private set; }
-        public readonly ValueFacetSetInfo ValueRestrictions;// { get; private set; }
+        public readonly FacetSetInfo Facets;
     }
     public enum TypeKind : byte {
         None = 0,
@@ -207,7 +211,7 @@ namespace XData {
         //Time,
     }
     public static class InfoExtensions {
-        public const string SystemUri = "http://xdata-lang.org";
+        public const string SystemUri = "http://xdata-solution.org";
         public const TypeKind TypeStart = TypeKind.ComplexType;
         public const TypeKind TypeEnd = TypeKind.DateTimeOffset;
         public const TypeKind ConcreteAtomTypeStart = TypeKind.String;
@@ -221,31 +225,22 @@ namespace XData {
         public static AtomTypeInfo ToAtomTypeInfo(this TypeKind kind, Type clrType, AtomTypeInfo baseType) {
             return new AtomTypeInfo(clrType, false, ToFullName(kind), baseType, null, kind);
         }
-
-
     }
 
     public sealed class AtomTypeInfo : SimpleTypeInfo {
         public AtomTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo baseType,
-            ValueFacetSetInfo valueRestrictions, TypeKind kind)
-            : base(clrType, isAbstract, fullName, baseType, valueRestrictions) {
+            FacetSetInfo facets, TypeKind kind)
+            : base(clrType, isAbstract, fullName, baseType, facets) {
             Kind = kind;
         }
         public readonly TypeKind Kind;
-
-        //new public SimpleTypeInfo BaseType { get { return (SimpleTypeInfo)base.BaseType; } }
     }
     public sealed class ListTypeInfo : SimpleTypeInfo {
         public ListTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo baseType, SimpleTypeInfo itemType,
-            ValueFacetSetInfo valueRestrictions)
-            : base(clrType, isAbstract, fullName, baseType, valueRestrictions) {
+            FacetSetInfo facets)
+            : base(clrType, isAbstract, fullName, baseType, facets) {
             ItemType = itemType;
         }
-        //new public SimpleTypeInfo BaseType {
-        //    get {
-        //        return (SimpleTypeInfo)base.BaseType;
-        //    }
-        //}
         public readonly SimpleTypeInfo ItemType;
     }
     public sealed class ComplexTypeInfo : TypeInfo {
@@ -274,8 +269,6 @@ namespace XData {
             : base(clrType, false) {
             Attributes = attributes;
         }
-        //public readonly AttributeSetInfo BaseAttributeSet;
-        //public readonly bool IsExtension;
         public readonly AttributeInfo[] Attributes;
         public AttributeInfo TryGetAttribute(string name) {
             if (Attributes != null) {
@@ -290,21 +283,19 @@ namespace XData {
     }
     public sealed class AttributeInfo : ObjectInfo {
         public AttributeInfo(Type clrType, string name, string displayName, bool isOptional, bool isNullable,
-            SimpleTypeInfo type/*, AttributeInfo restrictedAttribute*/)
+            SimpleTypeInfo type)
             : base(clrType, false) {
             Name = name;
             DisplayName = displayName;
             IsOptional = isOptional;
             IsNullable = isNullable;
             Type = type;
-            //RestrictedAttribute = restrictedAttribute;
         }
         public readonly string Name;
         public readonly string DisplayName;
         public readonly bool IsOptional;
         public readonly bool IsNullable;
         public readonly SimpleTypeInfo Type;
-        //public readonly AttributeInfo RestrictedAttribute;
     }
 
 

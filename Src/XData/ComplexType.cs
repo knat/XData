@@ -91,7 +91,7 @@ namespace XData {
             ComplexValueNode complexValueNode, out XComplexType result) {
             result = null;
             var equalsTokenTextSpan = complexValueNode.EqualsToken;
-            var effComplexTypeInfo = (ComplexTypeInfo)GetTypeInfo(context, programInfo, complexValueNode.TypeQName, complexTypeInfo, equalsTokenTextSpan);
+            var effComplexTypeInfo = (ComplexTypeInfo)GetEffectiveTypeInfo(context, programInfo, complexValueNode.TypeQName, complexTypeInfo, equalsTokenTextSpan);
             if (effComplexTypeInfo == null) {
                 return false;
             }
