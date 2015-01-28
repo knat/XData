@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace XData {
+﻿namespace XData {
 
     public abstract class XAttribute : XObject {
         protected XAttribute() {

@@ -1,5 +1,4 @@
-﻿using System;
-using XData.IO.Text;
+﻿using XData.IO.Text;
 
 namespace XData {
     public abstract class XChild : XObject {

@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using XData.IO.Text;
 
 namespace XData {
@@ -282,42 +280,5 @@ namespace XData {
         }
     }
 
-    public class SavingContext : IndentedStringBuilder {
-        public SavingContext( string indentString = "\t", string newLineString = "\n") :
-            base(new StringBuilder(StringBuilderCapacity), indentString, newLineString) {
-            _aliasUriList = new List<AliasUri>();
-        }
-        public const int StringBuilderCapacity = 1024;
-        private struct AliasUri {
-            public AliasUri(string alias, string uri) {
-                Alias = alias;
-                Uri = uri;
-            }
-            public readonly string Alias, Uri;
-        }
-        private readonly List<AliasUri> _aliasUriList;
-        public string GetAlias(string uri) {
-            if (uri == InfoExtensions.SystemUri) {
-                return "sys";
-            }
-            foreach (var au in _aliasUriList) {
-                if (au.Uri == uri) {
-                    return au.Alias;
-                }
-            }
-            return null;
-        }
-        public string AddUri(string uri) {
-            var alias = GetAlias(uri);
-            if (alias != null) {
-                return alias;
-            }
-            alias = "a" + _aliasUriList.Count.ToInvString();
-            _aliasUriList.Add(new AliasUri(alias, uri));
-            return alias;
-        }
-
-
-    }
 
 }

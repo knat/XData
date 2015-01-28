@@ -73,7 +73,7 @@ namespace XData.IO.Text {
         private bool _isEOF;
         private int _totalIndex;
         private int _lastLine, _lastColumn, _line, _column;
-        private const int _stringBuilderCapacity = 128;
+        private const int _stringBuilderCapacity = 256;
         private StringBuilder _stringBuilder;
         private Lexer Set(TextReader reader) {
             if (reader == null) {
@@ -91,7 +91,7 @@ namespace XData.IO.Text {
         }
         public void Clear() {
             _reader = null;
-            if (_stringBuilder != null && _stringBuilder.Capacity > _stringBuilderCapacity * 8) {
+            if (_stringBuilder != null && _stringBuilder.Capacity > _stringBuilderCapacity * 4) {
                 _stringBuilder = null;
             }
         }

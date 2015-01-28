@@ -1,5 +1,4 @@
-﻿using System;
-using XData.IO.Text;
+﻿using XData.IO.Text;
 
 namespace XData {
     public abstract class XType : XObject {
@@ -48,11 +47,8 @@ namespace XData {
             var typeInfo = TypeInfo;
             if (typeInfo != declTypeInfo) {
                 context.Append('(');
-                var sb = context.StringBuilder;
-                sb.Append(context.AddUri(typeInfo.FullName.Uri));
-                sb.Append(':');
-                sb.Append(typeInfo.FullName.Name);
-                sb.Append(')');
+                context.Append(typeInfo.FullName);
+                context.StringBuilder.Append(')');
             }
             SaveValue(context);
         }

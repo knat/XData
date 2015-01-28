@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 
 namespace XData {
     public static class Extensions {
         private const int _stringBuilderCount = 4;
-        private const int _stringBuilderCapacity = 128;
+        private const int _stringBuilderCapacity = 256;
         private static readonly StringBuilder[] _stringBuilders = new StringBuilder[_stringBuilderCount];
         public static StringBuilder AcquireStringBuilder() {
             var sbs = _stringBuilders;
@@ -27,7 +26,7 @@ namespace XData {
             return new StringBuilder(_stringBuilderCapacity);
         }
         public static void ReleaseStringBuilder(this StringBuilder sb) {
-            if (sb != null && sb.Capacity <= _stringBuilderCapacity * 8) {
+            if (sb != null && sb.Capacity <= _stringBuilderCapacity * 4) {
                 var sbs = _stringBuilders;
                 lock (_stringBuilders) {
                     for (var i = 0; i < _stringBuilderCount; ++i) {
@@ -103,10 +102,6 @@ namespace XData {
             return byte.TryParse(s, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
         }
 
-
-        //public static object CreateInstance(Type type) {
-        //    return Activator.CreateInstance(type);//, true);
-        //}
 
         public static int AggregateHash(int hash, int newValue) {
             unchecked {

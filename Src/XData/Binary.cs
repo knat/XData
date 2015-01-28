@@ -1,5 +1,4 @@
 ﻿using System;
-using XData.IO.Text;
 
 namespace XData {
     public class XBinary : XAtomType {

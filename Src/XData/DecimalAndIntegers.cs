@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Globalization;
 
 namespace XData {
     public class XDecimal : XAtomType {
@@ -61,15 +60,18 @@ namespace XData {
             result = 0;
             return false;
         }
-        public override bool TryGetValuePrecisionAndScale(out byte precision, out byte scale) {
-            precision = 0;
-            scale = 0;
+        private static byte GetPrecisionAndScale(decimal value, out byte scale) {
+            byte p = 0;
+            byte s = 0;
             var inFraction = false;
             var inLeadingZero = true;
-            foreach (var ch in Value.ToInvString()) {
+            var str = value.ToInvString();
+            var length = str.Length;
+            for (var i = 0; i < length; ++i) {
+                var ch = str[i];
                 if (inFraction) {
-                    ++precision;
-                    ++scale;
+                    ++p;
+                    ++s;
                 }
                 else if (ch == '.') {
                     inLeadingZero = false;
@@ -77,15 +79,20 @@ namespace XData {
                 }
                 else if (ch >= '1' && ch <= '9') {
                     inLeadingZero = false;
-                    ++precision;
+                    ++p;
                 }
                 else if (ch == '0' && !inLeadingZero) {
-                    ++precision;
+                    ++p;
                 }
             }
             if (inLeadingZero) {
-                ++precision;
+                ++p;
             }
+            scale = s;
+            return p;
+        }
+        public override bool TryGetValuePrecisionAndScale(out byte precision, out byte scale) {
+            precision = GetPrecisionAndScale(Value, out scale);
             return true;
         }
         public override bool TryParseAndSet(string literal) {

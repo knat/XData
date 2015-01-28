@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Globalization;
-using XData.IO.Text;
 
 namespace XData {
     public class XTimeSpan : XAtomType {

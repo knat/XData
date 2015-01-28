@@ -1,5 +1,4 @@
 ﻿using System;
-using XData.IO.Text;
 
 namespace XData {
     public abstract class XStringBase : XAtomType {
@@ -66,17 +65,25 @@ namespace XData {
             return true;
         }
         public override void SaveValue(IndentedStringBuilder isb) {
-            isb.Append("@\"");
-            var sb = isb.StringBuilder;
-            foreach (var ch in _value) {
-                if (ch == '"') {
-                    sb.Append("\"\"");
-                }
-                else {
-                    sb.Append(ch);
-                }
+            var value = _value;
+            var length = value.Length;
+            if (length == 0) {
+                isb.Append("\"\"");
             }
-            sb.Append('"');
+            else {
+                isb.Append("@\"");
+                var sb = isb.StringBuilder;
+                for (var i = 0; i < length; ++i) {
+                    var ch = value[i];
+                    if (ch == '"') {
+                        sb.Append("\"\"");
+                    }
+                    else {
+                        sb.Append(ch);
+                    }
+                }
+                sb.Append('"');
+            }
         }
     }
     public class XString : XStringBase {

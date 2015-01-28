@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace XData {
+﻿namespace XData {
     public class XBoolean : XAtomType {
         public XBoolean() { }
         public XBoolean(bool value) {
