@@ -34,9 +34,9 @@ namespace XData {
             }
             return effTypeInfo;
         }
-        public bool CheckObjectType(DiagContext context, TypeInfo baseTypeInfo) {
+        public bool CheckObject(DiagContext context, TypeInfo baseTypeInfo) {
             var typeInfo = TypeInfo;
-            if (!TypeInfo.IsEqualToOrDeriveFrom(baseTypeInfo)) {
+            if (!typeInfo.IsEqualToOrDeriveFrom(baseTypeInfo)) {
                 context.AddErrorDiag(new DiagMsg(DiagCode.TypeNotEqualToOrDeriveFrom,
                     typeInfo.FullName.ToString(), baseTypeInfo.FullName.ToString()), this);
                 return false;

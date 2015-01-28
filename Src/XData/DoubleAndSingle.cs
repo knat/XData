@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using XData.IO.Text;
 
 namespace XData {
     public class XDouble : XAtomType {
@@ -226,7 +227,7 @@ namespace XData {
             }
             return false;
         }
-        public override void SaveValue(IndentedStringBuilder isb) {
+        public override sealed void SaveValue(IndentedStringBuilder isb) {
             string result;
             if (GetString(out result)) {
                 isb.Append(result);

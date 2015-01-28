@@ -17,7 +17,7 @@ namespace XData {
             NodeList<SimpleValueNode> listNode, out XListType result) {
             result = null;
             var listType = listTypeInfo.CreateInstance<XListType>();
-            listType.TextSpan = listNode.OpenToken;
+            listType.TextSpan = listNode.OpenTokenTextSpan;
             var itemInfo = listTypeInfo.ItemType;
             foreach (var itemNode in listNode) {
                 XSimpleType item;
@@ -204,7 +204,7 @@ namespace XData {
                 if ((object)item == null) {
                     context.AddErrorDiag(new DiagMsg(DiagCode.ListItemIsNull, i.ToInvString()), this);
                 }
-                else if (item.CheckObjectType(context, itemTypeInfo)) {
+                else if (item.CheckObject(context, itemTypeInfo)) {
                     item.TryValidate(context);
                 }
             }

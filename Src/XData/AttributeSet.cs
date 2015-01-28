@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using XData.IO.Text;
 
 namespace XData {
-
     public abstract class XAttributeSet : XObject, ICollection<XAttribute>, IReadOnlyCollection<XAttribute> {
         protected XAttributeSet() {
             _attributeList = new List<XAttribute>();
         }
         private List<XAttribute> _attributeList;
+        internal void InternalAdd(XAttribute attribute) {
+            _attributeList.Add(SetParentTo(attribute));
+        }
         public override XObject DeepClone() {
             var obj = (XAttributeSet)base.DeepClone();
             obj._attributeList = new List<XAttribute>();
@@ -126,11 +128,88 @@ namespace XData {
             }
             return attributeInfo.CreateInstance<T>(@try);
         }
-        //
+        public void Save(SavingContext context) {
+            if (_attributeList.Count > 0) {
+                context.AppendLine('[');
+                context.PushIndent();
+                foreach (var attribute in _attributeList) {
+                    attribute.Save(context);
+                    context.AppendLine();
+                }
+                context.PopIndent();
+                context.AppendLine(']');
+            }
+        }
+        protected override bool TryValidateCore(DiagContext context) {
+            var attributeSetInfo = AttributeSetInfo;
+            var dMarker = context.MarkDiags();
+            var attributeList = new List<XAttribute>(_attributeList);
+            if (attributeSetInfo.Attributes != null) {
+                foreach (var attributeInfo in attributeSetInfo.Attributes) {
+                    var found = false;
+                    for (var i = 0; i < attributeList.Count; ++i) {
+                        var attribute = attributeList[i];
+                        if (attribute.Name == attributeInfo.Name) {
+                            if (attribute.AttributeInfo != attributeInfo) {
+                                context.AddErrorDiag(new DiagMsg(DiagCode.InvalidAttributeObject), attribute);
+                            }
+                            else {
+                                attribute.TryValidate(context);
+                            }
+                            attributeList.RemoveAt(i);
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found && !attributeInfo.IsOptional) {
+                        context.AddErrorDiag(new DiagMsg(DiagCode.RequiredAttributeNotFound, attributeInfo.DisplayName), this);
+                    }
+                }
+            }
+            foreach (var attribute in attributeList) {
+                context.AddErrorDiag(new DiagMsg(DiagCode.RedundantAttribute, attribute.Name), attribute);
+            }
+            return !dMarker.HasErrors;
+        }
         internal static bool TryCreate(DiagContext context, ProgramInfo programInfo, AttributeSetInfo attributeSetInfo,
-            TextSpan equalsTokenTextSpan, NodeList<AttributeNode> attributeListNode, out XAttributeSet result) {
+            TextSpan openAttributesTextSpan, TextSpan closeAttributesTextSpan, List<AttributeNode> attributeNodeList, out XAttributeSet result) {
             result = null;
-
+            var dMarker = context.MarkDiags();
+            List<XAttribute> attributeList = null;
+            if (attributeSetInfo.Attributes != null) {
+                foreach (var attributeInfo in attributeSetInfo.Attributes) {
+                    var found = false;
+                    for (var i = 0; i < attributeNodeList.Count; ++i) {
+                        var attributeNode = attributeNodeList[i];
+                        if (attributeNode.Name.Value == attributeInfo.Name) {
+                            XAttribute attribute;
+                            if (XAttribute.TryCreate(context, programInfo, attributeInfo, attributeNode, out attribute)) {
+                                Extensions.CreateAndAdd(ref attributeList, attribute);
+                            }
+                            attributeNodeList.RemoveAt(i);
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found && !attributeInfo.IsOptional) {
+                        context.AddErrorDiag(new DiagMsg(DiagCode.RequiredAttributeNotFound, attributeInfo.DisplayName), closeAttributesTextSpan);
+                    }
+                }
+            }
+            foreach (var attributeNode in attributeNodeList) {
+                context.AddErrorDiag(new DiagMsg(DiagCode.RedundantAttribute, attributeNode.Name.ToString()), attributeNode.Name.TextSpan);
+            }
+            if (dMarker.HasErrors) {
+                return false;
+            }
+            var attributeSet = attributeSetInfo.CreateInstance<XAttributeSet>();
+            attributeSet.TextSpan = openAttributesTextSpan;
+            if (attributeList != null) {
+                foreach (var attribute in attributeList) {
+                    attributeSet.InternalAdd(attribute);
+                }
+            }
+            result = attributeSet;
             return true;
         }
     }

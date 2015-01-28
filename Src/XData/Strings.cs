@@ -1,4 +1,5 @@
 ﻿using System;
+using XData.IO.Text;
 
 namespace XData {
     public abstract class XStringBase : XAtomType {
@@ -64,7 +65,7 @@ namespace XData {
             result = (ulong)_value.Length;
             return true;
         }
-        public override void SaveValue(IndentedStringBuilder isb) {
+        public override sealed void SaveValue(IndentedStringBuilder isb) {
             var value = _value;
             var length = value.Length;
             if (length == 0) {

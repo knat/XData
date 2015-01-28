@@ -1,4 +1,5 @@
 ﻿using System;
+using XData.IO.Text;
 
 namespace XData {
     public class XBinary : XAtomType {
@@ -86,7 +87,7 @@ namespace XData {
             result = (ulong)_value.Length;
             return true;
         }
-        public override void SaveValue(IndentedStringBuilder isb) {
+        public override sealed void SaveValue(IndentedStringBuilder isb) {
             isb.Append('"');
             isb.StringBuilder.Append(ToString());
             isb.StringBuilder.Append('"');

@@ -87,28 +87,29 @@ namespace XData {
             }
         }
         //
-        internal static bool TryCreate(DiagContext context, ProgramInfo programInfo, ComplexTypeInfo complexTypeInfo, bool isNullable,
+        internal static bool TryCreate(DiagContext context, ProgramInfo programInfo, ComplexTypeInfo complexTypeInfo,
             ComplexValueNode complexValueNode, out XComplexType result) {
             result = null;
-            var equalsTokenTextSpan = complexValueNode.EqualsToken;
-            var effComplexTypeInfo = (ComplexTypeInfo)GetEffectiveTypeInfo(context, programInfo, complexValueNode.TypeQName, complexTypeInfo, equalsTokenTextSpan);
+            var equalsTextSpan = complexValueNode.EqualsTextSpan;
+            var effComplexTypeInfo = (ComplexTypeInfo)GetEffectiveTypeInfo(context, programInfo, complexValueNode.TypeQName,
+                complexTypeInfo, equalsTextSpan);
             if (effComplexTypeInfo == null) {
                 return false;
             }
             //
             XAttributeSet attributes = null;
-            var attributeListNode = complexValueNode.Attributes;
+            var attributeListNode = complexValueNode.AttributeList;
             var attributeSetInfo = effComplexTypeInfo.Attributes;
             if (attributeSetInfo != null) {
                 if (!XAttributeSet.TryCreate(context, programInfo, attributeSetInfo,
-                    equalsTokenTextSpan, attributeListNode, out attributes)) {
+                    complexValueNode.OpenAttributesTextSpan, complexValueNode.CloseAttributesTextSpan, complexValueNode.EffectiveAttributeList, out attributes)) {
                     return false;
                 }
             }
             else {
                 if (attributeListNode != null && attributeListNode.Count > 0) {
                     context.AddErrorDiag(new DiagMsg(DiagCode.TypeProhibitsAttributes, effComplexTypeInfo.FullName.ToString()),
-                        attributeListNode.OpenToken);
+                        attributeListNode.OpenTokenTextSpan);
                     return false;
                 }
             }
@@ -119,18 +120,17 @@ namespace XData {
             if (simpleTypeInfo != null) {
                 if (!simpleValueNode.IsValid) {
                     context.AddErrorDiag(new DiagMsg(DiagCode.TypeRequiresSimpleChild, effComplexTypeInfo.FullName.ToString()),
-                        complexValueNode.ChildrenOpenToken);
+                        complexValueNode.OpenChildrenTextSpan);
                     return false;
                 }
                 XSimpleType simpleType;
-                if (!XSimpleType.TryCreate(context, programInfo, simpleTypeInfo,
-                    simpleValueNode, out simpleType)) {
+                if (!XSimpleType.TryCreate(context, programInfo, simpleTypeInfo, simpleValueNode, out simpleType)) {
                     return false;
                 }
                 children = simpleType;
             }
             else {
-                var elementListNode = complexValueNode.ComplexChildren;
+                var elementListNode = complexValueNode.ElementList;
                 var childSetInfo = effComplexTypeInfo.ComplexChildren;
                 if (childSetInfo != null) {
                     if (simpleValueNode.IsValid) {
@@ -140,7 +140,7 @@ namespace XData {
                     }
                     XChildSet childSet;
                     if (!XChildSet.TryCreate(context, programInfo, childSetInfo,
-                        complexValueNode.ChildrenCloseToken, elementListNode, out childSet)) {
+                        complexValueNode.OpenChildrenTextSpan, complexValueNode.CloseChildrenTextSpan, complexValueNode.EffectiveElementList, out childSet)) {
                         return false;
                     }
                     children = childSet;
@@ -148,11 +148,13 @@ namespace XData {
                 else {
                     if (simpleValueNode.IsValid || (elementListNode != null && elementListNode.Count > 0)) {
                         context.AddErrorDiag(new DiagMsg(DiagCode.TypeProhibitsChildren, effComplexTypeInfo.FullName.ToString()),
-                            complexValueNode.ChildrenOpenToken);
+                            complexValueNode.OpenChildrenTextSpan);
+                        return false;
                     }
                 }
             }
             result = effComplexTypeInfo.CreateInstance<XComplexType>();
+            result.TextSpan = equalsTextSpan;
             result.Attributes = attributes;
             result.Children = children;
             return true;

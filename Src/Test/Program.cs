@@ -56,6 +56,16 @@ namespace Test {
 
     class Program {
 
+        static void Main() {
+            var list = new List<int> { 1, 2, 3, 4 };
+            for(var i = 0; i < list.Count; ++i) {
+                if (list[i] == 3) {
+                    list.RemoveAt(i);
+                    break;
+                }
+            }
+        }
+
         static byte GetPAndS(decimal d, out byte s) {
             var sqld = new System.Data.SqlTypes.SqlDecimal(d);
             s = sqld.Scale;
@@ -99,7 +109,7 @@ namespace Test {
             p = GetPAndS2(d, out s);
            // Console.WriteLine("d: {0}, P={1}, S={2}", d.ToInvString(), p.ToInvString(), s.ToInvString());
         }
-        static void Main(string[] args) {
+        static void TestDecimal() {
             Stopwatch sw1 = new Stopwatch();
             sw1.Start();
             for (var i = 0; i < 10000; ++i) {
@@ -147,6 +157,7 @@ namespace Test {
             //TestLexer();
             //TestParser();
         }
+
 
         static void TestLexer() {
             using (var reader = new StreamReader("test.txt")) {

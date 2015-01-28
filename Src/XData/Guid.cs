@@ -1,4 +1,5 @@
 ﻿using System;
+using XData.IO.Text;
 
 namespace XData {
     public class XGuid : XAtomType {
@@ -64,7 +65,7 @@ namespace XData {
         public override string ToString() {
             return _value.ToString("D");
         }
-        public override void SaveValue(IndentedStringBuilder sb) {
+        public override sealed void SaveValue(IndentedStringBuilder sb) {
             sb.Append('"');
             sb.StringBuilder.Append(ToString());
             sb.StringBuilder.Append('"');

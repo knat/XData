@@ -53,8 +53,7 @@ namespace XData {
                         return CreationResult.Error;
                     }
                     XComplexType complexType;
-                    if (!XComplexType.TryCreate(context, effElementInfo.Program, complexTypeInfo, isNullable,
-                        complexValueNode, out complexType)) {
+                    if (!XComplexType.TryCreate(context, effElementInfo.Program, complexTypeInfo, complexValueNode, out complexType)) {
                         return CreationResult.Error;
                     }
                     type = complexType;

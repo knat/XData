@@ -1,4 +1,7 @@
-﻿namespace XData {
+﻿using System;
+using XData.IO.Text;
+
+namespace XData {
 
     public abstract class XAttribute : XObject {
         protected XAttribute() {
@@ -54,8 +57,48 @@
                 return (AttributeInfo)ObjectInfo;
             }
         }
-
+        public void Save(SavingContext context) {
+            context.Append(Name);
+            if (_type != null) {
+                context.StringBuilder.Append(" = ");
+                _type.Save(context, AttributeInfo.Type);
+            }
+        }
+        protected override bool TryValidateCore(DiagContext context) {
+            var attributeInfo = AttributeInfo;
+            if (_type != null) {
+                if (!_type.CheckObject(context, attributeInfo.Type)) {
+                    return false;
+                }
+                if (!_type.TryValidate(context)) {
+                    return false;
+                }
+            }
+            else if (!attributeInfo.IsNullable) {
+                context.AddErrorDiag(new DiagMsg(DiagCode.AttributeIsNotNullable, attributeInfo.DisplayName), this);
+                return false;
+            }
+            return true;
+        }
+        internal static bool TryCreate(DiagContext context, ProgramInfo programInfo, AttributeInfo attributeInfo,
+            AttributeNode attributeNode, out XAttribute result) {
+            result = null;
+            XSimpleType type = null;
+            if (attributeNode.Value.IsValid) {
+                if (!XSimpleType.TryCreate(context, programInfo, attributeInfo.Type, attributeNode.Value, out type)) {
+                    return false;
+                }
+            }
+            else if (!attributeInfo.IsNullable) {
+                context.AddErrorDiag(new DiagMsg(DiagCode.AttributeIsNotNullable, attributeInfo.DisplayName), attributeNode.Name.TextSpan);
+                return false;
+            }
+            var attribute = attributeInfo.CreateInstance<XAttribute>();
+            attribute.TextSpan = attributeNode.Name.TextSpan;
+            attribute.Type = type;
+            result = attribute;
+            return true;
+        }
     }
-
 
 }

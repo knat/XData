@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace XData {
+namespace XData.IO.Text {
     public class IndentedStringBuilder {
         public IndentedStringBuilder(StringBuilder stringBuilder, string indentString = DefaultIndentString, string newLineString = DefaultNewLineString) {
             if (stringBuilder == null) throw new ArgumentNullException("stringBuilder");
@@ -68,10 +68,10 @@ namespace XData {
     public class SavingContext : IndentedStringBuilder {
         public SavingContext(StringBuilder stringBuilder, string indentString = DefaultIndentString, string newLineString = DefaultNewLineString) :
             base(stringBuilder, indentString, newLineString) {
+            _aliasUriList = new List<AliasUri>();
         }
         public SavingContext(string indentString = DefaultIndentString, string newLineString = DefaultNewLineString) :
-            base(new StringBuilder(StringBuilderCapacity), indentString, newLineString) {
-            _aliasUriList = new List<AliasUri>();
+            this(new StringBuilder(StringBuilderCapacity), indentString, newLineString) {
         }
         public const int StringBuilderCapacity = 1024 * 2;
         private struct AliasUri {

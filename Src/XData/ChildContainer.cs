@@ -146,28 +146,29 @@ namespace XData {
         }
         //
         internal static bool TryCreate(DiagContext context, ProgramInfo programInfo, ChildSetInfo childSetInfo,
-            TextSpan closeElementTextSpan, NodeList<ElementNode> elementListNode, out XChildSet result) {
+            TextSpan openChildrenTextSpan, TextSpan closeChildrenTextSpan, List<ElementNode> elementNodeList, out XChildSet result) {
             result = null;
-            new CreationContext(context, programInfo, closeElementTextSpan, elementListNode);
+            new CreationContext(context, programInfo, openChildrenTextSpan, closeChildrenTextSpan, elementNodeList);
 
 
             return true;
         }
 
         private struct CreationContext {
-            internal CreationContext(DiagContext context, ProgramInfo programInfo, TextSpan closeElementTextSpan, List<ElementNode> list) {
+            internal CreationContext(DiagContext context, ProgramInfo programInfo,
+                TextSpan openChildrenTextSpan, TextSpan closeChildrenTextSpan, List<ElementNode> elementNodeList) {
                 _context = context;
                 _programInfo = programInfo;
-                _closeElementTextSpan = closeElementTextSpan;
-                _list = list ?? emptyList;
-                _count = _list.Count;
+                _openChildrenTextSpan = openChildrenTextSpan;
+                _closeChildrenTextSpan = closeChildrenTextSpan;
+                _elementNodeList = elementNodeList;
+                _count = _elementNodeList.Count;
                 _index = 0;
             }
-            private static readonly List<ElementNode> emptyList = new List<ElementNode>();
             private readonly DiagContext _context;
             private readonly ProgramInfo _programInfo;
-            private readonly TextSpan _closeElementTextSpan;
-            private readonly List<ElementNode> _list;
+            private readonly TextSpan _openChildrenTextSpan, _closeChildrenTextSpan;
+            private readonly List<ElementNode> _elementNodeList;
             private readonly int _count;
             private int _index;
             private bool IsEOF {
@@ -177,7 +178,7 @@ namespace XData {
             }
             private ElementNode GetElementNode() {
                 if (_index < _count) {
-                    return _list[_index];
+                    return _elementNodeList[_index];
                 }
                 return default(ElementNode);
             }
@@ -186,9 +187,9 @@ namespace XData {
             }
             private TextSpan GetTextSpan() {
                 if (_index < _count) {
-                    return _list[_index].QName.TextSpan;
+                    return _elementNodeList[_index].QName.TextSpan;
                 }
-                return _closeElementTextSpan;
+                return _closeChildrenTextSpan;
             }
             private CreationResult Create(ChildInfo childInfo, out XChild result) {
                 result = null;
@@ -197,7 +198,7 @@ namespace XData {
                 }
                 var elementInfo = childInfo as ElementInfo;
                 if (elementInfo != null) {
-                    var res = XElement.TrySkippableCreate(_context, elementInfo, GetElementNode(), out result);
+                    var res = XElementBase.TrySkippableCreate(_context, elementInfo, GetElementNode(), out result);
                     if (res == CreationResult.OK) {
                         ConsumeElementNode();
                     }
@@ -207,19 +208,19 @@ namespace XData {
                     var childSetInfo = childInfo as ChildSetInfo;
                     if (childSetInfo != null) {
                         if (childSetInfo.IsSequence) {
-                            var memberList = new List<XChild>();
-                            foreach (var memberInfo in childSetInfo.Children) {
-                                XChild member;
-                                var res = Create(memberInfo, out member);
+                            List<XChild> childList = null;
+                            foreach (var memberChildInfo in childSetInfo.Children) {
+                                XChild child;
+                                var res = Create(memberChildInfo, out child);
                                 if (res == CreationResult.OK) {
-                                    memberList.Add(member);
+                                    Extensions.CreateAndAdd(ref childList, child);
                                 }
                                 else if (res == CreationResult.Skipped) {
-                                    if (!memberInfo.IsOptional) {
-                                        if (memberList.Count == 0) {
+                                    if (!memberChildInfo.IsOptional) {
+                                        if (childList.CountOrZero() == 0) {
                                             return res;
                                         }
-                                        _context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildMemberIsNotMatched, memberInfo.DisplayName), GetTextSpan());
+                                        _context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotFound, memberChildInfo.DisplayName), GetTextSpan());
                                         return CreationResult.Error;
                                     }
                                 }
@@ -227,23 +228,24 @@ namespace XData {
                                     return res;
                                 }
                             }
-                            if (memberList.Count == 0) {
+                            if (childList.CountOrZero() == 0) {
                                 return CreationResult.Skipped;
                             }
                             var container = childInfo.CreateInstance<XChildContainer>();
-                            foreach (var member in memberList) {
-                                container.InternalAdd(member);
+                            container.TextSpan = childList[0].TextSpan;
+                            foreach (var child in childList) {
+                                container.InternalAdd(child);
                             }
                             result = container;
                             return CreationResult.OK;
                         }
                         else {//choice
                             XChild choice = null;
-                            foreach (var memberInfo in childSetInfo.Children) {
-                                XChild member;
-                                var res = Create(memberInfo, out member);
+                            foreach (var memberChildInfo in childSetInfo.Children) {
+                                XChild child;
+                                var res = Create(memberChildInfo, out child);
                                 if (res == CreationResult.OK) {
-                                    choice = member;
+                                    choice = child;
                                     break;
                                 }
                                 else if (res == CreationResult.Error) {
@@ -254,6 +256,7 @@ namespace XData {
                                 return CreationResult.Skipped;
                             }
                             var container = childInfo.CreateInstance<XChildContainer>();
+                            container.TextSpan = choice.TextSpan;
                             container.InternalAdd(choice);
                             result = container;
                             return CreationResult.OK;
@@ -263,13 +266,13 @@ namespace XData {
                         var childListInfo = childInfo as ChildListInfo;
                         var itemInfo = childListInfo.Item;
                         var itemCount = 0UL;
-                        var maxOccurs = childListInfo.MaxOccurrence;
-                        var itemList = new List<XChild>();
-                        while (itemCount <= maxOccurs) {
+                        var maxOccurrence = childListInfo.MaxOccurrence;
+                        List<XChild> itemList = null;
+                        while (itemCount <= maxOccurrence) {
                             XChild item;
                             var res = Create(itemInfo, out item);
                             if (res == CreationResult.OK) {
-                                itemList.Add(item);
+                                Extensions.CreateAndAdd(ref itemList, item);
                                 ++itemCount;
                             }
                             else if (res == CreationResult.Skipped) {
@@ -277,7 +280,7 @@ namespace XData {
                                     return res;
                                 }
                                 if (itemCount < childListInfo.MinOccurrence) {
-                                    _context.AddErrorDiag(new DiagMsg(DiagCode.ChildListCountIsNotGreaterThanOrEqualToMinOccurs,
+                                    _context.AddErrorDiag(new DiagMsg(DiagCode.ChildListCountNotGreaterThanOrEqualToMinOccurrence,
                                         childListInfo.DisplayName, itemCount.ToInvString(), childListInfo.MinOccurrence.ToInvString()), GetTextSpan());
                                     return CreationResult.Error;
                                 }
@@ -289,10 +292,11 @@ namespace XData {
                                 return res;
                             }
                         }
-                        if (itemList.Count == 0) {
+                        if (itemList.CountOrZero() == 0) {
                             return CreationResult.Skipped;
                         }
                         var container = childInfo.CreateInstance<XChildContainer>();
+                        container.TextSpan = itemList[0].TextSpan;
                         foreach (var item in itemList) {
                             container.InternalAdd(item);
                         }

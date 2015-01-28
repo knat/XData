@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using XData.IO.Text;
 
 namespace XData {
     public class XDateTimeOffset : XAtomType {
@@ -66,7 +67,7 @@ namespace XData {
         public override string ToString() {
             return _value.ToString(FormatString, DateTimeFormatInfo.InvariantInfo);
         }
-        public override void SaveValue(IndentedStringBuilder isb) {
+        public override sealed void SaveValue(IndentedStringBuilder isb) {
             isb.Append('"');
             isb.StringBuilder.Append(ToString());
             isb.StringBuilder.Append('"');

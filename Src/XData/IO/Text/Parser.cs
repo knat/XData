@@ -306,16 +306,16 @@ namespace XData.IO.Text {
             return value;
         }
         protected bool List<T>(int startRawKind, int endRawKind, NodeGetter<T> nodeGetter, string errorMsg, out NodeList<T> result) {
-            TextSpan openToken, closeToken;
-            if (Token(startRawKind, out openToken)) {
-                var list = new NodeList<T>(openToken);
+            TextSpan openTokenTextSpan, closeTokenTextSpan;
+            if (Token(startRawKind, out openTokenTextSpan)) {
+                var list = new NodeList<T>(openTokenTextSpan);
                 while (true) {
                     T item;
                     if (nodeGetter(out item)) {
                         list.Add(item);
                     }
-                    else if (Token(endRawKind, out closeToken)) {
-                        list.CloseToken = closeToken;
+                    else if (Token(endRawKind, out closeTokenTextSpan)) {
+                        list.CloseTokenTextSpan = closeTokenTextSpan;
                         result = list;
                         return true;
                     }
@@ -328,16 +328,16 @@ namespace XData.IO.Text {
             return false;
         }
         protected bool List<T>(int startRawKind, int endRawKind, NodeGetterWithList<T> nodeGetterWithList, string errorMsg, out NodeList<T> result) {
-            TextSpan openToken, closeToken;
-            if (Token(startRawKind, out openToken)) {
-                var list = new NodeList<T>(openToken);
+            TextSpan openTokenTextSpan, closeTokenTextSpan;
+            if (Token(startRawKind, out openTokenTextSpan)) {
+                var list = new NodeList<T>(openTokenTextSpan);
                 while (true) {
                     T item;
                     if (nodeGetterWithList(list, out item)) {
                         list.Add(item);
                     }
-                    else if (Token(endRawKind, out closeToken)) {
-                        list.CloseToken = closeToken;
+                    else if (Token(endRawKind, out closeTokenTextSpan)) {
+                        list.CloseTokenTextSpan = closeTokenTextSpan;
                         result = list;
                         return true;
                     }
@@ -375,7 +375,7 @@ namespace XData.IO.Text {
             _uriAliasingListStack = new Stack<NodeList<UriAliasingNode>>();
         }
         private readonly NodeGetterWithList<UriAliasingNode> _uriAliasingGetter;
-        private readonly NodeGetter<AttributeNode> _attributeGetter;
+        private readonly NodeGetterWithList<AttributeNode> _attributeGetter;
         private readonly NodeGetter<ElementNode> _elementGetter;
         private readonly Stack<NodeList<UriAliasingNode>> _uriAliasingListStack;
         private bool _getFullName;
@@ -477,9 +477,9 @@ namespace XData.IO.Text {
                 var hasUriAliasingList = UriAliasingList();
                 GetFullName(ref qName);
                 var elementValue = default(ElementValueNode);
-                TextSpan equalsToken;
-                if (Token('=', out equalsToken)) {
-                    if (!ElementValue(equalsToken, out elementValue)) {
+                TextSpan equalsTextSpan;
+                if (Token('=', out equalsTextSpan)) {
+                    if (!ElementValue(equalsTextSpan, out elementValue)) {
                         ErrorDiagAndThrow("Element value expected.");
                     }
                 }
@@ -492,12 +492,12 @@ namespace XData.IO.Text {
             result = default(ElementNode);
             return false;
         }
-        private bool ElementValue(TextSpan equalsToken, out ElementValueNode result) {
+        private bool ElementValue(TextSpan equalsTextSpan, out ElementValueNode result) {
             QualifiableNameNode typeQName;
             var hasTypeQName = TypeIndicator(out typeQName);
             ComplexValueNode complexValue;
             var simpleValue = default(SimpleValueNode);
-            if (!ComplexValue(equalsToken, typeQName, out complexValue)) {
+            if (!ComplexValue(equalsTextSpan, typeQName, out complexValue)) {
                 if (!SimpleValue(typeQName, out simpleValue)) {
                     if (hasTypeQName) {
                         ErrorDiagAndThrow("Complex value or simple value expetced.");
@@ -509,30 +509,37 @@ namespace XData.IO.Text {
             result = new ElementValueNode(complexValue, simpleValue);
             return true;
         }
-        private bool ComplexValue(TextSpan equalsToken, QualifiableNameNode typeQName, out ComplexValueNode result) {
-            NodeList<AttributeNode> attributes;
-            List('[', ']', _attributeGetter, "Attribute or ] expected.", out attributes);
-            NodeList<ElementNode> complexChildren = null;
+        private bool ComplexValue(TextSpan equalsTextSpan, QualifiableNameNode typeQName, out ComplexValueNode result) {
+            NodeList<AttributeNode> attributeList;
+            List('[', ']', _attributeGetter, "Attribute or ] expected.", out attributeList);
+            NodeList<ElementNode> elementList = null;
             var simpleChild = default(SimpleValueNode);
             if (Token('$')) {
                 simpleChild = SimpleValueExpected();
             }
             else {
-                List('{', '}', _elementGetter, "Element or } expected.", out complexChildren);
+                List('{', '}', _elementGetter, "Element or } expected.", out elementList);
             }
-            var semicolonToken = default(TextSpan);
-            if (attributes == null && complexChildren == null && !simpleChild.IsValid) {
-                if (!Token(';', out semicolonToken)) {
+            var semicolonTextSpan = default(TextSpan);
+            if (attributeList == null && elementList == null && !simpleChild.IsValid) {
+                if (!Token(';', out semicolonTextSpan)) {
                     result = default(ComplexValueNode);
                     return false;
                 }
             }
-            result = new ComplexValueNode(equalsToken, typeQName, attributes, complexChildren, simpleChild, semicolonToken);
+            result = new ComplexValueNode(equalsTextSpan, typeQName, attributeList, elementList, simpleChild, semicolonTextSpan);
             return true;
         }
-        private bool Attribute(out AttributeNode result) {
+        private bool Attribute(List<AttributeNode> list, out AttributeNode result) {
             NameNode name;
             if (Name(out name)) {
+                if (list != null) {
+                    foreach (var item in list) {
+                        if (item.Name == name) {
+                            ErrorDiagAndThrow(new DiagMsg(DiagCode.DuplicateAttributeName, name.ToString()), name.TextSpan);
+                        }
+                    }
+                }
                 var value = default(SimpleValueNode);
                 if (Token('=')) {
                     value = SimpleValueExpected();

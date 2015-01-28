@@ -132,6 +132,12 @@ namespace XData {
             }
             list.Add(item);
         }
+        public static int CountOrZero<T>(this List<T> list) {
+            if (list == null) {
+                return 0;
+            }
+            return list.Count;
+        }
         //
         //
         //

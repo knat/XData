@@ -9,12 +9,14 @@ namespace XData {
         AliasSysIsReserved,
         DuplicateUriAlias,
         InvalidUriAlias,
+        //element
         ElementIsAbstract,
         ElementIsNotNullable,
         ElementRequiresComplexTypeValue,
         ElementRequiresSimpleTypeValue,
-        RequiredChildMemberIsNotMatched,
-        ChildListCountIsNotGreaterThanOrEqualToMinOccurs,
+        //children
+        RequiredChildNotFound,
+        ChildListCountNotGreaterThanOrEqualToMinOccurrence,
         //
         //types
         InvalidTypeName,
@@ -44,8 +46,13 @@ namespace XData {
         TypeRequiresSimpleChild,
         TypeRequiresComplexChildren,
 
+        //attributes
+        DuplicateAttributeName,
+        RequiredAttributeNotFound,
+        RedundantAttribute,
+        InvalidAttributeObject,
+        AttributeIsNotNullable,
 
-        //DuplicateAttributeFullName,
 
 
     }
@@ -78,10 +85,11 @@ namespace XData {
                     return "Element '{0}' requires complex type value.".InvFormat(_msgArgs);
                 case DiagCode.ElementRequiresSimpleTypeValue:
                     return "Element '{0}' requires simple type value.".InvFormat(_msgArgs);
-                case DiagCode.RequiredChildMemberIsNotMatched:
-                    return "Required child member '{0}' is not matched.".InvFormat(_msgArgs);
-                case DiagCode.ChildListCountIsNotGreaterThanOrEqualToMinOccurs:
-                    return "Child list '{0}' count '{1}' is not greater than or equal to min occurs '{2}'.".InvFormat(_msgArgs);
+                //children
+                case DiagCode.RequiredChildNotFound:
+                    return "Required child '{0}' not found.".InvFormat(_msgArgs);
+                case DiagCode.ChildListCountNotGreaterThanOrEqualToMinOccurrence:
+                    return "Child list '{0}' count '{1}' not greater than or equal to min occurrence '{2}'.".InvFormat(_msgArgs);
                 //
                 //types
                 case DiagCode.InvalidTypeName:
@@ -133,10 +141,17 @@ namespace XData {
                 case DiagCode.TypeRequiresComplexChildren:
                     return "Type '{0}' requires complex children.".InvFormat(_msgArgs);
 
-
-
-
-
+                //attributes
+                case DiagCode.DuplicateAttributeName:
+                    return "Duplicate attribute name '{0}'.".InvFormat(_msgArgs);
+                case DiagCode.RequiredAttributeNotFound:
+                    return "Required attribute '{0}' not found.".InvFormat(_msgArgs);
+                case DiagCode.RedundantAttribute:
+                    return "Redundant attribute '{0}'.";
+                case DiagCode.InvalidAttributeObject:
+                    return "Invalid attribute object.";
+                case DiagCode.AttributeIsNotNullable:
+                    return "Attribute '{0}' is not nullable.".InvFormat(_msgArgs);
 
                 default:
                     throw new InvalidOperationException("Invalid code: " + Code.ToString());
