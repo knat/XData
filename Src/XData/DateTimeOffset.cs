@@ -67,10 +67,10 @@ namespace XData {
         public override string ToString() {
             return _value.ToString(FormatString, DateTimeFormatInfo.InvariantInfo);
         }
-        public override sealed void SaveValue(IndentedStringBuilder isb) {
-            isb.Append('"');
-            isb.StringBuilder.Append(ToString());
-            isb.StringBuilder.Append('"');
+        internal override sealed void SaveValue(SavingContext context) {
+            context.Append('"');
+            context.StringBuilder.Append(ToString());
+            context.StringBuilder.Append('"');
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
         new public static readonly AtomTypeInfo ThisInfo = TypeKind.DateTimeOffset.ToAtomTypeInfo(typeof(XDateTimeOffset), XAtomType.ThisInfo);

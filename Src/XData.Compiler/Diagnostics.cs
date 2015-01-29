@@ -2,7 +2,7 @@
 using XData.IO.Text;
 
 namespace XData.Compiler {
-    public enum DiagCodeEx {
+    internal enum DiagCodeEx {
         None = 0,
         AliasSysIsReserved = -2000,
         UriSystemIsReserved,
@@ -71,7 +71,7 @@ namespace XData.Compiler {
         //
 
     }
-    public struct DiagMsgEx {
+    internal struct DiagMsgEx {
         public DiagMsgEx(DiagCodeEx code) {
             Code = code;
             _msgArgs = null;
@@ -214,7 +214,7 @@ namespace XData.Compiler {
         }
     }
 
-    public sealed class DiagContextEx : DiagContext {
+    internal sealed class DiagContextEx : DiagContext {
         [ThreadStatic]
         public static DiagContextEx Current;
         public sealed class ContextException : Exception { }

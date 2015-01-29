@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using XData.IO.Text;
 
@@ -41,7 +40,7 @@ namespace XData {
             AddRange(items);
         }
         private List<T> _itemList;
-        public override sealed bool TryGetValueLength(out ulong result) {
+        internal override sealed bool TryGetValueLength(out ulong result) {
             result = (ulong)_itemList.Count;
             return true;
         }
@@ -124,11 +123,11 @@ namespace XData {
                 return _itemList[index];
             }
             set {
-                _itemList[index] = SetParentTo(value);
+                _itemList[index] = SetParentTo(value, false);
             }
         }
         public void Add(T item) {
-            _itemList.Add(SetParentTo(item));
+            _itemList.Add(SetParentTo(item, false));
         }
         public void AddRange(IEnumerable<T> items) {
             if (items != null) {
@@ -138,7 +137,7 @@ namespace XData {
             }
         }
         public void Insert(int index, T item) {
-            _itemList.Insert(index, SetParentTo(item));
+            _itemList.Insert(index, SetParentTo(item, false));
         }
         public bool Remove(T item) {
             return _itemList.Remove(item);
@@ -164,7 +163,7 @@ namespace XData {
         IEnumerator<T> IEnumerable<T>.GetEnumerator() {
             return GetEnumerator();
         }
-        IEnumerator IEnumerable.GetEnumerator() {
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
             return GetEnumerator();
         }
         public bool IsReadOnly {
@@ -192,7 +191,7 @@ namespace XData {
                 array[arrayIndex++] = _itemList[i] as U;
             }
         }
-        protected override bool TryValidateCore(DiagContext context) {
+        internal override bool TryValidateCore(DiagContext context) {
             if (!base.TryValidateCore(context)) {
                 return false;
             }
@@ -201,28 +200,22 @@ namespace XData {
             var count = _itemList.Count;
             for (var i = 0; i < count; ++i) {
                 var item = _itemList[i];
-                if ((object)item == null) {
-                    context.AddErrorDiag(new DiagMsg(DiagCode.ListItemIsNull, i.ToInvString()), this);
-                }
-                else if (item.CheckObject(context, itemTypeInfo)) {
+                if (item.CheckEqualToOrDeriveFrom(context, itemTypeInfo)) {
                     item.TryValidate(context);
                 }
             }
             return !dMarker.HasErrors;
         }
-        public override void SaveValue(IndentedStringBuilder isb) {
-            isb.Append("#[");
+        internal override void SaveValue(SavingContext context) {
+            context.Append("#[");
             var count = _itemList.Count;
             for (var i = 0; i < count; ++i) {
                 if (i > 0) {
-                    isb.Append(' ');
+                    context.Append(' ');
                 }
-                var item = _itemList[i];
-                if (item != null) {
-                    item.SaveValue(isb);
-                }
+                _itemList[i].SaveValue(context);
             }
-            isb.Append(']');
+            context.Append(']');
         }
     }
 }

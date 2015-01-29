@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace XData.Compiler {
-    public abstract class Symbol {
+    internal abstract class Symbol {
     }
-    public sealed class ProgramSymbol : Symbol {
+    internal sealed class ProgramSymbol : Symbol {
         public ProgramSymbol(bool needGenCode) {
             NeedGenCode = needGenCode;
             NamespaceList = new List<NamespaceSymbol>();
@@ -14,7 +14,7 @@ namespace XData.Compiler {
         public readonly bool NeedGenCode;
         public readonly List<NamespaceSymbol> NamespaceList;
     }
-    public abstract class ObjectBaseSymbol : Symbol {
+    internal abstract class ObjectBaseSymbol : Symbol {
         protected ObjectBaseSymbol(NameSyntax csFullName, ExpressionSyntax csFullExp) {
             CSFullName = csFullName;
             CSFullExp = csFullExp;
@@ -28,7 +28,7 @@ namespace XData.Compiler {
             }
         }
     }
-    public sealed class NamespaceSymbol : ObjectBaseSymbol {
+    internal sealed class NamespaceSymbol : ObjectBaseSymbol {
         public NamespaceSymbol(string uri, CSNamespaceNameNode csNamespaceName, bool isCSNamespaceRef)
             : base(csNamespaceName.CSFullName, csNamespaceName.CSFullExp) {
             Uri = uri;
@@ -99,7 +99,7 @@ namespace XData.Compiler {
             return symbol;
         }
     }
-    public abstract class ObjectSymbol : ObjectBaseSymbol {
+    internal abstract class ObjectSymbol : ObjectBaseSymbol {
         protected ObjectSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, bool isCSOverride,
             NameSyntax csBaseFullName, NameSyntax[] csItfNames)
             : base(CS.QualifiedName(parent.CSFullName, csName), CS.MemberAccessExpr(parent.CSFullExp, csName)) {
@@ -134,10 +134,10 @@ namespace XData.Compiler {
         }
 
     }
-    public interface IGlobalObjectSymbol {
+    internal interface IGlobalObjectSymbol {
         FullName FullName { get; }
     }
-    public abstract class TypeSymbol : ObjectSymbol, IGlobalObjectSymbol {
+    internal abstract class TypeSymbol : ObjectSymbol, IGlobalObjectSymbol {
         protected TypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
             NameSyntax csBaseFullName, NameSyntax[] csItfNames, FullName fullName, TypeKind kind, TypeSymbol baseType)
             : base(parent, csName, isAbstract, isSealed, false, csBaseFullName, csItfNames) {
@@ -159,7 +159,7 @@ namespace XData.Compiler {
         }
 
     }
-    public class SimpleTypeSymbol : TypeSymbol {
+    internal class SimpleTypeSymbol : TypeSymbol {
         public SimpleTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
             NameSyntax csBaseFullName, NameSyntax[] csItfNames, FullName fullName, TypeKind kind, SimpleTypeSymbol baseType,
             FacetSetInfo valueRestrictions)
@@ -168,7 +168,7 @@ namespace XData.Compiler {
         }
         public readonly FacetSetInfo ValueRestrictions;
     }
-    public sealed class AtomTypeSymbol : SimpleTypeSymbol {
+    internal sealed class AtomTypeSymbol : SimpleTypeSymbol {
         public AtomTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
             FullName fullName, TypeKind kind, SimpleTypeSymbol baseType, FacetSetInfo valueRestrictions,
             TypeSyntax valueCSFullName)
@@ -177,7 +177,7 @@ namespace XData.Compiler {
         }
         public readonly TypeSyntax ValueCSFullName;
     }
-    public sealed class ListTypeSymbol : SimpleTypeSymbol {
+    internal sealed class ListTypeSymbol : SimpleTypeSymbol {
         public ListTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
             FullName fullName, SimpleTypeSymbol baseType, FacetSetInfo valueRestrictions,
             NameSyntax[] csItfNames, SimpleTypeSymbol itemType)
@@ -186,7 +186,7 @@ namespace XData.Compiler {
         }
         public readonly SimpleTypeSymbol ItemType;
     }
-    public sealed class ComplexTypeSymbol : TypeSymbol {
+    internal sealed class ComplexTypeSymbol : TypeSymbol {
         public ComplexTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
             FullName fullName, ComplexTypeSymbol baseType)
             : base(parent, csName, isAbstract, isSealed, baseType != null ? baseType.CSFullName : CSEX.XComplexTypeName, null,
@@ -205,7 +205,7 @@ namespace XData.Compiler {
             }
         }
     }
-    public sealed class AttributeSetSymbol : ObjectSymbol {
+    internal sealed class AttributeSetSymbol : ObjectSymbol {
         public AttributeSetSymbol(ComplexTypeSymbol parent, AttributeSetSymbol baseAttributeSet) :
             base(parent, "CLS_Attributes", false, false, baseAttributeSet != null,
                 baseAttributeSet != null ? baseAttributeSet.CSFullName : CSEX.XAttributeSetName, null) {
@@ -216,7 +216,7 @@ namespace XData.Compiler {
         public readonly List<AttributeSymbol> AttributeList;
 
     }
-    public sealed class AttributeSymbol : ObjectSymbol {
+    internal sealed class AttributeSymbol : ObjectSymbol {
         public AttributeSymbol(AttributeSetSymbol parent, string csName,
             string name, string displayName, bool isOptional, bool isNullable, SimpleTypeSymbol type, AttributeSymbol restrictedAttribute) :
                 base(parent, csName, false, false, restrictedAttribute != null,
@@ -236,7 +236,7 @@ namespace XData.Compiler {
         public readonly AttributeSymbol RestrictedAttribute;
     }
 
-    public abstract class ChildSymbol : ObjectSymbol {
+    internal abstract class ChildSymbol : ObjectSymbol {
         protected ChildSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, bool isCSOverride, NameSyntax csBaseFullName, NameSyntax[] csItfNames,
             ChildKind kind, string displayName, string memberName, ulong minOccurrence, ulong maxOccurrence, int order, ChildSymbol restrictedChild) :
                 base(parent, csName, isAbstract, isSealed, isCSOverride, csBaseFullName, csItfNames) {
@@ -266,7 +266,7 @@ namespace XData.Compiler {
         public abstract bool HasIntersection(FullName fullName, bool forChoice);
     }
 
-    public sealed class ElementSymbol : ChildSymbol, IGlobalObjectSymbol {
+    internal sealed class ElementSymbol : ChildSymbol, IGlobalObjectSymbol {
         public ElementSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
             ChildKind kind, string displayName, string memberName, ulong minOccurrence, ulong maxOccurrence, int order, ElementSymbol restrictedElement,
             FullName fullName, bool isNullable, TypeSymbol type, ElementSymbol referencedElement, ElementSymbol substitutedElement
@@ -326,19 +326,19 @@ namespace XData.Compiler {
             return false;
         }
     }
-    public abstract class ChildContainerSymbol : ChildSymbol {
+    internal abstract class ChildContainerSymbol : ChildSymbol {
         public ChildContainerSymbol(ObjectSymbol parent, string csName, bool isCSOverride, NameSyntax csBaseFullName, NameSyntax[] csItfNames,
             ChildKind kind, string displayName, string memberName, ulong minOccurrence, ulong maxOccurrence, int order, ChildContainerSymbol restrictedChildContainer)
             : base(parent, csName, false, false, isCSOverride, csBaseFullName, csItfNames, kind, displayName, memberName, minOccurrence, maxOccurrence, order, restrictedChildContainer) {
         }
     }
 
-    public sealed class ChildSetSymbol : ChildContainerSymbol {
+    internal sealed class ChildSetSymbol : ChildContainerSymbol {
         public ChildSetSymbol(ObjectSymbol parent, string csName,
             ChildKind kind, string displayName, string memberName, ulong minOccurrence, ulong maxOccurrence, int order, ChildSetSymbol restrictedChildSet,
             bool isRoot, ChildSetSymbol baseChildSet)
             : base(parent, csName, restrictedChildSet != null || baseChildSet != null,
-                 restrictedChildSet != null ? restrictedChildSet.CSFullName : baseChildSet != null ? baseChildSet.CSFullName : CSEX.XChildSetName, null,
+                 restrictedChildSet != null ? restrictedChildSet.CSFullName : baseChildSet != null ? baseChildSet.CSFullName : CSEX.XChildSequenceName, null,
                  kind, displayName, memberName, minOccurrence, maxOccurrence, order, restrictedChildSet) {
             IsRoot = isRoot;
             BaseChildSet = baseChildSet;
@@ -435,7 +435,7 @@ namespace XData.Compiler {
             return false;
         }
     }
-    public sealed class ChildListSymbol : ChildContainerSymbol {
+    internal sealed class ChildListSymbol : ChildContainerSymbol {
         public ChildListSymbol(ChildSetSymbol parent, string csName,
             string displayName, string memberName, ulong minOccurrence, ulong maxOccurrence, int order, ChildListSymbol restrictedChildList,
              ChildSymbol item)

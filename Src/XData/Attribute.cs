@@ -58,16 +58,17 @@ namespace XData {
             }
         }
         public void Save(SavingContext context) {
-            context.Append(Name);
+            context.Append(_name);
             if (_type != null) {
                 context.StringBuilder.Append(" = ");
                 _type.Save(context, AttributeInfo.Type);
+                context.AppendLine();
             }
         }
-        protected override bool TryValidateCore(DiagContext context) {
+        internal override bool TryValidateCore(DiagContext context) {
             var attributeInfo = AttributeInfo;
             if (_type != null) {
-                if (!_type.CheckObject(context, attributeInfo.Type)) {
+                if (!_type.CheckEqualToOrDeriveFrom(context, attributeInfo.Type)) {
                     return false;
                 }
                 if (!_type.TryValidate(context)) {
@@ -90,11 +91,11 @@ namespace XData {
                 }
             }
             else if (!attributeInfo.IsNullable) {
-                context.AddErrorDiag(new DiagMsg(DiagCode.AttributeIsNotNullable, attributeInfo.DisplayName), attributeNode.Name.TextSpan);
+                context.AddErrorDiag(new DiagMsg(DiagCode.AttributeIsNotNullable, attributeInfo.DisplayName), attributeNode.NameNode.TextSpan);
                 return false;
             }
             var attribute = attributeInfo.CreateInstance<XAttribute>();
-            attribute.TextSpan = attributeNode.Name.TextSpan;
+            attribute.TextSpan = attributeNode.NameNode.TextSpan;
             attribute.Type = type;
             result = attribute;
             return true;

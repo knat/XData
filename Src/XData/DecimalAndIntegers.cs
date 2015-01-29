@@ -91,7 +91,7 @@ namespace XData {
             scale = s;
             return p;
         }
-        public override bool TryGetValuePrecisionAndScale(out byte precision, out byte scale) {
+        internal override bool TryGetValuePrecisionAndScale(out byte precision, out byte scale) {
             precision = GetPrecisionAndScale(Value, out scale);
             return true;
         }

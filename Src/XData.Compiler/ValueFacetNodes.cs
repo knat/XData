@@ -2,7 +2,7 @@
 using XData.IO.Text;
 
 namespace XData.Compiler {
-    public sealed class ValueFacetsNode : Node {
+    internal sealed class ValueFacetsNode : Node {
         public ValueFacetsNode(Node parent) : base(parent) { }
         public IntegerRangeNode<ulong> Lengths;
         public IntegerRangeNode<byte> Digits;
@@ -63,7 +63,7 @@ namespace XData.Compiler {
         }
     }
 
-    public struct IntegerRangeNode<T> where T : struct {
+    internal struct IntegerRangeNode<T> where T : struct {
         public IntegerRangeNode(AtomValueNode minValueNode, T? minValue, AtomValueNode maxValueNode, T? maxValue, TextSpan dotDotToken) {
             MinValueNode = minValueNode;
             MinValue = minValue;
@@ -82,7 +82,7 @@ namespace XData.Compiler {
             }
         }
     }
-    public struct ValueRangeNode {
+    internal struct ValueRangeNode {
         public ValueRangeNode(ValueBoundaryNode? minValue, ValueBoundaryNode? maxValue, TextSpan dotDotToken) {
             MinValue = minValue;
             MaxValue = maxValue;
@@ -98,7 +98,7 @@ namespace XData.Compiler {
         }
 
     }
-    public struct ValueBoundaryNode {
+    internal struct ValueBoundaryNode {
         public ValueBoundaryNode(SimpleValueNode value, bool isInclusive) {
             Value = value;
             IsInclusive = isInclusive;

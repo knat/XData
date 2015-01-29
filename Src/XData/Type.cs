@@ -2,7 +2,6 @@
 
 namespace XData {
     public abstract class XType : XObject {
-        protected XType() { }
         public TypeInfo TypeInfo {
             get {
                 return (TypeInfo)ObjectInfo;
@@ -20,30 +19,30 @@ namespace XData {
                         typeQName.TextSpan);
                     return null;
                 }
-                if (!typeInfo.IsEqualToOrDeriveFrom(declTypeInfo)) {
+                if (!typeInfo.EqualToOrDeriveFrom(declTypeInfo)) {
                     context.AddErrorDiag(new DiagMsg(DiagCode.TypeNotEqualToOrDeriveFrom,
-                        typeFullName.ToString(), declTypeInfo.FullName.ToString()), typeQName.TextSpan);
+                        typeInfo.DisplayName, declTypeInfo.DisplayName), typeQName.TextSpan);
                     return null;
                 }
             }
             var effTypeInfo = typeInfo ?? declTypeInfo;
             if (effTypeInfo.IsAbstract) {
-                context.AddErrorDiag(new DiagMsg(DiagCode.TypeIsAbstract, effTypeInfo.FullName.ToString()),
+                context.AddErrorDiag(new DiagMsg(DiagCode.TypeIsAbstract, effTypeInfo.DisplayName),
                     typeInfo != null ? typeQName.TextSpan : declTypeTextSpan);
                 return null;
             }
             return effTypeInfo;
         }
-        public bool CheckObject(DiagContext context, TypeInfo baseTypeInfo) {
+        internal bool CheckEqualToOrDeriveFrom(DiagContext context, TypeInfo baseTypeInfo) {
             var typeInfo = TypeInfo;
-            if (!typeInfo.IsEqualToOrDeriveFrom(baseTypeInfo)) {
+            if (!typeInfo.EqualToOrDeriveFrom(baseTypeInfo)) {
                 context.AddErrorDiag(new DiagMsg(DiagCode.TypeNotEqualToOrDeriveFrom,
-                    typeInfo.FullName.ToString(), baseTypeInfo.FullName.ToString()), this);
+                    typeInfo.DisplayName, baseTypeInfo.DisplayName), this);
                 return false;
             }
             return true;
         }
-        public void Save(SavingContext context, TypeInfo declTypeInfo) {
+        internal void Save(SavingContext context, TypeInfo declTypeInfo) {
             var typeInfo = TypeInfo;
             if (typeInfo != declTypeInfo) {
                 context.Append('(');
@@ -52,7 +51,7 @@ namespace XData {
             }
             SaveValue(context);
         }
-        public abstract void SaveValue(IndentedStringBuilder isb);
+        internal abstract void SaveValue(SavingContext context);
 
 
     }

@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Text;
 
 namespace XData {
-    public static class Extensions {
+    internal static class Extensions {
         private const int _stringBuilderCount = 4;
         private const int _stringBuilderCapacity = 256;
         private static readonly StringBuilder[] _stringBuilders = new StringBuilder[_stringBuilderCount];
@@ -102,7 +102,7 @@ namespace XData {
             return byte.TryParse(s, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
         }
 
-
+        //
         public static int AggregateHash(int hash, int newValue) {
             unchecked {
                 return hash * 31 + newValue;
@@ -125,7 +125,7 @@ namespace XData {
                 return hash;
             }
         }
-
+        //
         public static void CreateAndAdd<T>(ref List<T> list, T item) {
             if (list == null) {
                 list = new List<T>();
@@ -133,10 +133,7 @@ namespace XData {
             list.Add(item);
         }
         public static int CountOrZero<T>(this List<T> list) {
-            if (list == null) {
-                return 0;
-            }
-            return list.Count;
+            return list == null ? 0 : list.Count;
         }
         //
         //

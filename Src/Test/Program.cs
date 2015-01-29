@@ -71,42 +71,42 @@ namespace Test {
             s = sqld.Scale;
             return sqld.Precision;
         }
-        static byte GetPAndS2(decimal d, out byte s) {
-            byte precision = 0;
-            byte scale = 0;
-            var inFraction = false;
-            var isLeadingZero = true;
-            foreach (var ch in d.ToInvString()) {
-                if (inFraction) {
-                    ++precision;
-                    ++scale;
-                }
-                else if (ch == '.') {
-                    isLeadingZero = false;
-                    inFraction = true;
-                }
-                else if (ch >= '1' && ch <= '9') {
-                    isLeadingZero = false;
-                    ++precision;
-                }
-                else if (ch == '0' && !isLeadingZero) {
-                    ++precision;
-                }
-            }
-            if (isLeadingZero) {
-                ++precision;
-            }
-            s = scale;
-            return precision;
-        }
+        //static byte GetPAndS2(decimal d, out byte s) {
+        //    byte precision = 0;
+        //    byte scale = 0;
+        //    var inFraction = false;
+        //    var isLeadingZero = true;
+        //    foreach (var ch in d.ToInvString()) {
+        //        if (inFraction) {
+        //            ++precision;
+        //            ++scale;
+        //        }
+        //        else if (ch == '.') {
+        //            isLeadingZero = false;
+        //            inFraction = true;
+        //        }
+        //        else if (ch >= '1' && ch <= '9') {
+        //            isLeadingZero = false;
+        //            ++precision;
+        //        }
+        //        else if (ch == '0' && !isLeadingZero) {
+        //            ++precision;
+        //        }
+        //    }
+        //    if (isLeadingZero) {
+        //        ++precision;
+        //    }
+        //    s = scale;
+        //    return precision;
+        //}
         static void Display(decimal d) {
             byte p, s;
             p = GetPAndS(d, out s);
            // Console.WriteLine("d: {0}, P={1}, S={2}", d.ToInvString(), p.ToInvString(), s.ToInvString());
         }
         static void Display2(decimal d) {
-            byte p, s;
-            p = GetPAndS2(d, out s);
+            //byte p, s;
+            //p = GetPAndS2(d, out s);
            // Console.WriteLine("d: {0}, P={1}, S={2}", d.ToInvString(), p.ToInvString(), s.ToInvString());
         }
         static void TestDecimal() {
@@ -159,29 +159,29 @@ namespace Test {
         }
 
 
-        static void TestLexer() {
-            using (var reader = new StreamReader("test.txt")) {
-                var lexer = Lexer.Get(reader);
-                while (true) {
-                    Token token = lexer.GetToken();
-                    Console.WriteLine("Kind={0},startIdx={1},length={2},StartPos={3},EndPos={4},Value={5}",
-                        token.RawKind, token.StartIndex, token.Length, token.StartPosition.ToString(), token.EndPosition.ToString(), token.Value);
-                    if (token.IsError || token.IsEndOfFile) {
-                        break;
-                    }
-                }
-            }
-        }
-        static void TestParser() {
-            var ctx = new DiagContext();
-            ElementNode element;
-            using (var reader = new StreamReader("test.txt")) {
-                Parser.Parse("test.txt", reader, ctx, out element);
-            }
-            foreach (var diag in ctx) {
-                Console.WriteLine(diag.ToString());
-            }
+        //static void TestLexer() {
+        //    using (var reader = new StreamReader("test.txt")) {
+        //        var lexer = Lexer.Get(reader);
+        //        while (true) {
+        //            Token token = lexer.GetToken();
+        //            Console.WriteLine("Kind={0},startIdx={1},length={2},StartPos={3},EndPos={4},Value={5}",
+        //                token.RawKind, token.StartIndex, token.Length, token.StartPosition.ToString(), token.EndPosition.ToString(), token.Value);
+        //            if (token.IsError || token.IsEndOfFile) {
+        //                break;
+        //            }
+        //        }
+        //    }
+        //}
+        //static void TestParser() {
+        //    var ctx = new DiagContext();
+        //    ElementNode element;
+        //    using (var reader = new StreamReader("test.txt")) {
+        //        Parser.Parse("test.txt", reader, ctx, out element);
+        //    }
+        //    foreach (var diag in ctx) {
+        //        Console.WriteLine(diag.ToString());
+        //    }
 
-        }
+        //}
     }
 }

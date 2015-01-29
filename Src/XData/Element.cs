@@ -1,4 +1,5 @@
-﻿using XData.IO.Text;
+﻿using System;
+using XData.IO.Text;
 
 namespace XData {
     public abstract class XChild : XObject {
@@ -16,6 +17,7 @@ namespace XData {
                 return (ChildInfo)ObjectInfo;
             }
         }
+        internal abstract void Save(SavingContext context);
     }
     internal enum CreationResult : byte {
         Error,
@@ -23,7 +25,6 @@ namespace XData {
         OK
     }
     public abstract class XElementBase : XChild {
-
         public ElementInfo ElementInfo {
             get {
                 return (ElementInfo)ObjectInfo;
@@ -82,9 +83,11 @@ namespace XData {
             }
             //
             var effElement = effElementInfo.CreateInstance<XElement>();
+            effElement.TextSpan = elementNameTextSpan;
             effElement.Type = type;
             if (elementInfo.IsReference) {
                 var elementRef = elementInfo.CreateInstance<XElementReference>();
+                elementRef.TextSpan = elementNameTextSpan;
                 elementRef.ReferencedElement = effElement;
                 result = elementRef;
             }
@@ -143,14 +146,50 @@ namespace XData {
             obj.Type = _type;
             return obj;
         }
-
         //
-        private static bool TryLoadAndValidate<T>(DiagContext context, ElementInfo elementInfo, ElementNode elementNode, out T result) where T : XElement {
+        public void SaveAsRoot(SavingContext context) {
 
-
-
+        }
+        internal override sealed void Save(SavingContext context) {
+            context.Append(_fullName);
+            if (_type != null) {
+                context.StringBuilder.Append(" = ");
+                _type.Save(context, ElementInfo.Type);
+                context.AppendLine();
+            }
+        }
+        internal override bool TryValidateCore(DiagContext context) {
+            var elementInfo = ElementInfo;
+            if (_type != null) {
+                if (!_type.CheckEqualToOrDeriveFrom(context, elementInfo.Type)) {
+                    return false;
+                }
+                if (!_type.TryValidate(context)) {
+                    return false;
+                }
+            }
+            else if (!elementInfo.IsNullable) {
+                context.AddErrorDiag(new DiagMsg(DiagCode.ElementIsNotNullable, elementInfo.DisplayName), this);
+                return false;
+            }
+            return true;
+        }
+        //
+        internal static bool TryCreate<T>(DiagContext context, ElementInfo elementInfo, ElementNode elementNode, out T result) where T : XElement {
+            if (!elementInfo.IsGlobal) throw new ArgumentException("!elementInfo.IsGlobal");
             result = null;
-            return false;
+            XChild child;
+            var res = TrySkippableCreate(context, elementInfo, elementNode, out child);
+            if (res == CreationResult.Error) {
+                return false;
+            }
+            if (res == CreationResult.Skipped) {
+                context.AddErrorDiag(new DiagMsg(DiagCode.InvalidElement, elementNode.FullName.ToString(), elementInfo.DisplayName),
+                    elementNode.QName.TextSpan);
+                return false;
+            }
+            result = (T)child;
+            return true;
         }
     }
     public abstract class XElementReference : XElementBase {
@@ -176,6 +215,9 @@ namespace XData {
             if (obj != null) return obj;
             _referencedElement = obj = ElementInfo.ReferencedElement.CreateInstance<T>(@try);
             return obj;
+        }
+        public XElement EnsureReferencedElement(bool @try = false) {
+            return EnsureReferencedElement<XElement>(@try);
         }
         public FullName FullName {
             get {
@@ -206,6 +248,8 @@ namespace XData {
         public XType EnsureType(bool @try = false) {
             return EnsureType<XType>(@try);
         }
-
+        internal override sealed void Save(SavingContext context) {
+            throw new NotImplementedException();
+        }
     }
 }

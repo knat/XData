@@ -61,19 +61,19 @@ namespace XData {
         public override string ToString() {
             return _value;
         }
-        public override bool TryGetValueLength(out ulong result) {
+        internal override bool TryGetValueLength(out ulong result) {
             result = (ulong)_value.Length;
             return true;
         }
-        public override sealed void SaveValue(IndentedStringBuilder isb) {
+        internal override sealed void SaveValue(SavingContext context) {
             var value = _value;
             var length = value.Length;
             if (length == 0) {
-                isb.Append("\"\"");
+                context.Append("\"\"");
             }
             else {
-                isb.Append("@\"");
-                var sb = isb.StringBuilder;
+                context.Append("@\"");
+                var sb = context.StringBuilder;
                 for (var i = 0; i < length; ++i) {
                     var ch = value[i];
                     if (ch == '"') {

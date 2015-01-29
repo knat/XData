@@ -64,6 +64,22 @@ namespace XData {
                 Children = value;
             }
         }
+        public XSimpleType SimpleChild {
+            get {
+                return _children as XSimpleType;
+            }
+            set {
+                Children = value;
+            }
+        }
+        public XChildSequence ComplexChildren {
+            get {
+                return _children as XChildSequence;
+            }
+            set {
+                Children = value;
+            }
+        }
         public T EnsureChildren<T>(bool @try = false) where T : XObject {
             var obj = _children as T;
             if (obj != null) {
@@ -86,6 +102,38 @@ namespace XData {
                 return (ComplexTypeInfo)ObjectInfo;
             }
         }
+        internal override void SaveValue(SavingContext context) {
+            if (_attributes != null) {
+                context.AppendLine();
+                context.PushIndent();
+                _attributes.Save(context);
+                context.PopIndent();
+            }
+            var simpleChildInfo = ComplexTypeInfo.SimpleChild;
+            if (simpleChildInfo != null) {
+                var simpleChild = SimpleChild;
+                if (simpleChild != null) {
+                    if (_attributes != null) {
+                        context.AppendLine();
+                        context.PushIndent();
+                    }
+                    context.Append("$ ");
+                    simpleChild.Save(context, simpleChildInfo);
+                    if (_attributes != null) {
+                        context.PopIndent();
+                    }
+                }
+            }
+            else {
+                var complexChildren = ComplexChildren;
+                if (complexChildren != null) {
+                    context.AppendLine();
+                    context.PushIndent();
+                    complexChildren.SaveAsRoot(context);
+                    context.PopIndent();
+                }
+            }
+        }
         //
         internal static bool TryCreate(DiagContext context, ProgramInfo programInfo, ComplexTypeInfo complexTypeInfo,
             ComplexValueNode complexValueNode, out XComplexType result) {
@@ -102,13 +150,13 @@ namespace XData {
             var attributeSetInfo = effComplexTypeInfo.Attributes;
             if (attributeSetInfo != null) {
                 if (!XAttributeSet.TryCreate(context, programInfo, attributeSetInfo,
-                    complexValueNode.OpenAttributesTextSpan, complexValueNode.CloseAttributesTextSpan, complexValueNode.EffectiveAttributeList, out attributes)) {
+                    attributeListNode, complexValueNode.CloseAttributesTextSpan, out attributes)) {
                     return false;
                 }
             }
             else {
                 if (attributeListNode != null && attributeListNode.Count > 0) {
-                    context.AddErrorDiag(new DiagMsg(DiagCode.TypeProhibitsAttributes, effComplexTypeInfo.FullName.ToString()),
+                    context.AddErrorDiag(new DiagMsg(DiagCode.TypeProhibitsAttributes, effComplexTypeInfo.DisplayName),
                         attributeListNode.OpenTokenTextSpan);
                     return false;
                 }
@@ -119,7 +167,7 @@ namespace XData {
             var simpleTypeInfo = effComplexTypeInfo.SimpleChild;
             if (simpleTypeInfo != null) {
                 if (!simpleValueNode.IsValid) {
-                    context.AddErrorDiag(new DiagMsg(DiagCode.TypeRequiresSimpleChild, effComplexTypeInfo.FullName.ToString()),
+                    context.AddErrorDiag(new DiagMsg(DiagCode.TypeRequiresSimpleChild, effComplexTypeInfo.DisplayName),
                         complexValueNode.OpenChildrenTextSpan);
                     return false;
                 }
@@ -134,20 +182,20 @@ namespace XData {
                 var childSetInfo = effComplexTypeInfo.ComplexChildren;
                 if (childSetInfo != null) {
                     if (simpleValueNode.IsValid) {
-                        context.AddErrorDiag(new DiagMsg(DiagCode.TypeRequiresComplexChildren, effComplexTypeInfo.FullName.ToString()),
+                        context.AddErrorDiag(new DiagMsg(DiagCode.TypeRequiresComplexChildren, effComplexTypeInfo.DisplayName),
                             simpleValueNode.TextSpan);
                         return false;
                     }
-                    XChildSet childSet;
-                    if (!XChildSet.TryCreate(context, programInfo, childSetInfo,
-                        complexValueNode.OpenChildrenTextSpan, complexValueNode.CloseChildrenTextSpan, complexValueNode.EffectiveElementList, out childSet)) {
+                    XChildSequence childSeq;
+                    if (!XChildSequence.TryCreate(context, childSetInfo,
+                         elementListNode, complexValueNode.CloseChildrenTextSpan, out childSeq)) {
                         return false;
                     }
-                    children = childSet;
+                    children = childSeq;
                 }
                 else {
                     if (simpleValueNode.IsValid || (elementListNode != null && elementListNode.Count > 0)) {
-                        context.AddErrorDiag(new DiagMsg(DiagCode.TypeProhibitsChildren, effComplexTypeInfo.FullName.ToString()),
+                        context.AddErrorDiag(new DiagMsg(DiagCode.TypeProhibitsChildren, effComplexTypeInfo.DisplayName),
                             complexValueNode.OpenChildrenTextSpan);
                         return false;
                     }

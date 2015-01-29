@@ -3,7 +3,6 @@ using XData.IO.Text;
 
 namespace XData {
     public abstract class XObject {
-        protected XObject() { }
         private XObject _parent;
         private TextSpan _textSpan;
         public TextSpan TextSpan {
@@ -80,26 +79,22 @@ namespace XData {
         //}
         public abstract ObjectInfo ObjectInfo { get; }
         public bool TryValidate(DiagContext context) {
-            if (context == null) {
-                throw new ArgumentNullException("context");
-            }
+            if (context == null) throw new ArgumentNullException("context");
             return TryValidateCore(context);
-            //var success = TryValidating(context, true);
-            //if (success) {
-            //    success = TryValidateCore(context);
-            //}
-            //return TryValidated(context, success);
         }
-        protected abstract bool TryValidateCore(DiagContext context);
-        //protected virtual bool TryValidating(Context context, bool fromValidate) {
+        internal abstract bool TryValidateCore(DiagContext context);
+        //internal bool CheckEqualTo(DiagContext context, ObjectInfo otherObjectInfo) {
+        //    var objectInfo = ObjectInfo;
+        //    if (objectInfo != otherObjectInfo) {
+        //        context.AddErrorDiag(new DiagMsg(DiagCode.ObjectNotEqualTo, objectInfo.DisplayName, otherObjectInfo.DisplayName), this);
+        //        return false;
+        //    }
         //    return true;
         //}
-        //protected virtual bool TryValidated(Context context, bool success) {
-        //    return success;
-        //}
-        //internal bool InvokeTryValidatePair(Context context) {
-        //    return TryValidated(context, TryValidating(context, false));
-        //}
+        internal bool EqualTo(ObjectInfo otherObjectInfo) {
+            return ObjectInfo == otherObjectInfo;
+        }
+
     }
 
 

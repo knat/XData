@@ -1,5 +1,4 @@
 ﻿namespace XData.IO.Text {
-
     public struct TextSpan {
         public TextSpan(string filePath, int startIndex, int length, TextPosition startPosition, TextPosition endPosition) {
             //if (filePath == null) throw new ArgumentNullException("filePath");
@@ -11,7 +10,7 @@
             StartPosition = startPosition;
             EndPosition = endPosition;
         }
-        public TextSpan(string filePath, Token token)
+        internal TextSpan(string filePath, Token token)
             : this(filePath, token.StartIndex, token.Length, token.StartPosition, token.EndPosition) {
         }
         public readonly string FilePath;

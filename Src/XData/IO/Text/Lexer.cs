@@ -4,7 +4,7 @@ using System.IO;
 using System.Text;
 
 namespace XData.IO.Text {
-    public struct Token {
+    internal struct Token {
         public Token(int kind, int startIndex, int length, TextPosition startPosition, TextPosition endPosition, string value) {
             RawKind = kind;
             StartIndex = startIndex;
@@ -38,7 +38,7 @@ namespace XData.IO.Text {
             return new TextSpan(filePath, this);
         }
     }
-    public enum TokenKind {
+    internal enum TokenKind {
         Error = -1000,
         WhitespaceOrNewLine,
         SingleLineComment,
@@ -57,7 +57,7 @@ namespace XData.IO.Text {
         DollarOpenBrace,
         QuestionOpenBrace,
     }
-    public sealed class Lexer {
+    internal sealed class Lexer {
         [ThreadStatic]
         private static Lexer _instance;
         public static Lexer Get(TextReader reader) {

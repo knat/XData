@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 
 namespace XData.IO.Text {
-    public abstract class ParserBase {
+    internal abstract class ParserBase {
         protected ParserBase() {
             _simpleValueGetter = SimpleValue;
         }
@@ -362,7 +362,7 @@ namespace XData.IO.Text {
         }
 
     }
-    public sealed class Parser : ParserBase {
+    internal sealed class Parser : ParserBase {
         [ThreadStatic]
         private static Parser _instance;
         public static bool Parse(string filePath, TextReader reader, DiagContext context, out ElementNode result) {
@@ -416,7 +416,7 @@ namespace XData.IO.Text {
                 if (alias.Value == "sys") {
                     ErrorDiagAndThrow(new DiagMsg(DiagCode.AliasSysIsReserved), alias.TextSpan);
                 }
-                if (list != null) {
+                if (list.CountOrZero() > 0) {
                     foreach (var item in list) {
                         if (item.Alias == alias) {
                             ErrorDiagAndThrow(new DiagMsg(DiagCode.DuplicateUriAlias, alias.ToString()), alias.TextSpan);
@@ -533,9 +533,9 @@ namespace XData.IO.Text {
         private bool Attribute(List<AttributeNode> list, out AttributeNode result) {
             NameNode name;
             if (Name(out name)) {
-                if (list != null) {
+                if (list.CountOrZero() > 0) {
                     foreach (var item in list) {
-                        if (item.Name == name) {
+                        if (item.NameNode == name) {
                             ErrorDiagAndThrow(new DiagMsg(DiagCode.DuplicateAttributeName, name.ToString()), name.TextSpan);
                         }
                     }

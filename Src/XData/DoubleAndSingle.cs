@@ -97,15 +97,15 @@ namespace XData {
             }
             return false;
         }
-        public override void SaveValue(IndentedStringBuilder isb) {
+        internal override void SaveValue(SavingContext context) {
             string result;
             if (GetString(out result)) {
-                isb.Append(result);
+                context.Append(result);
             }
             else {
-                isb.Append('"');
-                isb.StringBuilder.Append(result);
-                isb.StringBuilder.Append('"');
+                context.Append('"');
+                context.StringBuilder.Append(result);
+                context.StringBuilder.Append('"');
             }
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
@@ -227,15 +227,15 @@ namespace XData {
             }
             return false;
         }
-        public override sealed void SaveValue(IndentedStringBuilder isb) {
+        internal override sealed void SaveValue(SavingContext context) {
             string result;
             if (GetString(out result)) {
-                isb.Append(result);
+                context.Append(result);
             }
             else {
-                isb.Append('"');
-                isb.StringBuilder.Append(result);
-                isb.StringBuilder.Append('"');
+                context.Append('"');
+                context.StringBuilder.Append(result);
+                context.StringBuilder.Append('"');
             }
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }

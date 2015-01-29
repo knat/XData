@@ -83,14 +83,14 @@ namespace XData {
             if (_value.Length == 0) return "";
             return Convert.ToBase64String(_value);
         }
-        public override bool TryGetValueLength(out ulong result) {
+        internal override bool TryGetValueLength(out ulong result) {
             result = (ulong)_value.Length;
             return true;
         }
-        public override sealed void SaveValue(IndentedStringBuilder isb) {
-            isb.Append('"');
-            isb.StringBuilder.Append(ToString());
-            isb.StringBuilder.Append('"');
+        internal override sealed void SaveValue(SavingContext context) {
+            context.Append('"');
+            context.StringBuilder.Append(ToString());
+            context.StringBuilder.Append('"');
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
         new public static readonly AtomTypeInfo ThisInfo = TypeKind.Binary.ToAtomTypeInfo(typeof(XBinary), XAtomType.ThisInfo);

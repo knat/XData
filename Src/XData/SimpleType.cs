@@ -3,7 +3,6 @@ using XData.IO.Text;
 
 namespace XData {
     public abstract class XSimpleType : XType, IEquatable<XSimpleType> {
-        protected XSimpleType() { }
         public abstract bool Equals(XSimpleType other);
         public abstract bool ValueEquals(object other);
         public override sealed bool Equals(object obj) {
@@ -21,15 +20,17 @@ namespace XData {
         public static bool operator !=(XSimpleType left, XSimpleType right) {
             return !(left == right);
         }
-        public virtual bool TryGetValueLength(out ulong result) {
-            result = 0;
-            return false;
+        public SimpleTypeInfo SimpleTypeInfo {
+            get {
+                return (SimpleTypeInfo)ObjectInfo;
+            }
         }
-
-        protected override bool TryValidateCore(DiagContext context) {
+        public static readonly SimpleTypeInfo ThisInfo = new SimpleTypeInfo(typeof(XSimpleType), true, TypeKind.SimpleType.ToFullName(), null, null);
+        //
+        internal override bool TryValidateCore(DiagContext context) {
             return TryValidateFacets(context);
         }
-        protected bool TryValidateFacets(DiagContext context) {
+        internal bool TryValidateFacets(DiagContext context) {
             var facets = SimpleTypeInfo.Facets;
             if (facets != null) {
                 var dMarker = context.MarkDiags();
@@ -61,18 +62,14 @@ namespace XData {
             }
             return true;
         }
-        protected virtual void TryValidateFacetsEx(DiagContext context, FacetSetInfo facets) { }
-        public override void SaveValue(IndentedStringBuilder isb) {
-            isb.Append(ToString());
+        internal virtual bool TryGetValueLength(out ulong result) {
+            result = 0;
+            return false;
         }
-
-        public SimpleTypeInfo SimpleTypeInfo {
-            get {
-                return (SimpleTypeInfo)ObjectInfo;
-            }
+        internal virtual void TryValidateFacetsEx(DiagContext context, FacetSetInfo facets) { }
+        internal override void SaveValue(SavingContext context) {
+            context.Append(ToString());
         }
-        public static readonly SimpleTypeInfo ThisInfo = new SimpleTypeInfo(typeof(XSimpleType), true, TypeKind.SimpleType.ToFullName(), null, null);
-        //
         internal static bool TryCreate(DiagContext context, ProgramInfo programInfo, SimpleTypeInfo simpleTypeInfo,
             SimpleValueNode simpleValueNode, out XSimpleType result) {
             result = null;
@@ -86,7 +83,7 @@ namespace XData {
             if (atomTypeInfo != null) {
                 var atomicValueNode = simpleValueNode.Atom;
                 if (!atomicValueNode.IsValid) {
-                    context.AddErrorDiag(new DiagMsg(DiagCode.TypeRequiresAtomValue, effSimpleTypeInfo.FullName.ToString()), simpleValueTextSpan);
+                    context.AddErrorDiag(new DiagMsg(DiagCode.TypeRequiresAtomValue, effSimpleTypeInfo.DisplayName), simpleValueTextSpan);
                     return false;
                 }
                 XAtomType atomicType;
@@ -98,7 +95,7 @@ namespace XData {
             else {
                 var listNode = simpleValueNode.List;
                 if (listNode == null) {
-                    context.AddErrorDiag(new DiagMsg(DiagCode.TypeRequiresListValue, effSimpleTypeInfo.FullName.ToString()), simpleValueTextSpan);
+                    context.AddErrorDiag(new DiagMsg(DiagCode.TypeRequiresListValue, effSimpleTypeInfo.DisplayName), simpleValueTextSpan);
                     return false;
                 }
                 XListType listType;

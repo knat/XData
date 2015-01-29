@@ -4,8 +4,7 @@ using System.IO;
 using XData.IO.Text;
 
 namespace XData.Compiler {
-
-    public sealed class Parser : ParserBase {
+    internal sealed class Parser : ParserBase {
         public const string AbstractKeyword = "abstract";
         public const string AliasKeyword = "alias";
         public const string AsKeyword = "as";
@@ -170,7 +169,7 @@ namespace XData.Compiler {
                 KeywordExpected(AsKeyword);
                 var alias = NameExpected();
                 CheckAlias(alias);
-                if (list != null) {
+                if (list.CountOrZero() > 0) {
                     foreach (var item in list) {
                         if (item.Alias == alias) {
                             ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateUriAlias, alias.ToString()), alias.TextSpan);
@@ -227,7 +226,7 @@ namespace XData.Compiler {
                 if (Keyword(AsKeyword)) {
                     alias = NameExpected();
                     CheckAlias(alias);
-                    if (list != null) {
+                    if (list.CountOrZero() > 0) {
                         foreach (var item in list) {
                             if (item.Alias == alias) {
                                 ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateImportAlias, alias.ToString()), alias.TextSpan);
@@ -247,7 +246,7 @@ namespace XData.Compiler {
                     return false;
                 }
             }
-            if (list != null) {
+            if (list.CountOrZero() > 0) {
                 var name = result.Name;
                 foreach (var item in list) {
                     if (item.Name == name) {
@@ -551,7 +550,7 @@ namespace XData.Compiler {
                 Unordered(_nullableGetter, _optionalOrDeleteGetter,
                     out attribute.Nullable, out attribute.OptionalOrDelete,
                     "Nullable, ?, x, or > expected.");
-                if (list != null) {
+                if (list.CountOrZero() > 0) {
                     foreach (var item in list) {
                         if (item.NameNode == name) {
                             ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateAttributeName, name.ToString()), name.TextSpan);
@@ -602,7 +601,7 @@ namespace XData.Compiler {
                     }
                 }
             }
-            if (list != null) {
+            if (list.CountOrZero() > 0) {
                 var memberName = result.MemberNameNode;
                 foreach (var item in list) {
                     if (item.MemberNameNode == memberName) {

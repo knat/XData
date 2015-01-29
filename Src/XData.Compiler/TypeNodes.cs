@@ -2,7 +2,7 @@
 using XData.IO.Text;
 
 namespace XData.Compiler {
-    public sealed class SystemTypeNode : TypeNode {
+    internal sealed class SystemTypeNode : TypeNode {
         private SystemTypeNode() : base(null) { }
         private static readonly Dictionary<string, SystemTypeNode> _dict;
         static SystemTypeNode() {
@@ -19,7 +19,7 @@ namespace XData.Compiler {
             return result;
         }
     }
-    public class TypeNode : NamespaceMemberNode {
+    internal class TypeNode : NamespaceMemberNode {
         public TypeNode(Node parent) : base(parent) { }
         public TypeBodyNode Body;
         public override void Resolve() {
@@ -29,12 +29,12 @@ namespace XData.Compiler {
             return Body.CreateSymbolCore(parent, csName, fullName, isAbstract, isSealed);
         }
     }
-    public abstract class TypeBodyNode : Node {
+    internal abstract class TypeBodyNode : Node {
         protected TypeBodyNode(Node parent) : base(parent) { }
         public abstract void Resolve();
         public abstract TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed);
     }
-    public sealed class TypeListNode : TypeBodyNode {
+    internal sealed class TypeListNode : TypeBodyNode {
         public TypeListNode(Node parent) : base(parent) { }
         public QualifiableNameNode ItemTypeQName;
         public TypeNode ItemType;
@@ -59,7 +59,7 @@ namespace XData.Compiler {
             return null;// new ListTypeSymbol(parent, csName, isAbstract, isSealed, fullName, itemSymbol);
         }
     }
-    public sealed class AttributesChildrenNode : Node {
+    internal sealed class AttributesChildrenNode : Node {
         public AttributesChildrenNode(Node parent) : base(parent) { }
         public AttributesNode Attributes;
         public ComplexChildrenNode ComplexChildren;
@@ -95,7 +95,7 @@ namespace XData.Compiler {
             }
         }
     }
-    public class TypeDirectnessNode : TypeBodyNode {
+    internal class TypeDirectnessNode : TypeBodyNode {
         public TypeDirectnessNode(Node parent) : base(parent) { }
         public AttributesChildrenNode AttributesChildren;
         public override void Resolve() {
@@ -119,7 +119,7 @@ namespace XData.Compiler {
             return complexTypeSymbol;
         }
     }
-    public class TypeExtension : TypeDirectnessNode {
+    internal class TypeExtension : TypeDirectnessNode {
         public TypeExtension(Node parent) : base(parent) { }
         public QualifiableNameNode BaseTypeQName;
         public TypeNode BaseType;
@@ -159,7 +159,7 @@ namespace XData.Compiler {
             return complexTypeSymbol;
         }
     }
-    public sealed class TypeRestriction : TypeExtension {
+    internal sealed class TypeRestriction : TypeExtension {
         public TypeRestriction(Node parent) : base(parent) { }
         public ValueFacetsNode ValueRestrictions;
         public override void Resolve() {

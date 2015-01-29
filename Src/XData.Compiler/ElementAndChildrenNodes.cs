@@ -2,7 +2,7 @@
 using XData.IO.Text;
 
 namespace XData.Compiler {
-    public sealed class GlobalElementNode : NamespaceMemberNode {
+    internal sealed class GlobalElementNode : NamespaceMemberNode {
         public GlobalElementNode(Node parent) : base(parent) { }
         public TextSpan Nullable;
         public QualifiableNameNode SubstitutedGlobalElementQName;
@@ -79,7 +79,7 @@ namespace XData.Compiler {
                 IsNullable, typeSymbol, null, substitutedElementSymbol) { GlobalElementNode = this };
         }
     }
-    public sealed class ComplexChildrenNode : Node {
+    internal sealed class ComplexChildrenNode : Node {
         public ComplexChildrenNode(Node parent) : base(parent) { }
         public List<MemberChildNode> ChildList;
         public TextSpan OpenBraceToken, CloseBraceToken;
@@ -153,7 +153,7 @@ namespace XData.Compiler {
             }
         }
     }
-    public abstract class MemberChildNode : Node {
+    internal abstract class MemberChildNode : Node {
         protected MemberChildNode(Node parent) : base(parent) { }
         public ChildKind Kind;
         public NameNode MemberNameNode;
@@ -221,10 +221,10 @@ namespace XData.Compiler {
             int order, string displayName, string csName);
 
     }
-    public abstract class MemberElementNode : MemberChildNode {
+    internal abstract class MemberElementNode : MemberChildNode {
         protected MemberElementNode(Node parent) : base(parent) { }
     }
-    public sealed class LocalElementNode : MemberElementNode {
+    internal sealed class LocalElementNode : MemberElementNode {
         public LocalElementNode(Node parent) : base(parent) {
             Kind = ChildKind.LocalElement;
         }
@@ -275,7 +275,7 @@ namespace XData.Compiler {
                 MinOccurrence, MaxOccurrence, order, restrictedElementSymbol, fullName, IsNullable, typeSymbol, null, null);
         }
     }
-    public sealed class GlobalElementRefNode : MemberElementNode {
+    internal sealed class GlobalElementRefNode : MemberElementNode {
         public GlobalElementRefNode(Node parent) : base(parent) {
             Kind = ChildKind.GlobalElementReference;
         }
@@ -311,7 +311,7 @@ namespace XData.Compiler {
                 globalElementSymbol.Type, globalElementSymbol, null);
         }
     }
-    public sealed class MemberComplexChildrenNode : MemberChildNode {
+    internal sealed class MemberComplexChildrenNode : MemberChildNode {
         public MemberComplexChildrenNode(Node parent) : base(parent) { }
         public List<MemberChildNode> ChildList;
         public TextSpan OpenBraceToken, CloseBraceToken;
@@ -351,7 +351,7 @@ namespace XData.Compiler {
             return childSetSymbol;
         }
     }
-    public struct OccurrenceNode {
+    internal struct OccurrenceNode {
         public OccurrenceNode(ulong minValue, ulong maxValue, TextSpan token) {
             MinValue = minValue;
             MaxValue = maxValue;

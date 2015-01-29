@@ -7,7 +7,6 @@ namespace XData {
     }
 
     public abstract class XAtomType : XSimpleType, ITryComparable<XAtomType> {
-        protected XAtomType() { }
         public abstract bool TryParseAndSet(string literal);
         public virtual bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
@@ -53,12 +52,20 @@ namespace XData {
             }
             return false;
         }
-        public virtual bool TryGetValuePrecisionAndScale(out byte precision, out byte scale) {
+        public AtomTypeInfo AtomTypeInfo {
+            get {
+                return (AtomTypeInfo)ObjectInfo;
+            }
+        }
+        new public static readonly AtomTypeInfo ThisInfo = new AtomTypeInfo(typeof(XAtomType), true, TypeKind.AtomType.ToFullName(),
+            XSimpleType.ThisInfo, null, TypeKind.AtomType);
+        //
+        internal virtual bool TryGetValuePrecisionAndScale(out byte precision, out byte scale) {
             precision = 0;
             scale = 0;
             return false;
         }
-        protected override sealed void TryValidateFacetsEx(DiagContext context, FacetSetInfo facets) {
+        internal override sealed void TryValidateFacetsEx(DiagContext context, FacetSetInfo facets) {
             var precision = facets.Precision;
             var scale = facets.Scale;
             if (precision != null || scale != null) {
@@ -160,13 +167,6 @@ namespace XData {
             result = atomType;
             return true;
         }
-        public AtomTypeInfo AtomTypeInfo {
-            get {
-                return (AtomTypeInfo)ObjectInfo;
-            }
-        }
-        new public static readonly AtomTypeInfo ThisInfo = new AtomTypeInfo(typeof(XAtomType), true, TypeKind.AtomType.ToFullName(),
-            XSimpleType.ThisInfo, null, TypeKind.AtomType);
     }
 
 }

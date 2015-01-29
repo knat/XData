@@ -129,18 +129,15 @@ namespace XData {
             return attributeInfo.CreateInstance<T>(@try);
         }
         public void Save(SavingContext context) {
-            if (_attributeList.Count > 0) {
-                context.AppendLine('[');
-                context.PushIndent();
-                foreach (var attribute in _attributeList) {
-                    attribute.Save(context);
-                    context.AppendLine();
-                }
-                context.PopIndent();
-                context.AppendLine(']');
+            context.AppendLine('[');
+            context.PushIndent();
+            foreach (var attribute in _attributeList) {
+                attribute.Save(context);
             }
+            context.PopIndent();
+            context.Append(']');
         }
-        protected override bool TryValidateCore(DiagContext context) {
+        internal override bool TryValidateCore(DiagContext context) {
             var attributeSetInfo = AttributeSetInfo;
             var dMarker = context.MarkDiags();
             var attributeList = new List<XAttribute>(_attributeList);
@@ -149,13 +146,8 @@ namespace XData {
                     var found = false;
                     for (var i = 0; i < attributeList.Count; ++i) {
                         var attribute = attributeList[i];
-                        if (attribute.Name == attributeInfo.Name) {
-                            if (attribute.AttributeInfo != attributeInfo) {
-                                context.AddErrorDiag(new DiagMsg(DiagCode.InvalidAttributeObject), attribute);
-                            }
-                            else {
-                                attribute.TryValidate(context);
-                            }
+                        if (attribute.Name == attributeInfo.Name && attribute.EqualTo(attributeInfo)) {
+                            attribute.TryValidate(context);
                             attributeList.RemoveAt(i);
                             found = true;
                             break;
@@ -166,29 +158,33 @@ namespace XData {
                     }
                 }
             }
-            foreach (var attribute in attributeList) {
-                context.AddErrorDiag(new DiagMsg(DiagCode.RedundantAttribute, attribute.Name), attribute);
+            if (attributeList.Count > 0) {
+                foreach (var attribute in attributeList) {
+                    context.AddErrorDiag(new DiagMsg(DiagCode.RedundantAttribute, attribute.ObjectInfo.DisplayName), attribute);
+                }
             }
             return !dMarker.HasErrors;
         }
         internal static bool TryCreate(DiagContext context, ProgramInfo programInfo, AttributeSetInfo attributeSetInfo,
-            TextSpan openAttributesTextSpan, TextSpan closeAttributesTextSpan, List<AttributeNode> attributeNodeList, out XAttributeSet result) {
+            NodeList<AttributeNode> attributeNodeList, TextSpan closeAttributesTextSpan, out XAttributeSet result) {
             result = null;
             var dMarker = context.MarkDiags();
             List<XAttribute> attributeList = null;
             if (attributeSetInfo.Attributes != null) {
                 foreach (var attributeInfo in attributeSetInfo.Attributes) {
                     var found = false;
-                    for (var i = 0; i < attributeNodeList.Count; ++i) {
-                        var attributeNode = attributeNodeList[i];
-                        if (attributeNode.Name.Value == attributeInfo.Name) {
-                            XAttribute attribute;
-                            if (XAttribute.TryCreate(context, programInfo, attributeInfo, attributeNode, out attribute)) {
-                                Extensions.CreateAndAdd(ref attributeList, attribute);
+                    if (attributeNodeList != null) {
+                        for (var i = 0; i < attributeNodeList.Count; ++i) {
+                            var attributeNode = attributeNodeList[i];
+                            if (attributeNode.Name == attributeInfo.Name) {
+                                XAttribute attribute;
+                                if (XAttribute.TryCreate(context, programInfo, attributeInfo, attributeNode, out attribute)) {
+                                    Extensions.CreateAndAdd(ref attributeList, attribute);
+                                }
+                                attributeNodeList.RemoveAt(i);
+                                found = true;
+                                break;
                             }
-                            attributeNodeList.RemoveAt(i);
-                            found = true;
-                            break;
                         }
                     }
                     if (!found && !attributeInfo.IsOptional) {
@@ -196,20 +192,24 @@ namespace XData {
                     }
                 }
             }
-            foreach (var attributeNode in attributeNodeList) {
-                context.AddErrorDiag(new DiagMsg(DiagCode.RedundantAttribute, attributeNode.Name.ToString()), attributeNode.Name.TextSpan);
+            if (attributeNodeList.CountOrZero() > 0) {
+                foreach (var attributeNode in attributeNodeList) {
+                    context.AddErrorDiag(new DiagMsg(DiagCode.RedundantAttribute, attributeNode.NameNode.ToString()), attributeNode.NameNode.TextSpan);
+                }
             }
             if (dMarker.HasErrors) {
                 return false;
             }
-            var attributeSet = attributeSetInfo.CreateInstance<XAttributeSet>();
-            attributeSet.TextSpan = openAttributesTextSpan;
-            if (attributeList != null) {
-                foreach (var attribute in attributeList) {
-                    attributeSet.InternalAdd(attribute);
+            if (attributeNodeList != null) {
+                var attributeSet = attributeSetInfo.CreateInstance<XAttributeSet>();
+                attributeSet.TextSpan = attributeNodeList.OpenTokenTextSpan;
+                if (attributeList != null) {
+                    foreach (var attribute in attributeList) {
+                        attributeSet.InternalAdd(attribute);
+                    }
                 }
+                result = attributeSet;
             }
-            result = attributeSet;
             return true;
         }
     }

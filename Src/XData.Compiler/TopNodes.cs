@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using XData.IO.Text;
 
 namespace XData.Compiler {
-    public sealed class ProgramNode : Node {
+    internal sealed class ProgramNode : Node {
         public ProgramNode() : base(null) {
         }
         public List<CompilationUnitNode> CompilationUnitList;
@@ -101,7 +101,7 @@ namespace XData.Compiler {
 
         }
     }
-    public abstract class Node {
+    internal abstract class Node {
         protected Node(Node parent) {
             Parent = parent;
         }
@@ -137,18 +137,18 @@ namespace XData.Compiler {
             }
         }
     }
-    public class CompilationUnitNode : Node {
+    internal class CompilationUnitNode : Node {
         public CompilationUnitNode(Node parent) : base(parent) { }
         public List<UriAliasingNode> UriAliasingList;
         public List<NamespaceNode> NamespaceList;
     }
-    public sealed class CSNSIndicatorCompilationUnitNode : CompilationUnitNode {
+    internal sealed class CSNSIndicatorCompilationUnitNode : CompilationUnitNode {
         public CSNSIndicatorCompilationUnitNode(Node parent) : base(parent) { }
         new public List<CSNSIndicatorNode> NamespaceList;
     }
-    public sealed class NamespaceNodeDict : Dictionary<string, LogicalNamespaceNode> {
+    internal sealed class NamespaceNodeDict : Dictionary<string, LogicalNamespaceNode> {
     }
-    public sealed class LogicalNamespaceNode : List<NamespaceNode> {
+    internal sealed class LogicalNamespaceNode : List<NamespaceNode> {
         public string Uri {
             get {
                 return this[0].Uri;
@@ -180,7 +180,7 @@ namespace XData.Compiler {
             return null;
         }
     }
-    public class NamespaceNode : Node {
+    internal class NamespaceNode : Node {
         public NamespaceNode(Node parent) : base(parent) { }
         public UriNode UriNode;
         public List<ImportNode> ImportList;
@@ -291,14 +291,14 @@ namespace XData.Compiler {
             return result;
         }
     }
-    public sealed class CSNSIndicatorNode : NamespaceNode {
+    internal sealed class CSNSIndicatorNode : NamespaceNode {
         public CSNSIndicatorNode(Node parent) : base(parent) { }
         public TextSpan TextSpan;
         public bool IsRef;
         public CSNamespaceNameNode CSNamespaceName;
     }
 
-    public struct UriNode {
+    internal struct UriNode {
         public UriNode(NameNode alias, AtomValueNode stringValue, string value) {
             Alias = alias;
             StringValue = stringValue;
@@ -316,7 +316,7 @@ namespace XData.Compiler {
             }
         }
     }
-    public struct UriAliasingNode {
+    internal struct UriAliasingNode {
         public UriAliasingNode(AtomValueNode uri, NameNode alias) {
             Uri = uri;
             Alias = alias;
@@ -324,7 +324,7 @@ namespace XData.Compiler {
         public readonly AtomValueNode Uri;
         public readonly NameNode Alias;
     }
-    public struct ImportNode {
+    internal struct ImportNode {
         public ImportNode(UriNode uri, NameNode alias) {
             Uri = uri;
             Alias = alias;
@@ -334,7 +334,7 @@ namespace XData.Compiler {
         public readonly NameNode Alias;//opt
         public LogicalNamespaceNode LogicalNamespace;
     }
-    public abstract class NamespaceMemberNode : Node {
+    internal abstract class NamespaceMemberNode : Node {
         protected NamespaceMemberNode(Node parent) : base(parent) { }
         public NameNode Name;
         public NameNode AbstractOrSealed;

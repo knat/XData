@@ -8,7 +8,7 @@ using System.Collections.Immutable;
 using XData.IO.Text;
 
 namespace XData.Compiler {
-    public sealed class CSNamespaceNameNode : List<string>, IEquatable<CSNamespaceNameNode> {
+    internal sealed class CSNamespaceNameNode : List<string>, IEquatable<CSNamespaceNameNode> {
         public TextSpan TextSpan;
         public bool Equals(CSNamespaceNameNode other) {
             if ((object)this == other) return true;

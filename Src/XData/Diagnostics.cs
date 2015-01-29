@@ -9,14 +9,21 @@ namespace XData {
         AliasSysIsReserved,
         DuplicateUriAlias,
         InvalidUriAlias,
+        //object
+        //ObjectNotEqualTo,
+
         //element
         ElementIsAbstract,
         ElementIsNotNullable,
         ElementRequiresComplexTypeValue,
         ElementRequiresSimpleTypeValue,
+        InvalidElement,
         //children
-        RequiredChildNotFound,
+        RequiredChildNotMatched,
         ChildListCountNotGreaterThanOrEqualToMinOccurrence,
+        RedundantElement,
+        RequiredChildNotFound,
+        RedundantChild,
         //
         //types
         InvalidTypeName,
@@ -27,7 +34,7 @@ namespace XData {
         TypeRequiresAtomValue,
         TypeRequiresListValue,
         InvalidAtomTypeLiteral,
-        ListItemIsNull,
+        //ListItemIsNull,
         //facets
         LengthNotEqualTo,
         LengthNotGreaterThanOrEqualTo,
@@ -50,7 +57,6 @@ namespace XData {
         DuplicateAttributeName,
         RequiredAttributeNotFound,
         RedundantAttribute,
-        InvalidAttributeObject,
         AttributeIsNotNullable,
 
 
@@ -77,6 +83,11 @@ namespace XData {
                     return "Duplicate uri alias '{0}'.".InvFormat(_msgArgs);
                 case DiagCode.InvalidUriAlias:
                     return "Invalid uri alias '{0}'.".InvFormat(_msgArgs);
+                //object
+                //case DiagCode.ObjectNotEqualTo:
+                //    return "Object '{0}' not equal to '{1}'.".InvFormat(_msgArgs);
+
+                //elements
                 case DiagCode.ElementIsAbstract:
                     return "Element '{0}' is abstract.".InvFormat(_msgArgs);
                 case DiagCode.ElementIsNotNullable:
@@ -85,11 +96,19 @@ namespace XData {
                     return "Element '{0}' requires complex type value.".InvFormat(_msgArgs);
                 case DiagCode.ElementRequiresSimpleTypeValue:
                     return "Element '{0}' requires simple type value.".InvFormat(_msgArgs);
+                case DiagCode.InvalidElement:
+                    return "Invalid element '{0}'. '{1}' or its substitutor expected.".InvFormat(_msgArgs);
                 //children
-                case DiagCode.RequiredChildNotFound:
-                    return "Required child '{0}' not found.".InvFormat(_msgArgs);
+                case DiagCode.RequiredChildNotMatched:
+                    return "Required child '{0}' not matched.".InvFormat(_msgArgs);
                 case DiagCode.ChildListCountNotGreaterThanOrEqualToMinOccurrence:
                     return "Child list '{0}' count '{1}' not greater than or equal to min occurrence '{2}'.".InvFormat(_msgArgs);
+                case DiagCode.RedundantElement:
+                    return "Redundant element '{0}'.".InvFormat(_msgArgs);
+                case DiagCode.RequiredChildNotFound:
+                    return "Required child '{0}' not found.".InvFormat(_msgArgs);
+                case DiagCode.RedundantChild:
+                    return "Redundant child '{0}'.".InvFormat(_msgArgs);
                 //
                 //types
                 case DiagCode.InvalidTypeName:
@@ -105,8 +124,8 @@ namespace XData {
                     return "Type '{0}' requires list value.".InvFormat(_msgArgs);
                 case DiagCode.InvalidAtomTypeLiteral:
                     return "Invalid atom type '{0}' literal '{1}'.".InvFormat(_msgArgs);
-                case DiagCode.ListItemIsNull:
-                    return "List item #{0} is null.".InvFormat(_msgArgs);
+                //case DiagCode.ListItemIsNull:
+                //    return "List item #{0} is null.".InvFormat(_msgArgs);
                 //facets
                 case DiagCode.LengthNotEqualTo:
                     return "Length '{0}' not equal to '{1}'.".InvFormat(_msgArgs);
@@ -147,9 +166,7 @@ namespace XData {
                 case DiagCode.RequiredAttributeNotFound:
                     return "Required attribute '{0}' not found.".InvFormat(_msgArgs);
                 case DiagCode.RedundantAttribute:
-                    return "Redundant attribute '{0}'.";
-                case DiagCode.InvalidAttributeObject:
-                    return "Invalid attribute object.";
+                    return "Redundant attribute '{0}'.".InvFormat(_msgArgs);
                 case DiagCode.AttributeIsNotNullable:
                     return "Attribute '{0}' is not nullable.".InvFormat(_msgArgs);
 

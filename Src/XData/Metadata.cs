@@ -61,19 +61,21 @@ namespace XData {
     }
 
     public abstract class ObjectInfo {
-        protected ObjectInfo(Type clrType, bool isAbstract) {
+        protected ObjectInfo(Type clrType, bool isAbstract, string displayName) {
             if (clrType == null) throw new ArgumentNullException("clrType");
             ClrType = clrType;
             IsAbstract = isAbstract;
+            DisplayName = displayName;
         }
         public readonly Type ClrType;
         public readonly bool IsAbstract;
+        public readonly string DisplayName;
         public T CreateInstance<T>(bool @try = false) where T : XObject {
             if (IsAbstract) {
                 if (@try) {
                     return null;
                 }
-                throw new InvalidOperationException("Object '{0}' is abstract.".InvFormat(ClrType.FullName));
+                throw new InvalidOperationException("Object '{0}' is abstract.".InvFormat(DisplayName));
             }
             return (T)Activator.CreateInstance(ClrType);
         }
@@ -86,13 +88,13 @@ namespace XData {
 
     public abstract class TypeInfo : ObjectInfo, IGlobalObjectInfo {
         protected TypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeInfo baseType)
-            : base(clrType, isAbstract) {
+            : base(clrType, isAbstract, fullName.ToString()) {
             FullName = fullName;
             BaseType = baseType;
         }
         public FullName FullName { get; private set; }
         public readonly TypeInfo BaseType;
-        public bool IsEqualToOrDeriveFrom(TypeInfo other) {
+        public bool EqualToOrDeriveFrom(TypeInfo other) {
             if (other == null) throw new ArgumentNullException("other");
             for (var info = this; info != null; info = info.BaseType) {
                 if (info == other) {
@@ -265,8 +267,8 @@ namespace XData {
     }
 
     public sealed class AttributeSetInfo : ObjectInfo {
-        public AttributeSetInfo(Type clrType, AttributeInfo[] attributes)
-            : base(clrType, false) {
+        public AttributeSetInfo(Type clrType, string displayName, AttributeInfo[] attributes)
+            : base(clrType, false, displayName) {
             Attributes = attributes;
         }
         public readonly AttributeInfo[] Attributes;
@@ -282,17 +284,15 @@ namespace XData {
         }
     }
     public sealed class AttributeInfo : ObjectInfo {
-        public AttributeInfo(Type clrType, string name, string displayName, bool isOptional, bool isNullable,
+        public AttributeInfo(Type clrType, string displayName, string name, bool isOptional, bool isNullable,
             SimpleTypeInfo type)
-            : base(clrType, false) {
+            : base(clrType, false, displayName) {
             Name = name;
-            DisplayName = displayName;
             IsOptional = isOptional;
             IsNullable = isNullable;
             Type = type;
         }
         public readonly string Name;
-        public readonly string DisplayName;
         public readonly bool IsOptional;
         public readonly bool IsNullable;
         public readonly SimpleTypeInfo Type;
@@ -309,24 +309,22 @@ namespace XData {
         List
     }
     public abstract class ChildInfo : ObjectInfo {
-        protected ChildInfo(Type clrType, bool isAbstract, ChildKind kind, string displayName, bool isOptional, int order)
-            : base(clrType, isAbstract) {
+        protected ChildInfo(Type clrType, bool isAbstract, string displayName, ChildKind kind, bool isOptional, int order)
+            : base(clrType, isAbstract, displayName) {
             Kind = kind;
-            DisplayName = displayName;
             IsOptional = isOptional;
             Order = order;
         }
         public readonly ChildKind Kind;
-        public readonly string DisplayName;
         public readonly bool IsOptional;
         public readonly int Order;
     }
 
     public sealed class ElementInfo : ChildInfo, IGlobalObjectInfo {
-        public ElementInfo(Type clrType, bool isAbstract, ChildKind kind, string displayName, bool isOptional, int order,
+        public ElementInfo(Type clrType, bool isAbstract, string displayName, ChildKind kind, bool isOptional, int order,
             FullName fullName, bool isNullable, TypeInfo type,
-             ElementInfo referencedElement, ElementInfo substitutedElement, FullName[] directSubstitutingElementFullNames, ProgramInfo program)
-            : base(clrType, isAbstract, kind, displayName, isOptional, order) {
+            ElementInfo referencedElement, ElementInfo substitutedElement, FullName[] directSubstitutingElementFullNames, ProgramInfo program)
+            : base(clrType, isAbstract, displayName, kind, isOptional, order) {
             FullName = fullName;
             IsNullable = isNullable;
             Type = type;
@@ -400,13 +398,13 @@ namespace XData {
 
     }
     public abstract class ChildContainerInfo : ChildInfo {
-        protected ChildContainerInfo(Type clrType, ChildKind kind, string displayName, bool isOptional, int order)
-            : base(clrType, false, kind, displayName, isOptional, order) {
+        protected ChildContainerInfo(Type clrType, string displayName, ChildKind kind, bool isOptional, int order)
+            : base(clrType, false, displayName, kind, isOptional, order) {
         }
     }
     public sealed class ChildSetInfo : ChildContainerInfo {
         public ChildSetInfo(Type clrType, string displayName, ChildKind kind, bool isOptional, int order, ChildInfo[] children)
-            : base(clrType, kind, displayName, isOptional, order) {
+            : base(clrType, displayName, kind, isOptional, order) {
             Children = children;
         }
         public readonly ChildInfo[] Children;
@@ -434,7 +432,7 @@ namespace XData {
     public sealed class ChildListInfo : ChildContainerInfo {
         public ChildListInfo(Type clrType, string displayName, bool isOptional, int order,
             ulong minOccurrence, ulong maxOccurrence, ChildInfo item)
-            : base(clrType, ChildKind.List, displayName, isOptional, order) {
+            : base(clrType, displayName, ChildKind.List, isOptional, order) {
             MinOccurrence = minOccurrence;
             MaxOccurrence = maxOccurrence;
             Item = item;

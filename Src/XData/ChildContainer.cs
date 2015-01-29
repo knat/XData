@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using XData.IO.Text;
 
@@ -7,16 +6,13 @@ namespace XData {
     public abstract class XChildContainer : XChild {
         internal abstract void InternalAdd(XChild child);
     }
-    public abstract class XChildSet : XChildContainer, ICollection<XChild>, IReadOnlyCollection<XChild> {
-        protected XChildSet() {
+    public abstract class XChildSequence : XChildContainer, ICollection<XChild>, IReadOnlyCollection<XChild> {
+        protected XChildSequence() {
             _childList = new List<XChild>();
         }
         private List<XChild> _childList;
-        internal override sealed void InternalAdd(XChild child) {
-            _childList.Add(SetParentTo(child));
-        }
         public override XObject DeepClone() {
-            var obj = (XChildSet)base.DeepClone();
+            var obj = (XChildSequence)base.DeepClone();
             obj._childList = new List<XChild>();
             foreach (var child in _childList) {
                 obj._childList.Add(obj.SetParentTo(child));
@@ -144,33 +140,99 @@ namespace XData {
                 return (ChildSetInfo)ObjectInfo;
             }
         }
-        //
-        internal static bool TryCreate(DiagContext context, ProgramInfo programInfo, ChildSetInfo childSetInfo,
-            TextSpan openChildrenTextSpan, TextSpan closeChildrenTextSpan, List<ElementNode> elementNodeList, out XChildSet result) {
-            result = null;
-            new CreationContext(context, programInfo, openChildrenTextSpan, closeChildrenTextSpan, elementNodeList);
-
-
-            return true;
+        internal override sealed void InternalAdd(XChild child) {
+            _childList.Add(SetParentTo(child));
         }
-
-        private struct CreationContext {
-            internal CreationContext(DiagContext context, ProgramInfo programInfo,
-                TextSpan openChildrenTextSpan, TextSpan closeChildrenTextSpan, List<ElementNode> elementNodeList) {
-                _context = context;
-                _programInfo = programInfo;
-                _openChildrenTextSpan = openChildrenTextSpan;
-                _closeChildrenTextSpan = closeChildrenTextSpan;
-                _elementNodeList = elementNodeList;
-                _count = _elementNodeList.Count;
-                _index = 0;
+        internal override sealed void Save(SavingContext context) {
+            foreach (var child in _childList) {
+                child.Save(context);
             }
-            private readonly DiagContext _context;
-            private readonly ProgramInfo _programInfo;
-            private readonly TextSpan _openChildrenTextSpan, _closeChildrenTextSpan;
-            private readonly List<ElementNode> _elementNodeList;
-            private readonly int _count;
-            private int _index;
+        }
+        internal void SaveAsRoot(SavingContext context) {
+            context.AppendLine('{');
+            context.PushIndent();
+            foreach (var child in _childList) {
+                child.Save(context);
+            }
+            context.PopIndent();
+            context.Append('}');
+        }
+        internal override bool TryValidateCore(DiagContext context) {
+            var childSetInfo = ChildSetInfo;
+            var dMarker = context.MarkDiags();
+            var childList = new List<XChild>(_childList);
+            if (childSetInfo.Children != null) {
+                foreach (var childInfo in childSetInfo.Children) {
+                    var found = false;
+                    for (var i = 0; i < childList.Count; ++i) {
+                        var child = childList[i];
+                        if (child.Order == childInfo.Order && child.EqualTo(childInfo)) {
+                            child.TryValidate(context);
+                            childList.RemoveAt(i);
+                            found = true;
+                            break;
+                        }
+                        else if (child.Order > childInfo.Order) {
+                            break;
+                        }
+                    }
+                    if (!found && !childInfo.IsOptional) {
+                        context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotFound, childInfo.DisplayName), this);
+                    }
+                }
+            }
+            if (childList.Count > 0) {
+                foreach (var child in childList) {
+                    context.AddErrorDiag(new DiagMsg(DiagCode.RedundantChild, child.ObjectInfo.DisplayName), child);
+                }
+            }
+            return !dMarker.HasErrors;
+        }
+        internal static bool TryCreate(DiagContext context, ChildSetInfo childSetInfo,
+            NodeList<ElementNode> elementNodeList, TextSpan closeChildrenTextSpan, out XChildSequence result) {
+            return new CreationStruct().TryCreate(context, childSetInfo, elementNodeList, closeChildrenTextSpan, out result);
+        }
+        private struct CreationStruct {
+            internal bool TryCreate(DiagContext context, ChildSetInfo childSetInfo,
+                NodeList<ElementNode> elementNodeList, TextSpan closeChildrenTextSpan, out XChildSequence result) {
+                _context = context;
+                _elementNodeList = elementNodeList;
+                _closeChildrenTextSpan = closeChildrenTextSpan;
+                _count = elementNodeList.CountOrZero();
+                _index = 0;
+                //
+                result = null;
+                XChild child;
+                var res = Create(childSetInfo, out child);
+                if (res == CreationResult.Error) {
+                    return false;
+                }
+                if (!IsEOF) {
+                    while (!IsEOF) {
+                        var elementNode = GetElementNode();
+                        context.AddErrorDiag(new DiagMsg(DiagCode.RedundantElement, elementNode.FullName.ToString()), elementNode.QName.TextSpan);
+                        ConsumeElementNode();
+                    }
+                    return false;
+                }
+                var childSeq = (XChildSequence)child;
+                if (childSeq == null) {
+                    if (!childSetInfo.IsOptional) {
+                        context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotMatched, childSetInfo.DisplayName), closeChildrenTextSpan);
+                        return false;
+                    }
+                    if (elementNodeList != null) {
+                        childSeq = childSetInfo.CreateInstance<XChildSequence>();
+                        childSeq.TextSpan = elementNodeList.OpenTokenTextSpan;
+                    }
+                }
+                result = childSeq;
+                return true;
+            }
+            private DiagContext _context;
+            private NodeList<ElementNode> _elementNodeList;
+            private TextSpan _closeChildrenTextSpan;
+            private int _count, _index;
             private bool IsEOF {
                 get {
                     return _index >= _count;
@@ -209,23 +271,25 @@ namespace XData {
                     if (childSetInfo != null) {
                         if (childSetInfo.IsSequence) {
                             List<XChild> childList = null;
-                            foreach (var memberChildInfo in childSetInfo.Children) {
-                                XChild child;
-                                var res = Create(memberChildInfo, out child);
-                                if (res == CreationResult.OK) {
-                                    Extensions.CreateAndAdd(ref childList, child);
-                                }
-                                else if (res == CreationResult.Skipped) {
-                                    if (!memberChildInfo.IsOptional) {
-                                        if (childList.CountOrZero() == 0) {
-                                            return res;
-                                        }
-                                        _context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotFound, memberChildInfo.DisplayName), GetTextSpan());
-                                        return CreationResult.Error;
+                            if (childSetInfo.Children != null) {
+                                foreach (var memberChildInfo in childSetInfo.Children) {
+                                    XChild child;
+                                    var res = Create(memberChildInfo, out child);
+                                    if (res == CreationResult.OK) {
+                                        Extensions.CreateAndAdd(ref childList, child);
                                     }
-                                }
-                                else {//error
-                                    return res;
+                                    else if (res == CreationResult.Skipped) {
+                                        if (!memberChildInfo.IsOptional) {
+                                            if (childList.CountOrZero() == 0) {
+                                                return res;
+                                            }
+                                            _context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotMatched, memberChildInfo.DisplayName), GetTextSpan());
+                                            return CreationResult.Error;
+                                        }
+                                    }
+                                    else {//error
+                                        return res;
+                                    }
                                 }
                             }
                             if (childList.CountOrZero() == 0) {
@@ -241,15 +305,17 @@ namespace XData {
                         }
                         else {//choice
                             XChild choice = null;
-                            foreach (var memberChildInfo in childSetInfo.Children) {
-                                XChild child;
-                                var res = Create(memberChildInfo, out child);
-                                if (res == CreationResult.OK) {
-                                    choice = child;
-                                    break;
-                                }
-                                else if (res == CreationResult.Error) {
-                                    return res;
+                            if (childSetInfo.Children != null) {
+                                foreach (var memberChildInfo in childSetInfo.Children) {
+                                    XChild child;
+                                    var res = Create(memberChildInfo, out child);
+                                    if (res == CreationResult.OK) {
+                                        choice = child;
+                                        break;
+                                    }
+                                    else if (res == CreationResult.Error) {
+                                        return res;
+                                    }
                                 }
                             }
                             if (choice == null) {
@@ -309,7 +375,55 @@ namespace XData {
         }
 
     }
+    public abstract class XChildChoice : XChildContainer {
+        private XChild _choice;
+        public XChild Choice {
+            get {
+                return _choice;
+            }
+            set {
+                _choice = SetParentTo(value);
+            }
+        }
+        public ChildSetInfo ChildSetInfo {
+            get {
+                return (ChildSetInfo)ObjectInfo;
+            }
+        }
+        internal override sealed void InternalAdd(XChild child) {
+            Choice = child;
+        }
+        internal override sealed void Save(SavingContext context) {
+            if (_choice != null) {
+                _choice.Save(context);
+            }
+        }
+        internal override bool TryValidateCore(DiagContext context) {
+            var childSetInfo = ChildSetInfo;
+            var dMarker = context.MarkDiags();
+            var choice = _choice;
+            if (choice != null) {
+                var found = false;
+                if (childSetInfo.Children != null) {
+                    foreach (var childInfo in childSetInfo.Children) {
+                        if (choice.Order == childInfo.Order && choice.EqualTo(childInfo)) {
+                            choice.TryValidate(context);
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                if (!found) {
+                    context.AddErrorDiag(new DiagMsg(DiagCode.RedundantChild, choice.ObjectInfo.DisplayName), choice);
+                }
+            }
+            else if (!childSetInfo.IsOptional) {
+                context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotFound, childSetInfo.DisplayName), this);
+            }
+            return !dMarker.HasErrors;
+        }
 
+    }
     public abstract class XChildList<T> : XChildContainer, IList<T>, IReadOnlyList<T> where T : XChild {
         protected XChildList() {
             _itemList = new List<T>();
@@ -339,11 +453,11 @@ namespace XData {
                 return _itemList[index];
             }
             set {
-                _itemList[index] = SetParentTo(value);
+                _itemList[index] = SetParentTo(value, false);
             }
         }
         public void Add(T item) {
-            _itemList.Add(SetParentTo(item));
+            _itemList.Add(SetParentTo(item, false));
         }
         public void AddRange(IEnumerable<T> items) {
             if (items != null) {
@@ -353,7 +467,7 @@ namespace XData {
             }
         }
         public void Insert(int index, T item) {
-            _itemList.Insert(index, SetParentTo(item));
+            _itemList.Insert(index, SetParentTo(item, false));
         }
         public bool Remove(T item) {
             return _itemList.Remove(item);
@@ -379,7 +493,7 @@ namespace XData {
         IEnumerator<T> IEnumerable<T>.GetEnumerator() {
             return GetEnumerator();
         }
-        IEnumerator IEnumerable.GetEnumerator() {
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
             return GetEnumerator();
         }
         public bool IsReadOnly {
@@ -407,13 +521,39 @@ namespace XData {
                 array[arrayIndex++] = _itemList[i] as U;
             }
         }
-
-        //
         public ChildListInfo ChildListInfo {
             get {
                 return (ChildListInfo)ObjectInfo;
             }
         }
-
+        internal override sealed void Save(SavingContext context) {
+            foreach (var item in _itemList) {
+                item.Save(context);
+            }
+        }
+        internal override bool TryValidateCore(DiagContext context) {
+            var childListInfo = ChildListInfo;
+            var itemInfo = childListInfo.Item;
+            ulong count = 0;
+            var maxOccurrence = childListInfo.MaxOccurrence;
+            var dMarker = context.MarkDiags();
+            foreach (var item in _itemList) {
+                ++count;
+                if (count > maxOccurrence) {
+                    context.AddErrorDiag(new DiagMsg(DiagCode.RedundantChild, item.ObjectInfo.DisplayName), item);
+                }
+                else if (item.EqualTo(itemInfo)) {
+                    item.TryValidate(context);
+                }
+                else {
+                    context.AddErrorDiag(new DiagMsg(DiagCode.RedundantChild, item.ObjectInfo.DisplayName), item);
+                }
+            }
+            if (count < childListInfo.MinOccurrence) {
+                context.AddErrorDiag(new DiagMsg(DiagCode.ChildListCountNotGreaterThanOrEqualToMinOccurrence,
+                    childListInfo.DisplayName, count.ToInvString(), childListInfo.MinOccurrence.ToInvString()), this);
+            }
+            return !dMarker.HasErrors;
+        }
     }
 }

@@ -2,16 +2,15 @@
 using System.Collections.Generic;
 
 namespace XData.IO.Text {
-    public sealed class NodeList<T> : List<T> {
+    internal sealed class NodeList<T> : List<T> {
         public NodeList(TextSpan openTokenTextSpan) {
             OpenTokenTextSpan = openTokenTextSpan;
         }
         public readonly TextSpan OpenTokenTextSpan;
         public TextSpan CloseTokenTextSpan;
-
     }
 
-    public struct NameNode : IEquatable<NameNode> {
+    internal struct NameNode : IEquatable<NameNode> {
         public NameNode(string value, TextSpan textSpan) {
             Value = value;
             TextSpan = textSpan;
@@ -43,7 +42,7 @@ namespace XData.IO.Text {
         }
     }
 
-    public struct QualifiableNameNode {
+    internal struct QualifiableNameNode {
         public QualifiableNameNode(NameNode alias, NameNode name) {
             Alias = alias;
             Name = name;
@@ -74,7 +73,7 @@ namespace XData.IO.Text {
             }
         }
     }
-    public enum AtomValueKind : byte {
+    internal enum AtomValueKind : byte {
         None = 0,
         String,
         //Char,
@@ -83,7 +82,7 @@ namespace XData.IO.Text {
         Decimal,
         Real,
     }
-    public struct AtomValueNode {
+    internal struct AtomValueNode {
         public AtomValueNode(AtomValueKind kind, string value, TextSpan textSpan) {
             Kind = kind;
             Value = value;
@@ -98,7 +97,7 @@ namespace XData.IO.Text {
             }
         }
     }
-    public struct SimpleValueNode {
+    internal struct SimpleValueNode {
         public SimpleValueNode(QualifiableNameNode typeQName, AtomValueNode atom, NodeList<SimpleValueNode> list) {
             TypeQName = typeQName;
             Atom = atom;
@@ -121,7 +120,7 @@ namespace XData.IO.Text {
             }
         }
     }
-    public struct UriAliasingNode {
+    internal struct UriAliasingNode {
         public UriAliasingNode(NameNode alias, AtomValueNode uri) {
             Alias = alias;
             Uri = uri;
@@ -129,20 +128,25 @@ namespace XData.IO.Text {
         public readonly NameNode Alias;
         public readonly AtomValueNode Uri;
     }
-    public struct AttributeNode {
-        public AttributeNode(NameNode name, SimpleValueNode value) {
-            Name = name;
+    internal struct AttributeNode {
+        public AttributeNode(NameNode nameNode, SimpleValueNode value) {
+            NameNode = nameNode;
             Value = value;
         }
-        public readonly NameNode Name;
+        public readonly NameNode NameNode;
         public readonly SimpleValueNode Value;
         public bool IsValid {
             get {
-                return Name.IsValid;
+                return NameNode.IsValid;
+            }
+        }
+        public string Name {
+            get {
+                return NameNode.Value;
             }
         }
     }
-    public struct ElementValueNode {
+    internal struct ElementValueNode {
         public ElementValueNode(ComplexValueNode complexValue, SimpleValueNode simpleValue) {
             ComplexValue = complexValue;
             SimpleValue = simpleValue;
@@ -155,7 +159,7 @@ namespace XData.IO.Text {
             }
         }
     }
-    public struct ComplexValueNode {
+    internal struct ComplexValueNode {
         public ComplexValueNode(TextSpan equalsTextSpan, QualifiableNameNode typeQName,
             NodeList<AttributeNode> attributeList, NodeList<ElementNode> elementList,
             SimpleValueNode simpleChild, TextSpan semicolonTextSpan) {
@@ -172,24 +176,11 @@ namespace XData.IO.Text {
         public readonly NodeList<ElementNode> ElementList;
         public readonly SimpleValueNode SimpleChild;
         public readonly TextSpan SemicolonTextSpan;
-        private static readonly List<AttributeNode> _emptyAttributeList = new List<AttributeNode>();
-        private static readonly List<ElementNode> _emptyElementList = new List<ElementNode>();
-        public List<AttributeNode> EffectiveAttributeList {
-            get {
-                return AttributeList ?? _emptyAttributeList;
-            }
-        }
-        public List<ElementNode> EffectiveElementList {
-            get {
-                return ElementList ?? _emptyElementList;
-            }
-        }
         public bool IsValid {
             get {
                 return AttributeList != null || ElementList != null || SimpleChild.IsValid || SemicolonTextSpan.IsValid;
             }
         }
-
         public TextSpan OpenAttributesTextSpan {
             get {
                 if (AttributeList != null) {
@@ -235,7 +226,7 @@ namespace XData.IO.Text {
             }
         }
     }
-    public struct ElementNode {
+    internal struct ElementNode {
         public ElementNode(QualifiableNameNode qName, ElementValueNode value) {
             QName = qName;
             Value = value;
