@@ -2,26 +2,26 @@
 Lexical
 ==============================
 
-whitespace:
+whitespace-token:
 Unicode-class-Zs | '\u0009' | '\u000B' | '\u000C'
 ;
-new-line:
+new-line-token:
 '\u000D' | '\u000A' | '\u0085' | '\u2028' | '\u2029'
 ;
 
-single-line-comment:
+single-line-comment-token:
 '//' (!new-line)*
 ;
-multi-line-comment:
+multi-line-comment-token:
 '/*' (!'*/')* '*/'
 ; 
-name:
-normal-name | verbatim-name
+name-token:
+normal-name-token | verbatim-name-token
 ;
-verbatim-name:
-'@' normal-name
+verbatim-name-token:
+'@' normal-name-token
 ;
-normal-name:
+normal-name-token:
 name-start-char name-part-char*
 ;
 name-start-char:
@@ -45,25 +45,22 @@ A Unicode character of classes Mn or Mc
 formatting-char:
 A Unicode character of the class Cf
 ;
-string-value:
-normal-string-value | verbatim-string-value
+string-value-token:
+normal-string-value-token | verbatim-string-value-token
 ;
-normal-string-value:
+normal-string-value-token:
 '"'  '"'
 ;
-verbatim-string-value:
+verbatim-string-value-token:
 '@"' '"'
 ;
-char-value:
-'\'' '\''
-;
-integer-value:
+integer-value-token:
 
 ;
-decimal-value:
+decimal-value-token:
 
 ;
-real-value:
+real-value-token:
 
 ;
 

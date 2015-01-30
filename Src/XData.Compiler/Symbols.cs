@@ -64,7 +64,7 @@ namespace XData.Compiler {
         public static readonly ListTypeSymbol SystemListType;
         public static readonly ComplexTypeSymbol SystemComplexType;
         static NamespaceSymbol() {
-            System = new NamespaceSymbol(InfoExtensions.SystemUri, new CSNamespaceNameNode { "XData" }, true);
+            System = new NamespaceSymbol(Extensions.SystemUri, new CSNamespaceNameNode { "XData" }, true);
             SystemSimpleType = new SimpleTypeSymbol(System, TypeKind.SimpleType.ToClassName(), true, false, null, null, TypeKind.SimpleType.ToFullName(), TypeKind.SimpleType, null, null);
             SystemAtomType = new AtomTypeSymbol(System, TypeKind.AtomType.ToClassName(), true, false, TypeKind.AtomType.ToFullName(), TypeKind.AtomType, SystemSimpleType, null, null);
             CreateAndAdd(SystemAtomType, TypeKind.String, CS.StringType);
@@ -148,7 +148,7 @@ namespace XData.Compiler {
         public FullName FullName { get; private set; }
         public readonly TypeKind Kind;
         public readonly TypeSymbol BaseType;
-        public bool IsEqualToOrDeriveFrom(TypeSymbol other) {
+        public bool EqualToOrDeriveFrom(TypeSymbol other) {
             if (other == null) throw new ArgumentNullException("other");
             for (var symbol = this; symbol != null; symbol = symbol.BaseType) {
                 if (symbol == other) {
@@ -273,7 +273,7 @@ namespace XData.Compiler {
              )
             : base(parent, csName, isAbstract, isSealed, restrictedElement != null,
                  restrictedElement != null ? restrictedElement.CSFullName : substitutedElement != null ? substitutedElement.CSFullName :
-                    kind == ChildKind.GlobalElementReference ? CSEX.XElementReferenceName : CSEX.XElementName,
+                    kind == ChildKind.LocalElement ? CSEX.XLocalElementName : kind == ChildKind.GlobalElementRef ? CSEX.XGlobalElementRefName : CSEX.XGlobalElementName,
                  null, kind, displayName, memberName, minOccurrence, maxOccurrence, order, restrictedElement) {
             FullName = fullName;
             IsNullable = isNullable;
@@ -304,10 +304,10 @@ namespace XData.Compiler {
         }
         public bool IsReference {
             get {
-                return Kind == ChildKind.GlobalElementReference;
+                return Kind == ChildKind.GlobalElementRef;
             }
         }
-        public bool IsEqualToOrSubstitute(ElementSymbol other) {
+        public bool EqualToOrSubstituteFor(ElementSymbol other) {
             if (other == null) throw new ArgumentNullException("other");
             for (var symbol = this; symbol != null; symbol = symbol.SubstitutedElement) {
                 if (symbol == other) {

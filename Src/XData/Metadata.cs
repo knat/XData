@@ -42,7 +42,7 @@ namespace XData {
         public readonly IGlobalObjectInfo[] GlobalObjects;
         public bool IsSystem {
             get {
-                return Uri == InfoExtensions.SystemUri;
+                return Uri == Extensions.SystemUri;
             }
         }
         public IGlobalObjectInfo TryGetGlobalObject(FullName fullName) {
@@ -54,7 +54,7 @@ namespace XData {
             return null;
         }
         //
-        public static readonly NamespaceInfo System = new NamespaceInfo(InfoExtensions.SystemUri, new IGlobalObjectInfo[] {
+        public static readonly NamespaceInfo System = new NamespaceInfo(Extensions.SystemUri, new IGlobalObjectInfo[] {
 
 
         });
@@ -103,7 +103,6 @@ namespace XData {
             }
             return false;
         }
-
     }
 
     public sealed class FacetSetInfo {
@@ -212,22 +211,6 @@ namespace XData {
         //Date,
         //Time,
     }
-    public static class InfoExtensions {
-        public const string SystemUri = "http://xdata-solution.org";
-        public const TypeKind TypeStart = TypeKind.ComplexType;
-        public const TypeKind TypeEnd = TypeKind.DateTimeOffset;
-        public const TypeKind ConcreteAtomTypeStart = TypeKind.String;
-        public const TypeKind ConcreteAtomTypeEnd = TypeKind.DateTimeOffset;
-        public static bool IsConcreteAtomType(this TypeKind kind) {
-            return kind >= ConcreteAtomTypeStart && kind <= ConcreteAtomTypeEnd;
-        }
-        public static FullName ToFullName(this TypeKind kind) {
-            return new FullName(SystemUri, kind.ToString());
-        }
-        public static AtomTypeInfo ToAtomTypeInfo(this TypeKind kind, Type clrType, AtomTypeInfo baseType) {
-            return new AtomTypeInfo(clrType, false, ToFullName(kind), baseType, null, kind);
-        }
-    }
 
     public sealed class AtomTypeInfo : SimpleTypeInfo {
         public AtomTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo baseType,
@@ -303,7 +286,7 @@ namespace XData {
         None = 0,
         GlobalElement,
         LocalElement,
-        GlobalElementReference,
+        GlobalElementRef,
         Sequence,
         Choice,
         List
@@ -366,16 +349,25 @@ namespace XData {
                 return Kind == ChildKind.GlobalElement;
             }
         }
-        public bool IsReference {
+        public bool IsGlobalRef {
             get {
-                return Kind == ChildKind.GlobalElementReference;
+                return Kind == ChildKind.GlobalElementRef;
             }
+        }
+        public bool EqualToOrSubstituteFor(ElementInfo other) {
+            if (other == null) throw new ArgumentNullException("other");
+            for (var info = this; info != null; info = info.SubstitutedElement) {
+                if (info == other) {
+                    return true;
+                }
+            }
+            return false;
         }
         public ElementInfo TryGetEffectiveElement(FullName fullName) {
             if (IsLocal) {
                 return FullName == fullName ? this : null;
             }
-            if (IsReference) {
+            if (IsGlobalRef) {
                 return ReferencedElement.TryGetSubstitutor(fullName);
             }
             return TryGetSubstitutor(fullName);

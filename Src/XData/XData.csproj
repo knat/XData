@@ -42,10 +42,11 @@
     <Compile Include="Attribute.cs" />
     <Compile Include="AttributeSet.cs" />
     <Compile Include="ChildContainer.cs" />
-    <Compile Include="Extensions.cs" />
+    <Compile Include="EX.cs" />
     <Compile Include="ComplexType.cs" />
     <Compile Include="Diagnostics.cs" />
     <Compile Include="Element.cs" />
+    <Compile Include="Extensions.cs" />
     <Compile Include="FullName.cs" />
     <Compile Include="IO\Text\SavingContext.cs" />
     <Compile Include="Metadata.cs" />

@@ -4,13 +4,13 @@ using XData.IO.Text;
 namespace XData {
     public abstract class XStringBase : XAtomType {
         protected XStringBase() {
-            _value = "";
+            _value = string.Empty;
         }
         protected XStringBase(string value) {
             Value = value;
         }
         public static implicit operator string (XStringBase obj) {
-            if ((object)obj == null) return "";
+            if ((object)obj == null) return string.Empty;
             return obj._value;
         }
         private string _value;
@@ -19,7 +19,7 @@ namespace XData {
                 return _value;
             }
             set {
-                _value = value ?? "";
+                _value = value ?? string.Empty;
             }
         }
         protected abstract bool ValueEquals(string a, string b);

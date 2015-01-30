@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using XData.IO.Text;
 
 namespace XData {
@@ -128,7 +129,32 @@ namespace XData {
             }
             return attributeInfo.CreateInstance<T>(@try);
         }
-        public void Save(SavingContext context) {
+        //
+        public IEnumerable<T> SelfAttributes<T>(Func<T, bool> filter = null) where T : XAttribute {
+            foreach (var att in _attributeList) {
+                var attribute = att as T;
+                if (attribute != null) {
+                    if (filter == null || filter(attribute)) {
+                        yield return attribute;
+                    }
+                }
+            }
+        }
+        public IEnumerable<T> SelfAttributeTypes<T>(Func<XAttribute, bool> attributeFilter = null, Func<T, bool> typeFilter = null) where T : XSimpleType {
+            foreach (var att in _attributeList) {
+                if (attributeFilter == null || attributeFilter(att)) {
+                    var type = att.Type as T;
+                    if ((object)type != null) {
+                        if (typeFilter == null || typeFilter(type)) {
+                            yield return type;
+                        }
+                    }
+                }
+            }
+        }
+
+        //
+        internal void Save(SavingContext context) {
             context.AppendLine('[');
             context.PushIndent();
             foreach (var attribute in _attributeList) {
@@ -179,7 +205,7 @@ namespace XData {
                             if (attributeNode.Name == attributeInfo.Name) {
                                 XAttribute attribute;
                                 if (XAttribute.TryCreate(context, programInfo, attributeInfo, attributeNode, out attribute)) {
-                                    Extensions.CreateAndAdd(ref attributeList, attribute);
+                                    EX.CreateAndAdd(ref attributeList, attribute);
                                 }
                                 attributeNodeList.RemoveAt(i);
                                 found = true;

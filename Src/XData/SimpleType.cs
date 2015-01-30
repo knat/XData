@@ -26,7 +26,6 @@ namespace XData {
             }
         }
         public static readonly SimpleTypeInfo ThisInfo = new SimpleTypeInfo(typeof(XSimpleType), true, TypeKind.SimpleType.ToFullName(), null, null);
-        //
         internal override bool TryValidateCore(DiagContext context) {
             return TryValidateFacets(context);
         }

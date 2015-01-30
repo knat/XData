@@ -158,7 +158,7 @@ namespace XData.Compiler {
             }
         }
         private void CheckUri(AtomValueNode uri) {
-            if (uri.Value == InfoExtensions.SystemUri) {
+            if (uri.Value == Extensions.SystemUri) {
                 ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.UriSystemIsReserved), uri.TextSpan);
             }
         }

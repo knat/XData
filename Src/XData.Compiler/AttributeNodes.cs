@@ -122,7 +122,7 @@ namespace XData.Compiler {
                 DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.SimpleTypeRequired), TypeQName.TextSpan);
             }
             if (restrictedAttributeSymbol != null) {
-                if (!typeSymbol.IsEqualToOrDeriveFrom(restrictedAttributeSymbol.Type)) {
+                if (!typeSymbol.EqualToOrDeriveFrom(restrictedAttributeSymbol.Type)) {
                     DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.TypeNotEqualToOrDeriveFromRestricted,
                         typeSymbol.FullName.ToString(), restrictedAttributeSymbol.Type.FullName.ToString()),
                         TypeQName.TextSpan);

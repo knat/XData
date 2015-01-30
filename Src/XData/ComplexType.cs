@@ -1,10 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using XData.IO.Text;
 
 namespace XData {
     public abstract class XComplexType : XType {
-        protected XComplexType() { }
-        //
         private XAttributeSet _attributes;
         public XAttributeSet Attributes {
             get {
@@ -22,11 +22,6 @@ namespace XData {
                 Attributes = value;
             }
         }
-        //public bool HasAttributes {
-        //    get {
-        //        return _attributes != null && _attributes.Count > 0;
-        //    }
-        //}
         public T EnsureAttributes<T>(bool @try = false) where T : XAttributeSet {
             var obj = _attributes as T;
             if (obj != null) {
@@ -97,12 +92,100 @@ namespace XData {
             return obj;
         }
         //
+        #region LINQ
+        public IEnumerable<T> SelfAttributes<T>(Func<T, bool> filter = null) where T : XAttribute {
+            if (_attributes != null) {
+                return _attributes.SelfAttributes(filter);
+            }
+            return Enumerable.Empty<T>();
+        }
+        public IEnumerable<T> SelfAttributeTypes<T>(Func<XAttribute, bool> attributeFilter = null, Func<T, bool> typeFilter = null) where T : XSimpleType {
+            if (_attributes != null) {
+                return _attributes.SelfAttributeTypes(attributeFilter, typeFilter);
+            }
+            return Enumerable.Empty<T>();
+        }
+        public IEnumerable<T> ChildrenElements<T>(Func<T, bool> filter = null) where T : XElement {
+            var complexChildren = ComplexChildren;
+            if (complexChildren != null) {
+                return complexChildren.ChildrenElements(filter);
+            }
+            return Enumerable.Empty<T>();
+        }
+        public IEnumerable<T> ChildrenElementTypes<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> typeFilter = null) where T : XType {
+            var complexChildren = ComplexChildren;
+            if (complexChildren != null) {
+                return complexChildren.ChildrenElementTypes(elementFilter, typeFilter);
+            }
+            return Enumerable.Empty<T>();
+        }
+        public IEnumerable<T> ChildrenSimpleChildren<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> simpleChildFilter = null) where T : XSimpleType {
+            var complexChildren = ComplexChildren;
+            if (complexChildren != null) {
+                return complexChildren.ChildrenSimpleChildren(elementFilter, simpleChildFilter);
+            }
+            return Enumerable.Empty<T>();
+        }
+        public IEnumerable<T> ChildrenAttributes<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> attributeFilter = null) where T : XAttribute {
+            var complexChildren = ComplexChildren;
+            if (complexChildren != null) {
+                return complexChildren.ChildrenAttributes(elementFilter, attributeFilter);
+            }
+            return Enumerable.Empty<T>();
+        }
+        public IEnumerable<T> ChildrenAttributeTypes<T>(Func<XElement, bool> elementFilter = null,
+            Func<XAttribute, bool> attributeFilter = null, Func<T, bool> typeFilter = null) where T : XSimpleType {
+            var complexChildren = ComplexChildren;
+            if (complexChildren != null) {
+                return complexChildren.ChildrenAttributeTypes(elementFilter, attributeFilter, typeFilter);
+            }
+            return Enumerable.Empty<T>();
+        }
+        public IEnumerable<T> DescendantElements<T>(Func<T, bool> filter = null) where T : XElement {
+            var complexChildren = ComplexChildren;
+            if (complexChildren != null) {
+                return complexChildren.DescendantElements(filter);
+            }
+            return Enumerable.Empty<T>();
+        }
+        public IEnumerable<T> DescendantElementTypes<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> typeFilter = null) where T : XType {
+            var complexChildren = ComplexChildren;
+            if (complexChildren != null) {
+                return complexChildren.DescendantElementTypes(elementFilter, typeFilter);
+            }
+            return Enumerable.Empty<T>();
+        }
+        public IEnumerable<T> DescendantSimpleChildren<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> simpleChildFilter = null) where T : XSimpleType {
+            var complexChildren = ComplexChildren;
+            if (complexChildren != null) {
+                return complexChildren.DescendantSimpleChildren(elementFilter, simpleChildFilter);
+            }
+            return Enumerable.Empty<T>();
+        }
+        public IEnumerable<T> DescendantAttributes<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> attributeFilter = null) where T : XAttribute {
+            var complexChildren = ComplexChildren;
+            if (complexChildren != null) {
+                return complexChildren.DescendantAttributes(elementFilter, attributeFilter);
+            }
+            return Enumerable.Empty<T>();
+        }
+        public IEnumerable<T> DescendantAttributeTypes<T>(Func<XElement, bool> elementFilter = null,
+            Func<XAttribute, bool> attributeFilter = null, Func<T, bool> typeFilter = null) where T : XSimpleType {
+            var complexChildren = ComplexChildren;
+            if (complexChildren != null) {
+                return complexChildren.DescendantAttributeTypes(elementFilter, attributeFilter, typeFilter);
+            }
+            return Enumerable.Empty<T>();
+        }
+        #endregion LINQ
+
+        //
         public ComplexTypeInfo ComplexTypeInfo {
             get {
                 return (ComplexTypeInfo)ObjectInfo;
             }
         }
-        internal override void SaveValue(SavingContext context) {
+        internal override sealed void SaveValue(SavingContext context) {
             if (_attributes != null) {
                 context.AppendLine();
                 context.PushIndent();
@@ -134,7 +217,66 @@ namespace XData {
                 }
             }
         }
-        //
+        internal override sealed bool TryValidateCore(DiagContext context) {
+            var dMarker = context.MarkDiags();
+            var complexTypeInfo = ComplexTypeInfo;
+            var attributeSetInfo = complexTypeInfo.Attributes;
+            if (attributeSetInfo != null) {
+                if (_attributes != null) {
+                    if (_attributes.CheckEqualTo(context, attributeSetInfo)) {
+                        _attributes.TryValidate(context);
+                    }
+                }
+                else if (attributeSetInfo.Attributes != null) {
+                    foreach (var attributeInfo in attributeSetInfo.Attributes) {
+                        if (!attributeInfo.IsOptional) {
+                            context.AddErrorDiag(new DiagMsg(DiagCode.RequiredAttributeNotFound, attributeInfo.DisplayName), this);
+                        }
+                    }
+                }
+            }
+            else if (_attributes != null) {
+                context.AddErrorDiag(new DiagMsg(DiagCode.AttributesNotAllowedForType, complexTypeInfo.DisplayName), this);
+            }
+            //
+            var simpleTypeInfo = complexTypeInfo.SimpleChild;
+            if (simpleTypeInfo != null) {
+                var simpleChild = SimpleChild;
+                if ((object)simpleChild != null) {
+                    if (simpleChild.CheckEqualTo(context, simpleTypeInfo)) {
+                        simpleChild.TryValidate(context);
+                    }
+                }
+                else {
+                    context.AddErrorDiag(new DiagMsg(DiagCode.SimpleChildRequiredForType, complexTypeInfo.DisplayName), this);
+                }
+            }
+            else {
+                var complexChildrenInfo = complexTypeInfo.ComplexChildren;
+                if (complexChildrenInfo != null) {
+                    var complexChildren = ComplexChildren;
+                    if (complexChildren != null) {
+                        if (complexChildren.CheckEqualTo(context, complexChildrenInfo)) {
+                            complexChildren.TryValidate(context);
+                        }
+                    }
+                    else if (complexChildrenInfo.Children != null) {
+                        foreach (var childInfo in complexChildrenInfo.Children) {
+                            if (!childInfo.IsOptional) {
+                                context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotFound, childInfo.DisplayName), this);
+                            }
+                        }
+                    }
+                }
+                else {
+                    if (_children != null) {
+                        context.AddErrorDiag(new DiagMsg(DiagCode.ChildrenNotAllowedForType, complexTypeInfo.DisplayName),
+                            this);
+                    }
+                }
+            }
+            return !dMarker.HasErrors;
+        }
         internal static bool TryCreate(DiagContext context, ProgramInfo programInfo, ComplexTypeInfo complexTypeInfo,
             ComplexValueNode complexValueNode, out XComplexType result) {
             result = null;
@@ -155,8 +297,8 @@ namespace XData {
                 }
             }
             else {
-                if (attributeListNode != null && attributeListNode.Count > 0) {
-                    context.AddErrorDiag(new DiagMsg(DiagCode.TypeProhibitsAttributes, effComplexTypeInfo.DisplayName),
+                if (attributeListNode != null) {
+                    context.AddErrorDiag(new DiagMsg(DiagCode.AttributesNotAllowedForType, effComplexTypeInfo.DisplayName),
                         attributeListNode.OpenTokenTextSpan);
                     return false;
                 }
@@ -167,7 +309,7 @@ namespace XData {
             var simpleTypeInfo = effComplexTypeInfo.SimpleChild;
             if (simpleTypeInfo != null) {
                 if (!simpleValueNode.IsValid) {
-                    context.AddErrorDiag(new DiagMsg(DiagCode.TypeRequiresSimpleChild, effComplexTypeInfo.DisplayName),
+                    context.AddErrorDiag(new DiagMsg(DiagCode.SimpleChildRequiredForType, effComplexTypeInfo.DisplayName),
                         complexValueNode.OpenChildrenTextSpan);
                     return false;
                 }
@@ -179,23 +321,23 @@ namespace XData {
             }
             else {
                 var elementListNode = complexValueNode.ElementList;
-                var childSetInfo = effComplexTypeInfo.ComplexChildren;
-                if (childSetInfo != null) {
+                var complexChildrenInfo = effComplexTypeInfo.ComplexChildren;
+                if (complexChildrenInfo != null) {
                     if (simpleValueNode.IsValid) {
-                        context.AddErrorDiag(new DiagMsg(DiagCode.TypeRequiresComplexChildren, effComplexTypeInfo.DisplayName),
+                        context.AddErrorDiag(new DiagMsg(DiagCode.ComplexChildrenRequiredForType, effComplexTypeInfo.DisplayName),
                             simpleValueNode.TextSpan);
                         return false;
                     }
                     XChildSequence childSeq;
-                    if (!XChildSequence.TryCreate(context, childSetInfo,
+                    if (!XChildSequence.TryCreate(context, complexChildrenInfo,
                          elementListNode, complexValueNode.CloseChildrenTextSpan, out childSeq)) {
                         return false;
                     }
                     children = childSeq;
                 }
                 else {
-                    if (simpleValueNode.IsValid || (elementListNode != null && elementListNode.Count > 0)) {
-                        context.AddErrorDiag(new DiagMsg(DiagCode.TypeProhibitsChildren, effComplexTypeInfo.DisplayName),
+                    if (simpleValueNode.IsValid || elementListNode != null) {
+                        context.AddErrorDiag(new DiagMsg(DiagCode.ChildrenNotAllowedForType, effComplexTypeInfo.DisplayName),
                             complexValueNode.OpenChildrenTextSpan);
                         return false;
                     }

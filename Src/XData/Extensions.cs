@@ -1,203 +1,219 @@
-﻿using System.Collections.Generic;
-using System.Globalization;
-using System.Text;
+﻿using System;
+using System.Collections.Generic;
 
 namespace XData {
-    internal static class Extensions {
-        private const int _stringBuilderCount = 4;
-        private const int _stringBuilderCapacity = 256;
-        private static readonly StringBuilder[] _stringBuilders = new StringBuilder[_stringBuilderCount];
-        public static StringBuilder AcquireStringBuilder() {
-            var sbs = _stringBuilders;
-            StringBuilder sb = null;
-            lock (_stringBuilders) {
-                for (var i = 0; i < _stringBuilderCount; ++i) {
-                    sb = sbs[i];
-                    if (sb != null) {
-                        sbs[i] = null;
-                        break;
-                    }
-                }
-            }
-            if (sb != null) {
-                sb.Clear();
-                return sb;
-            }
-            return new StringBuilder(_stringBuilderCapacity);
-        }
-        public static void ReleaseStringBuilder(this StringBuilder sb) {
-            if (sb != null && sb.Capacity <= _stringBuilderCapacity * 4) {
-                var sbs = _stringBuilders;
-                lock (_stringBuilders) {
-                    for (var i = 0; i < _stringBuilderCount; ++i) {
-                        if (sbs[i] == null) {
-                            sbs[i] = sb;
-                            return;
-                        }
-                    }
+    public static class Extensions {
+        public const string SystemUri = "http://xdata-solution.org";
+
+        public static IEnumerable<T> Ancestors<T>(this IEnumerable<XObject> source, Func<T, bool> filter = null) where T : XObject {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.Ancestors(filter)) {
+                    yield return j;
                 }
             }
         }
-        public static string ToStringAndRelease(this StringBuilder sb) {
-            var str = sb.ToString();
-            ReleaseStringBuilder(sb);
-            return str;
-        }
-        public static string InvFormat(this string format, params string[] args) {
-            return AcquireStringBuilder().AppendFormat(CultureInfo.InvariantCulture, format, args).ToStringAndRelease();
-        }
-        //
-        public static string ToInvString(this decimal i) {
-            return i.ToString(CultureInfo.InvariantCulture);
-        }
-        public static string ToInvString(this long i) {
-            return i.ToString(CultureInfo.InvariantCulture);
-        }
-        public static string ToInvString(this int i) {
-            return i.ToString(CultureInfo.InvariantCulture);
-        }
-        public static string ToInvString(this short i) {
-            return i.ToString(CultureInfo.InvariantCulture);
-        }
-        public static string ToInvString(this sbyte i) {
-            return i.ToString(CultureInfo.InvariantCulture);
-        }
-        public static string ToInvString(this ulong i) {
-            return i.ToString(CultureInfo.InvariantCulture);
-        }
-        public static string ToInvString(this uint i) {
-            return i.ToString(CultureInfo.InvariantCulture);
-        }
-        public static string ToInvString(this ushort i) {
-            return i.ToString(CultureInfo.InvariantCulture);
-        }
-        public static string ToInvString(this byte i) {
-            return i.ToString(CultureInfo.InvariantCulture);
-        }
-        public static bool TryToInvDecimal(this string s, out decimal result) {
-            return decimal.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, NumberFormatInfo.InvariantInfo, out result);
-        }
-        public static bool TryToInvInt64(this string s, out long result) {
-            return long.TryParse(s, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
-        }
-        public static bool TryToInvInt32(this string s, out int result) {
-            return int.TryParse(s, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
-        }
-        public static bool TryToInvInt16(this string s, out short result) {
-            return short.TryParse(s, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
-        }
-        public static bool TryToInvSByte(this string s, out sbyte result) {
-            return sbyte.TryParse(s, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
-        }
-        public static bool TryToInvUInt64(this string s, out ulong result) {
-            return ulong.TryParse(s, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
-        }
-        public static bool TryToInvUInt32(this string s, out uint result) {
-            return uint.TryParse(s, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
-        }
-        public static bool TryToInvUInt16(this string s, out ushort result) {
-            return ushort.TryParse(s, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
-        }
-        public static bool TryToInvByte(this string s, out byte result) {
-            return byte.TryParse(s, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
-        }
-
-        //
-        public static int AggregateHash(int hash, int newValue) {
-            unchecked {
-                return hash * 31 + newValue;
+        #region complex type
+        public static IEnumerable<T> SelfAttributes<T>(this IEnumerable<XComplexType> source, Func<T, bool> filter = null) where T : XAttribute {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.SelfAttributes(filter)) {
+                    yield return j;
+                }
             }
         }
-        public static int CombineHash(int a, int b) {
-            unchecked {
-                int hash = 17;
-                hash = hash * 31 + a;
-                hash = hash * 31 + b;
-                return hash;
+        public static IEnumerable<T> SelfAttributeTypes<T>(this IEnumerable<XComplexType> source, Func<XAttribute, bool> attributeFilter = null, Func<T, bool> typeFilter = null) where T : XSimpleType {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.SelfAttributeTypes(attributeFilter, typeFilter)) {
+                    yield return j;
+                }
             }
         }
-        public static int CombineHash(int a, int b, int c) {
-            unchecked {
-                int hash = 17;
-                hash = hash * 31 + a;
-                hash = hash * 31 + b;
-                hash = hash * 31 + c;
-                return hash;
+        public static IEnumerable<T> ChildrenElements<T>(this IEnumerable<XComplexType> source, Func<T, bool> filter = null) where T : XElement {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.ChildrenElements(filter)) {
+                    yield return j;
+                }
             }
         }
-        //
-        public static void CreateAndAdd<T>(ref List<T> list, T item) {
-            if (list == null) {
-                list = new List<T>();
+        public static IEnumerable<T> ChildrenElementTypes<T>(this IEnumerable<XComplexType> source, Func<XElement, bool> elementFilter = null, Func<T, bool> typeFilter = null) where T : XType {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.ChildrenElementTypes(elementFilter, typeFilter)) {
+                    yield return j;
+                }
             }
-            list.Add(item);
         }
-        public static int CountOrZero<T>(this List<T> list) {
-            return list == null ? 0 : list.Count;
+        public static IEnumerable<T> ChildrenSimpleChildren<T>(this IEnumerable<XComplexType> source, Func<XElement, bool> elementFilter = null, Func<T, bool> simpleChildFilter = null) where T : XSimpleType {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.ChildrenSimpleChildren(elementFilter, simpleChildFilter)) {
+                    yield return j;
+                }
+            }
         }
-        //
-        //
-        //
+        public static IEnumerable<T> ChildrenAttributes<T>(this IEnumerable<XComplexType> source, Func<XElement, bool> elementFilter = null, Func<T, bool> attributeFilter = null) where T : XAttribute {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.ChildrenAttributes(elementFilter, attributeFilter)) {
+                    yield return j;
+                }
+            }
+        }
+        public static IEnumerable<T> ChildrenAttributeTypes<T>(this IEnumerable<XComplexType> source, Func<XElement, bool> elementFilter = null,
+            Func<XAttribute, bool> attributeFilter = null, Func<T, bool> typeFilter = null) where T : XSimpleType {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.ChildrenAttributeTypes(elementFilter, attributeFilter, typeFilter)) {
+                    yield return j;
+                }
+            }
+        }
+        public static IEnumerable<T> DescendantElements<T>(this IEnumerable<XComplexType> source, Func<T, bool> filter = null) where T : XElement {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.DescendantElements(filter)) {
+                    yield return j;
+                }
+            }
+        }
+        public static IEnumerable<T> DescendantElementTypes<T>(this IEnumerable<XComplexType> source, Func<XElement, bool> elementFilter = null, Func<T, bool> typeFilter = null) where T : XType {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.DescendantElementTypes(elementFilter, typeFilter)) {
+                    yield return j;
+                }
+            }
+        }
+        public static IEnumerable<T> DescendantSimpleChildren<T>(this IEnumerable<XComplexType> source, Func<XElement, bool> elementFilter = null, Func<T, bool> simpleChildFilter = null) where T : XSimpleType {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.DescendantSimpleChildren(elementFilter, simpleChildFilter)) {
+                    yield return j;
+                }
+            }
+        }
+        public static IEnumerable<T> DescendantAttributes<T>(this IEnumerable<XComplexType> source, Func<XElement, bool> elementFilter = null, Func<T, bool> attributeFilter = null) where T : XAttribute {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.DescendantAttributes(elementFilter, attributeFilter)) {
+                    yield return j;
+                }
+            }
+        }
+        public static IEnumerable<T> DescendantAttributeTypes<T>(this IEnumerable<XComplexType> source, Func<XElement, bool> elementFilter = null,
+            Func<XAttribute, bool> attributeFilter = null, Func<T, bool> typeFilter = null) where T : XSimpleType {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.DescendantAttributeTypes(elementFilter, attributeFilter, typeFilter)) {
+                    yield return j;
+                }
+            }
+        }
+        #endregion complex type
+        #region element
+        public static IEnumerable<T> SelfAttributes<T>(this IEnumerable<XElement> source, Func<T, bool> filter = null) where T : XAttribute {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.SelfAttributes(filter)) {
+                    yield return j;
+                }
+            }
+        }
+        public static IEnumerable<T> SelfAttributeTypes<T>(this IEnumerable<XElement> source, Func<XAttribute, bool> attributeFilter = null, Func<T, bool> typeFilter = null) where T : XSimpleType {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.SelfAttributeTypes(attributeFilter, typeFilter)) {
+                    yield return j;
+                }
+            }
+        }
+        public static IEnumerable<T> ChildrenElements<T>(this IEnumerable<XElement> source, Func<T, bool> filter = null) where T : XElement {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.ChildrenElements(filter)) {
+                    yield return j;
+                }
+            }
+        }
+        public static IEnumerable<T> ChildrenElementTypes<T>(this IEnumerable<XElement> source, Func<XElement, bool> elementFilter = null, Func<T, bool> typeFilter = null) where T : XType {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.ChildrenElementTypes(elementFilter, typeFilter)) {
+                    yield return j;
+                }
+            }
+        }
+        public static IEnumerable<T> ChildrenSimpleChildren<T>(this IEnumerable<XElement> source, Func<XElement, bool> elementFilter = null, Func<T, bool> simpleChildFilter = null) where T : XSimpleType {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.ChildrenSimpleChildren(elementFilter, simpleChildFilter)) {
+                    yield return j;
+                }
+            }
+        }
+        public static IEnumerable<T> ChildrenAttributes<T>(this IEnumerable<XElement> source, Func<XElement, bool> elementFilter = null, Func<T, bool> attributeFilter = null) where T : XAttribute {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.ChildrenAttributes(elementFilter, attributeFilter)) {
+                    yield return j;
+                }
+            }
+        }
+        public static IEnumerable<T> ChildrenAttributeTypes<T>(this IEnumerable<XElement> source, Func<XElement, bool> elementFilter = null,
+            Func<XAttribute, bool> attributeFilter = null, Func<T, bool> typeFilter = null) where T : XSimpleType {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.ChildrenAttributeTypes(elementFilter, attributeFilter, typeFilter)) {
+                    yield return j;
+                }
+            }
+        }
+        public static IEnumerable<T> DescendantElements<T>(this IEnumerable<XElement> source, Func<T, bool> filter = null) where T : XElement {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.DescendantElements(filter)) {
+                    yield return j;
+                }
+            }
+        }
+        public static IEnumerable<T> DescendantElementTypes<T>(this IEnumerable<XElement> source, Func<XElement, bool> elementFilter = null, Func<T, bool> typeFilter = null) where T : XType {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.DescendantElementTypes(elementFilter, typeFilter)) {
+                    yield return j;
+                }
+            }
+        }
+        public static IEnumerable<T> DescendantSimpleChildren<T>(this IEnumerable<XElement> source, Func<XElement, bool> elementFilter = null, Func<T, bool> simpleChildFilter = null) where T : XSimpleType {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.DescendantSimpleChildren(elementFilter, simpleChildFilter)) {
+                    yield return j;
+                }
+            }
+        }
+        public static IEnumerable<T> DescendantAttributes<T>(this IEnumerable<XElement> source, Func<XElement, bool> elementFilter = null, Func<T, bool> attributeFilter = null) where T : XAttribute {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.DescendantAttributes(elementFilter, attributeFilter)) {
+                    yield return j;
+                }
+            }
+        }
+        public static IEnumerable<T> DescendantAttributeTypes<T>(this IEnumerable<XElement> source, Func<XElement, bool> elementFilter = null,
+            Func<XAttribute, bool> attributeFilter = null, Func<T, bool> typeFilter = null) where T : XSimpleType {
+            if (source == null) throw new ArgumentNullException("source");
+            foreach (var i in source) {
+                foreach (var j in i.DescendantAttributeTypes(elementFilter, attributeFilter, typeFilter)) {
+                    yield return j;
+                }
+            }
+        }
+        #endregion element
 
-        //
-        //
-        //public static bool IsAssignableTo(Type to, Type from, bool @try) {
-        //    if (to == null) throw new ArgumentNullException("to");
-        //    if (to.IsAssignableFrom(from)) return true;
-        //    if (@try) return false;
-        //    throw new InvalidOperationException("Invalid object clr type '{0}'. '{1}' or its base type expected.".InvariantFormat(to.FullName, from.FullName));
-        //}
-        //
-
-        //public static bool IsEmpty(this XNamespace xnamespace) {
-        //    if (xnamespace == null) throw new ArgumentNullException("xnamespace");
-        //    return xnamespace == XNamespace.None;
-        //}
-        //public static bool IsUnqualified(this XName name) {
-        //    if (name == null) throw new ArgumentNullException("name");
-        //    return name.Namespace.IsEmpty();
-        //}
-        //public static bool IsQualified(this XName name) { return !name.IsUnqualified(); }
-
-        //public static TValue TryGetValue<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dict, TKey key) where TValue : class {
-        //    if (dict == null) {
-        //        throw new ArgumentNullException("dict");
-        //    }
-        //    TValue value;
-        //    if (dict.TryGetValue(key, out value)) {
-        //        return value;
-        //    }
-        //    return null;
-        //}
-        //public static void CopyTo<T>(IReadOnlyList<T> list, T[] array, int arrayIndex) {
-        //    if (list == null) {
-        //        throw new ArgumentNullException("list");
-        //    }
-        //    if (array == null) {
-        //        throw new ArgumentNullException("array");
-        //    }
-        //    if (arrayIndex < 0 || arrayIndex > array.Length) {
-        //        throw new ArgumentOutOfRangeException("arrayIndex");
-        //    }
-        //    var listCount = list.Count;
-        //    if (array.Length - arrayIndex < listCount) {
-        //        throw new ArgumentException("insufficient array space.");
-        //    }
-        //    for (var i = 0; i < listCount; i++) {
-        //        array[arrayIndex++] = list[i];
-        //    }
-        //}
-
-        //
-        //
-
-        //todo: move
-        //public static bool IsValid(this DiagnosticSeverity severity) {
-        //    return severity == DiagnosticSeverity.Error || severity == DiagnosticSeverity.Warning || severity == DiagnosticSeverity.Info;
-        //}
-        //public static bool IsValid(this DiagnosticCode code) {
-        //    return code >= DiagnosticCode.Parsing && code < DiagnosticCode.Max;
-        //}
 
     }
 }

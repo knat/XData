@@ -87,7 +87,7 @@ namespace XData.Compiler {
                 case DiagCodeEx.AliasSysIsReserved:
                     return "Alias 'sys' is reserved.";
                 case DiagCodeEx.UriSystemIsReserved:
-                    return "Uri '" + InfoExtensions.SystemUri + "' is reserved.";
+                    return "Uri '" + Extensions.SystemUri + "' is reserved.";
                 case DiagCodeEx.DuplicateUriAlias:
                     return "Duplicate uri alias '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.InvalidUriAlias:

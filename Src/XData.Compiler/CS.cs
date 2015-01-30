@@ -31,7 +31,7 @@ namespace XData.Compiler {
             var hash = 17;
             var count = Math.Min(Count, 5);
             for (var i = 0; i < count; i++) {
-                hash = Extensions.AggregateHash(hash, this[i].GetHashCode());
+                hash = EX.AggregateHash(hash, this[i].GetHashCode());
             }
             return hash;
         }
@@ -47,7 +47,7 @@ namespace XData.Compiler {
         private string _string;
         public override string ToString() {
             if (_string == null) {
-                var sb = Extensions.AcquireStringBuilder();
+                var sb = EX.AcquireStringBuilder();
                 for (var i = 0; i < Count; ++i) {
                     if (i > 0) {
                         sb.Append('.');
@@ -1556,19 +1556,19 @@ namespace XData.Compiler {
                     //
                     List<TypeParameterConstraintSyntax> constraintList = null;
                     if (symbol.HasConstructorConstraint) {
-                        Extensions.CreateAndAdd(ref constraintList, SyntaxFactory.ConstructorConstraint());
+                        EX.CreateAndAdd(ref constraintList, SyntaxFactory.ConstructorConstraint());
                     }
                     if (symbol.HasReferenceTypeConstraint) {
-                        Extensions.CreateAndAdd(ref constraintList, SyntaxFactory.ClassOrStructConstraint(SyntaxKind.ClassConstraint));
+                        EX.CreateAndAdd(ref constraintList, SyntaxFactory.ClassOrStructConstraint(SyntaxKind.ClassConstraint));
                     }
                     else if (symbol.HasValueTypeConstraint) {
-                        Extensions.CreateAndAdd(ref constraintList, SyntaxFactory.ClassOrStructConstraint(SyntaxKind.StructConstraint));
+                        EX.CreateAndAdd(ref constraintList, SyntaxFactory.ClassOrStructConstraint(SyntaxKind.StructConstraint));
                     }
                     foreach (var ct in symbol.ConstraintTypes) {
-                        Extensions.CreateAndAdd(ref constraintList, SyntaxFactory.TypeConstraint(ct.ToTypeSyntax()));
+                        EX.CreateAndAdd(ref constraintList, SyntaxFactory.TypeConstraint(ct.ToTypeSyntax()));
                     }
                     if (constraintList != null && constraintList.Count > 0) {
-                        Extensions.CreateAndAdd(ref constraintClauseList, SyntaxFactory.TypeParameterConstraintClause(
+                        EX.CreateAndAdd(ref constraintClauseList, SyntaxFactory.TypeParameterConstraintClause(
                             name: IdName(identifier),
                             constraints: SyntaxFactory.SeparatedList(constraintList)));
                     }

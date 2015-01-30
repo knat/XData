@@ -8,7 +8,7 @@ namespace XData.Compiler {
         static SystemTypeNode() {
             _dict = new Dictionary<string, SystemTypeNode>();
             var sysNs = NamespaceSymbol.System;
-            for (var kind = InfoExtensions.TypeStart; kind <= InfoExtensions.TypeEnd; ++kind) {
+            for (var kind = EX.TypeStart; kind <= EX.TypeEnd; ++kind) {
                 var name = kind.ToString();
                 _dict.Add(name, new SystemTypeNode() { _objectSymbol = sysNs.TryGetGlobalObject(name) });
             }
@@ -216,7 +216,7 @@ namespace XData.Compiler {
                             DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotRestrictNullSimpleChild), AttributesChildren.SimpleChildQName.TextSpan);
                         }
                         var simpleChildSymbol = AttributesChildren.CreateSimpleChildSymbol();
-                        if (!simpleChildSymbol.IsEqualToOrDeriveFrom(baseSimpleChildSymbol)) {
+                        if (!simpleChildSymbol.EqualToOrDeriveFrom(baseSimpleChildSymbol)) {
                             DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.IsNotEqualToOrDeriveFrom, simpleChildSymbol.FullName.ToString(), baseSimpleChildSymbol.FullName.ToString()), AttributesChildren.SimpleChildQName.TextSpan);
                         }
                         complexTypeSymbol.Children = simpleChildSymbol;

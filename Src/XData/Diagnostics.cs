@@ -5,26 +5,14 @@ using XData.IO.Text;
 namespace XData {
     public enum DiagCode {
         None = 0,
+        //parsing
         Parsing = -1000,
         AliasSysIsReserved,
         DuplicateUriAlias,
         InvalidUriAlias,
         //object
-        //ObjectNotEqualTo,
+        ObjectNotEqualTo,
 
-        //element
-        ElementIsAbstract,
-        ElementIsNotNullable,
-        ElementRequiresComplexTypeValue,
-        ElementRequiresSimpleTypeValue,
-        InvalidElement,
-        //children
-        RequiredChildNotMatched,
-        ChildListCountNotGreaterThanOrEqualToMinOccurrence,
-        RedundantElement,
-        RequiredChildNotFound,
-        RedundantChild,
-        //
         //types
         InvalidTypeName,
         TypeNotEqualToOrDeriveFrom,
@@ -34,7 +22,7 @@ namespace XData {
         TypeRequiresAtomValue,
         TypeRequiresListValue,
         InvalidAtomTypeLiteral,
-        //ListItemIsNull,
+
         //facets
         LengthNotEqualTo,
         LengthNotGreaterThanOrEqualTo,
@@ -47,11 +35,12 @@ namespace XData {
         ValueNotLessThan,
         ValueNotInEnumeration,
         LiteralNotMatchWithPattern,
+
         //complex types
-        TypeProhibitsAttributes,
-        TypeProhibitsChildren,
-        TypeRequiresSimpleChild,
-        TypeRequiresComplexChildren,
+        AttributesNotAllowedForType,
+        ChildrenNotAllowedForType,
+        SimpleChildRequiredForType,
+        ComplexChildrenRequiredForType,
 
         //attributes
         DuplicateAttributeName,
@@ -59,6 +48,21 @@ namespace XData {
         RedundantAttribute,
         AttributeIsNotNullable,
 
+        //element
+        ElementIsAbstract,
+        ElementIsNotNullable,
+        ComplexTypeValueRequiredForElement,
+        SimpleValueRequiredForElement,
+        InvalidElementNode,
+        EntityElementIsNull,
+        ElementNotEqualToOrSubstituteFor,
+
+        //children
+        RequiredChildNotMatched,
+        ChildListCountNotGreaterThanOrEqualToMinOccurrence,
+        RedundantElementNode,
+        RequiredChildNotFound,
+        RedundantChild,
 
 
     }
@@ -75,40 +79,16 @@ namespace XData {
         private readonly string[] _msgArgs;
         public string GetMessage() {
             switch (Code) {
+                //parsing
                 case DiagCode.AliasSysIsReserved:
                     return "Alias 'sys' is reserved.";
-                //case DiagCode.DuplicateDefaultUri:
-                //    return "Duplicate default uri.";
                 case DiagCode.DuplicateUriAlias:
                     return "Duplicate uri alias '{0}'.".InvFormat(_msgArgs);
                 case DiagCode.InvalidUriAlias:
                     return "Invalid uri alias '{0}'.".InvFormat(_msgArgs);
                 //object
-                //case DiagCode.ObjectNotEqualTo:
-                //    return "Object '{0}' not equal to '{1}'.".InvFormat(_msgArgs);
-
-                //elements
-                case DiagCode.ElementIsAbstract:
-                    return "Element '{0}' is abstract.".InvFormat(_msgArgs);
-                case DiagCode.ElementIsNotNullable:
-                    return "Element '{0}' is not nullable.".InvFormat(_msgArgs);
-                case DiagCode.ElementRequiresComplexTypeValue:
-                    return "Element '{0}' requires complex type value.".InvFormat(_msgArgs);
-                case DiagCode.ElementRequiresSimpleTypeValue:
-                    return "Element '{0}' requires simple type value.".InvFormat(_msgArgs);
-                case DiagCode.InvalidElement:
-                    return "Invalid element '{0}'. '{1}' or its substitutor expected.".InvFormat(_msgArgs);
-                //children
-                case DiagCode.RequiredChildNotMatched:
-                    return "Required child '{0}' not matched.".InvFormat(_msgArgs);
-                case DiagCode.ChildListCountNotGreaterThanOrEqualToMinOccurrence:
-                    return "Child list '{0}' count '{1}' not greater than or equal to min occurrence '{2}'.".InvFormat(_msgArgs);
-                case DiagCode.RedundantElement:
-                    return "Redundant element '{0}'.".InvFormat(_msgArgs);
-                case DiagCode.RequiredChildNotFound:
-                    return "Required child '{0}' not found.".InvFormat(_msgArgs);
-                case DiagCode.RedundantChild:
-                    return "Redundant child '{0}'.".InvFormat(_msgArgs);
+                case DiagCode.ObjectNotEqualTo:
+                    return "Object '{0}' not equal to '{1}'.".InvFormat(_msgArgs);
                 //
                 //types
                 case DiagCode.InvalidTypeName:
@@ -124,8 +104,6 @@ namespace XData {
                     return "Type '{0}' requires list value.".InvFormat(_msgArgs);
                 case DiagCode.InvalidAtomTypeLiteral:
                     return "Invalid atom type '{0}' literal '{1}'.".InvFormat(_msgArgs);
-                //case DiagCode.ListItemIsNull:
-                //    return "List item #{0} is null.".InvFormat(_msgArgs);
                 //facets
                 case DiagCode.LengthNotEqualTo:
                     return "Length '{0}' not equal to '{1}'.".InvFormat(_msgArgs);
@@ -151,14 +129,14 @@ namespace XData {
                     return "Literal '{0}' not match with pattern '{1}'.".InvFormat(_msgArgs);
 
                 //complex types
-                case DiagCode.TypeProhibitsAttributes:
-                    return "Type '{0}' prohibits attributes.".InvFormat(_msgArgs);
-                case DiagCode.TypeProhibitsChildren:
-                    return "Type '{0}' prohibits children.".InvFormat(_msgArgs);
-                case DiagCode.TypeRequiresSimpleChild:
-                    return "Type '{0}' requires simple child.".InvFormat(_msgArgs);
-                case DiagCode.TypeRequiresComplexChildren:
-                    return "Type '{0}' requires complex children.".InvFormat(_msgArgs);
+                case DiagCode.AttributesNotAllowedForType:
+                    return "Attributes not allowed for type '{0}'.".InvFormat(_msgArgs);
+                case DiagCode.ChildrenNotAllowedForType:
+                    return "Children not allowed for type '{0}'.".InvFormat(_msgArgs);
+                case DiagCode.SimpleChildRequiredForType:
+                    return "Simple child required for type '{0}'.".InvFormat(_msgArgs);
+                case DiagCode.ComplexChildrenRequiredForType:
+                    return "Complex children required for type '{0}'.".InvFormat(_msgArgs);
 
                 //attributes
                 case DiagCode.DuplicateAttributeName:
@@ -169,6 +147,34 @@ namespace XData {
                     return "Redundant attribute '{0}'.".InvFormat(_msgArgs);
                 case DiagCode.AttributeIsNotNullable:
                     return "Attribute '{0}' is not nullable.".InvFormat(_msgArgs);
+
+                //elements
+                case DiagCode.ElementIsAbstract:
+                    return "Element '{0}' is abstract.".InvFormat(_msgArgs);
+                case DiagCode.ElementIsNotNullable:
+                    return "Element '{0}' is not nullable.".InvFormat(_msgArgs);
+                case DiagCode.ComplexTypeValueRequiredForElement:
+                    return "Complex type value for element '{0}'.".InvFormat(_msgArgs);
+                case DiagCode.SimpleValueRequiredForElement:
+                    return "Simple value required for element '{0}'.".InvFormat(_msgArgs);
+                case DiagCode.InvalidElementNode:
+                    return "Invalid element '{0}'. '{1}' or its substitutor expected.".InvFormat(_msgArgs);
+                case DiagCode.EntityElementIsNull:
+                    return "Entity element is null.";
+                case DiagCode.ElementNotEqualToOrSubstituteFor:
+                    return "Element '{0}' not equal to or substitute for '{1}'.".InvFormat(_msgArgs);
+
+                //children
+                case DiagCode.RequiredChildNotMatched:
+                    return "Required child '{0}' not matched.".InvFormat(_msgArgs);
+                case DiagCode.ChildListCountNotGreaterThanOrEqualToMinOccurrence:
+                    return "Child list '{0}' count '{1}' not greater than or equal to min occurrence '{2}'.".InvFormat(_msgArgs);
+                case DiagCode.RedundantElementNode:
+                    return "Redundant element '{0}'.".InvFormat(_msgArgs);
+                case DiagCode.RequiredChildNotFound:
+                    return "Required child '{0}' not found.".InvFormat(_msgArgs);
+                case DiagCode.RedundantChild:
+                    return "Redundant child '{0}'.".InvFormat(_msgArgs);
 
                 default:
                     throw new InvalidOperationException("Invalid code: " + Code.ToString());
@@ -237,7 +243,7 @@ namespace XData {
         }
         public override string ToString() {
             if (IsValid) {
-                var sb = Extensions.AcquireStringBuilder();
+                var sb = EX.AcquireStringBuilder();
                 sb.Append(Severity.ToString());
                 sb.Append(' ');
                 sb.Append(RawCode.ToInvString());

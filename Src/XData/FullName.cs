@@ -46,7 +46,7 @@ namespace XData {
             if (IsUnqualified) {
                 return nameHash;
             }
-            return Extensions.CombineHash(Uri.GetHashCode(), nameHash);
+            return EX.CombineHash(Uri.GetHashCode(), nameHash);
         }
         public static bool operator ==(FullName left, FullName right) {
             return left.Equals(right);

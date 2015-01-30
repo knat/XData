@@ -57,7 +57,7 @@ namespace XData {
                 return (AttributeInfo)ObjectInfo;
             }
         }
-        public void Save(SavingContext context) {
+        internal void Save(SavingContext context) {
             context.Append(_name);
             if (_type != null) {
                 context.StringBuilder.Append(" = ");

@@ -7,7 +7,6 @@ namespace XData {
                 return (TypeInfo)ObjectInfo;
             }
         }
-        //
         internal static TypeInfo GetEffectiveTypeInfo(DiagContext context, ProgramInfo programInfo, QualifiableNameNode typeQName,
             TypeInfo declTypeInfo, TextSpan declTypeTextSpan) {
             TypeInfo typeInfo = null;

@@ -86,7 +86,7 @@ namespace XData.IO.Text {
             if (string.IsNullOrEmpty(uri)) {
                 return null;
             }
-            if (uri == InfoExtensions.SystemUri) {
+            if (uri == Extensions.SystemUri) {
                 return "sys";
             }
             foreach (var au in _aliasUriList) {

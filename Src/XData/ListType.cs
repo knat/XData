@@ -40,13 +40,6 @@ namespace XData {
             AddRange(items);
         }
         private List<T> _itemList;
-        internal override sealed bool TryGetValueLength(out ulong result) {
-            result = (ulong)_itemList.Count;
-            return true;
-        }
-        internal override sealed void InternalAdd(XSimpleType item) {
-            Add((T)item);
-        }
         public override XObject DeepClone() {
             var obj = (XListType<T>)base.DeepClone();
             obj._itemList = new List<T>();
@@ -90,7 +83,7 @@ namespace XData {
             var hash = 17;
             var count = Math.Min(_itemList.Count, 5);
             for (var i = 0; i < count; ++i) {
-                hash = Extensions.AggregateHash(hash, _itemList[i].GetHashCode());
+                hash = EX.AggregateHash(hash, _itemList[i].GetHashCode());
             }
             return hash;
         }
@@ -102,7 +95,7 @@ namespace XData {
             if (count == 1) {
                 return "#[" + _itemList[0].ToString() + "]";
             }
-            var sb = Extensions.AcquireStringBuilder();
+            var sb = EX.AcquireStringBuilder();
             sb.Append("#[");
             for (var i = 0; i < count; ++i) {
                 if (i > 0) {
@@ -191,7 +184,14 @@ namespace XData {
                 array[arrayIndex++] = _itemList[i] as U;
             }
         }
-        internal override bool TryValidateCore(DiagContext context) {
+        internal override sealed bool TryGetValueLength(out ulong result) {
+            result = (ulong)_itemList.Count;
+            return true;
+        }
+        internal override sealed void InternalAdd(XSimpleType item) {
+            Add((T)item);
+        }
+        internal override sealed bool TryValidateCore(DiagContext context) {
             if (!base.TryValidateCore(context)) {
                 return false;
             }
@@ -206,7 +206,7 @@ namespace XData {
             }
             return !dMarker.HasErrors;
         }
-        internal override void SaveValue(SavingContext context) {
+        internal override sealed void SaveValue(SavingContext context) {
             context.Append("#[");
             var count = _itemList.Count;
             for (var i = 0; i < count; ++i) {

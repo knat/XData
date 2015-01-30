@@ -1,28 +1,250 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using XData.IO.Text;
 
 namespace XData {
+    public abstract class XChild : XObject {
+        protected XChild() {
+            _order = ChildInfo.Order;
+        }
+        private readonly int _order;
+        public int Order {
+            get {
+                return _order;
+            }
+        }
+        public ChildInfo ChildInfo {
+            get {
+                return (ChildInfo)ObjectInfo;
+            }
+        }
+        internal abstract void Save(SavingContext context);
+        internal enum CreationResult : byte {
+            Error,
+            Skipped,
+            OK
+        }
+    }
+
     public abstract class XChildContainer : XChild {
+        internal abstract IEnumerable<XChild> InternalChildren { get; }
         internal abstract void InternalAdd(XChild child);
+        #region LINQ
+        public IEnumerable<T> ChildrenElements<T>(Func<T, bool> filter = null) where T : XElement {
+            foreach (var child in InternalChildren) {
+                var element = child as T;
+                if (element != null) {
+                    if (filter == null || filter(element)) {
+                        yield return element;
+                    }
+                }
+                else {
+                    foreach (var i in ((XChildContainer)child).ChildrenElements(filter)) {
+                        yield return i;
+                    }
+                }
+            }
+        }
+        public IEnumerable<T> ChildrenElementTypes<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> typeFilter = null) where T : XType {
+            foreach (var child in InternalChildren) {
+                var element = child as XElement;
+                if (element != null) {
+                    if (elementFilter == null || elementFilter(element)) {
+                        var type = element.Type as T;
+                        if (type != null) {
+                            if (typeFilter == null || typeFilter(type)) {
+                                yield return type;
+                            }
+                        }
+                    }
+                }
+                else {
+                    foreach (var i in ((XChildContainer)child).ChildrenElementTypes(elementFilter, typeFilter)) {
+                        yield return i;
+                    }
+                }
+            }
+        }
+        public IEnumerable<T> ChildrenSimpleChildren<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> simpleChildFilter = null) where T : XSimpleType {
+            foreach (var child in InternalChildren) {
+                var element = child as XElement;
+                if (element != null) {
+                    if (elementFilter == null || elementFilter(element)) {
+                        var simpleChild = element.SimpleChild as T;
+                        if ((object)simpleChild != null) {
+                            if (simpleChildFilter == null || simpleChildFilter(simpleChild)) {
+                                yield return simpleChild;
+                            }
+                        }
+                    }
+                }
+                else {
+                    foreach (var i in ((XChildContainer)child).ChildrenSimpleChildren(elementFilter, simpleChildFilter)) {
+                        yield return i;
+                    }
+                }
+            }
+        }
+        public IEnumerable<T> ChildrenAttributes<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> attributeFilter = null) where T : XAttribute {
+            foreach (var child in InternalChildren) {
+                var element = child as XElement;
+                if (element != null) {
+                    if (elementFilter == null || elementFilter(element)) {
+                        foreach (var i in element.SelfAttributes(attributeFilter)) {
+                            yield return i;
+                        }
+                    }
+                }
+                else {
+                    foreach (var i in ((XChildContainer)child).ChildrenAttributes(elementFilter, attributeFilter)) {
+                        yield return i;
+                    }
+                }
+            }
+        }
+        public IEnumerable<T> ChildrenAttributeTypes<T>(Func<XElement, bool> elementFilter = null,
+            Func<XAttribute, bool> attributeFilter = null, Func<T, bool> typeFilter = null) where T : XSimpleType {
+            foreach (var child in InternalChildren) {
+                var element = child as XElement;
+                if (element != null) {
+                    if (elementFilter == null || elementFilter(element)) {
+                        foreach (var i in element.SelfAttributeTypes(attributeFilter, typeFilter)) {
+                            yield return i;
+                        }
+                    }
+                }
+                else {
+                    foreach (var i in ((XChildContainer)child).ChildrenAttributeTypes(elementFilter, attributeFilter, typeFilter)) {
+                        yield return i;
+                    }
+                }
+            }
+        }
+        public IEnumerable<T> DescendantElements<T>(Func<T, bool> filter = null) where T : XElement {
+            foreach (var child in InternalChildren) {
+                var element = child as T;
+                if (element != null) {
+                    if (filter == null || filter(element)) {
+                        yield return element;
+                    }
+                    foreach (var i in element.DescendantElements(filter)) {
+                        yield return i;
+                    }
+                }
+                else {
+                    foreach (var i in ((XChildContainer)child).DescendantElements(filter)) {
+                        yield return i;
+                    }
+                }
+            }
+        }
+        public IEnumerable<T> DescendantElementTypes<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> typeFilter = null) where T : XType {
+            foreach (var child in InternalChildren) {
+                var element = child as XElement;
+                if (element != null) {
+                    if (elementFilter == null || elementFilter(element)) {
+                        var type = element.Type as T;
+                        if (type != null) {
+                            if (typeFilter == null || typeFilter(type)) {
+                                yield return type;
+                            }
+                        }
+                    }
+                    foreach (var i in element.DescendantElementTypes(elementFilter, typeFilter)) {
+                        yield return i;
+                    }
+                }
+                else {
+                    foreach (var i in ((XChildContainer)child).DescendantElementTypes(elementFilter, typeFilter)) {
+                        yield return i;
+                    }
+                }
+            }
+        }
+        public IEnumerable<T> DescendantSimpleChildren<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> simpleChildFilter = null) where T : XSimpleType {
+            foreach (var child in InternalChildren) {
+                var element = child as XElement;
+                if (element != null) {
+                    if (elementFilter == null || elementFilter(element)) {
+                        var simpleChild = element.SimpleChild as T;
+                        if ((object)simpleChild != null) {
+                            if (simpleChildFilter == null || simpleChildFilter(simpleChild)) {
+                                yield return simpleChild;
+                            }
+                        }
+                    }
+                    foreach (var i in element.DescendantSimpleChildren(elementFilter, simpleChildFilter)) {
+                        yield return i;
+                    }
+                }
+                else {
+                    foreach (var i in ((XChildContainer)child).DescendantSimpleChildren(elementFilter, simpleChildFilter)) {
+                        yield return i;
+                    }
+                }
+            }
+        }
+        public IEnumerable<T> DescendantAttributes<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> attributeFilter = null) where T : XAttribute {
+            foreach (var child in InternalChildren) {
+                var element = child as XElement;
+                if (element != null) {
+                    if (elementFilter == null || elementFilter(element)) {
+                        foreach (var i in element.SelfAttributes(attributeFilter)) {
+                            yield return i;
+                        }
+                    }
+                    foreach (var i in element.DescendantAttributes(elementFilter, attributeFilter)) {
+                        yield return i;
+                    }
+                }
+                else {
+                    foreach (var i in ((XChildContainer)child).DescendantAttributes(elementFilter, attributeFilter)) {
+                        yield return i;
+                    }
+                }
+            }
+        }
+        public IEnumerable<T> DescendantAttributeTypes<T>(Func<XElement, bool> elementFilter = null,
+            Func<XAttribute, bool> attributeFilter = null, Func<T, bool> typeFilter = null) where T : XSimpleType {
+            foreach (var child in InternalChildren) {
+                var element = child as XElement;
+                if (element != null) {
+                    if (elementFilter == null || elementFilter(element)) {
+                        foreach (var i in element.SelfAttributeTypes(attributeFilter, typeFilter)) {
+                            yield return i;
+                        }
+                    }
+                    foreach (var i in element.DescendantAttributeTypes(elementFilter, attributeFilter, typeFilter)) {
+                        yield return i;
+                    }
+                }
+                else {
+                    foreach (var i in ((XChildContainer)child).DescendantAttributeTypes(elementFilter, attributeFilter, typeFilter)) {
+                        yield return i;
+                    }
+                }
+            }
+        }
+        #endregion LINQ
     }
     public abstract class XChildSequence : XChildContainer, ICollection<XChild>, IReadOnlyCollection<XChild> {
         protected XChildSequence() {
-            _childList = new List<XChild>();
+            _list = new List<XChild>();
         }
-        private List<XChild> _childList;
+        private List<XChild> _list;
         public override XObject DeepClone() {
             var obj = (XChildSequence)base.DeepClone();
-            obj._childList = new List<XChild>();
-            foreach (var child in _childList) {
-                obj._childList.Add(obj.SetParentTo(child));
+            obj._list = new List<XChild>();
+            foreach (var child in _list) {
+                obj._list.Add(obj.SetParentTo(child));
             }
             return obj;
         }
         private bool TryGetIndexOf(int order, out int index) {
             int i;
             var found = false;
-            var childList = _childList;
+            var childList = _list;
             var count = childList.Count;
             for (i = 0; i < count; i++) {
                 var childOrder = childList[i].Order;
@@ -53,7 +275,7 @@ namespace XData {
             if (TryGetIndexOf(order, out index)) {
                 throw new ArgumentException("Child '{0}' already exists.".InvFormat(order.ToInvString()));
             }
-            _childList.Insert(index, SetParentTo(child));
+            _list.Insert(index, SetParentTo(child));
         }
         public void AddRange(IEnumerable<XChild> children) {
             if (children != null) {
@@ -69,10 +291,10 @@ namespace XData {
             var order = child.Order;
             int index;
             if (TryGetIndexOf(order, out index)) {
-                _childList[index] = SetParentTo(child);
+                _list[index] = SetParentTo(child);
             }
             else {
-                _childList.Insert(index, SetParentTo(child));
+                _list.Insert(index, SetParentTo(child));
             }
         }
         public bool Contains(int order) {
@@ -85,7 +307,7 @@ namespace XData {
             return Contains(child.Order);
         }
         public XChild TryGet(int order) {
-            foreach (var child in _childList) {
+            foreach (var child in _list) {
                 if (child.Order == order) {
                     return child;
                 }
@@ -98,13 +320,13 @@ namespace XData {
         }
         public int Count {
             get {
-                return _childList.Count;
+                return _list.Count;
             }
         }
         public bool Remove(int order) {
             var idx = IndexOf(order);
             if (idx != -1) {
-                _childList.RemoveAt(idx);
+                _list.RemoveAt(idx);
                 return true;
             }
             return false;
@@ -116,10 +338,10 @@ namespace XData {
             return Remove(child.Order);
         }
         public void Clear() {
-            _childList.Clear();
+            _list.Clear();
         }
         public List<XChild>.Enumerator GetEnumerator() {
-            return _childList.GetEnumerator();
+            return _list.GetEnumerator();
         }
         IEnumerator<XChild> IEnumerable<XChild>.GetEnumerator() {
             return GetEnumerator();
@@ -128,7 +350,7 @@ namespace XData {
             return GetEnumerator();
         }
         public void CopyTo(XChild[] array, int arrayIndex) {
-            _childList.CopyTo(array, arrayIndex);
+            _list.CopyTo(array, arrayIndex);
         }
         bool ICollection<XChild>.IsReadOnly {
             get {
@@ -140,18 +362,23 @@ namespace XData {
                 return (ChildSetInfo)ObjectInfo;
             }
         }
+        internal override sealed IEnumerable<XChild> InternalChildren {
+            get {
+                return _list;
+            }
+        }
         internal override sealed void InternalAdd(XChild child) {
-            _childList.Add(SetParentTo(child));
+            _list.Add(SetParentTo(child));
         }
         internal override sealed void Save(SavingContext context) {
-            foreach (var child in _childList) {
+            foreach (var child in _list) {
                 child.Save(context);
             }
         }
         internal void SaveAsRoot(SavingContext context) {
             context.AppendLine('{');
             context.PushIndent();
-            foreach (var child in _childList) {
+            foreach (var child in _list) {
                 child.Save(context);
             }
             context.PopIndent();
@@ -159,8 +386,8 @@ namespace XData {
         }
         internal override bool TryValidateCore(DiagContext context) {
             var childSetInfo = ChildSetInfo;
+            var childList = new List<XChild>(_list);
             var dMarker = context.MarkDiags();
-            var childList = new List<XChild>(_childList);
             if (childSetInfo.Children != null) {
                 foreach (var childInfo in childSetInfo.Children) {
                     var found = false;
@@ -210,7 +437,7 @@ namespace XData {
                 if (!IsEOF) {
                     while (!IsEOF) {
                         var elementNode = GetElementNode();
-                        context.AddErrorDiag(new DiagMsg(DiagCode.RedundantElement, elementNode.FullName.ToString()), elementNode.QName.TextSpan);
+                        context.AddErrorDiag(new DiagMsg(DiagCode.RedundantElementNode, elementNode.FullName.ToString()), elementNode.QName.TextSpan);
                         ConsumeElementNode();
                     }
                     return false;
@@ -260,7 +487,7 @@ namespace XData {
                 }
                 var elementInfo = childInfo as ElementInfo;
                 if (elementInfo != null) {
-                    var res = XElementBase.TrySkippableCreate(_context, elementInfo, GetElementNode(), out result);
+                    var res = XElement.TrySkippableCreate(_context, elementInfo, GetElementNode(), out result);
                     if (res == CreationResult.OK) {
                         ConsumeElementNode();
                     }
@@ -276,7 +503,7 @@ namespace XData {
                                     XChild child;
                                     var res = Create(memberChildInfo, out child);
                                     if (res == CreationResult.OK) {
-                                        Extensions.CreateAndAdd(ref childList, child);
+                                        EX.CreateAndAdd(ref childList, child);
                                     }
                                     else if (res == CreationResult.Skipped) {
                                         if (!memberChildInfo.IsOptional) {
@@ -338,7 +565,7 @@ namespace XData {
                             XChild item;
                             var res = Create(itemInfo, out item);
                             if (res == CreationResult.OK) {
-                                Extensions.CreateAndAdd(ref itemList, item);
+                                EX.CreateAndAdd(ref itemList, item);
                                 ++itemCount;
                             }
                             else if (res == CreationResult.Skipped) {
@@ -390,6 +617,14 @@ namespace XData {
                 return (ChildSetInfo)ObjectInfo;
             }
         }
+        internal override sealed IEnumerable<XChild> InternalChildren {
+            get {
+                if (_choice != null) {
+                    return Enumerable.Repeat(_choice, 1);
+                }
+                return Enumerable.Empty<XChild>();
+            }
+        }
         internal override sealed void InternalAdd(XChild child) {
             Choice = child;
         }
@@ -400,8 +635,8 @@ namespace XData {
         }
         internal override bool TryValidateCore(DiagContext context) {
             var childSetInfo = ChildSetInfo;
-            var dMarker = context.MarkDiags();
             var choice = _choice;
+            var dMarker = context.MarkDiags();
             if (choice != null) {
                 var found = false;
                 if (childSetInfo.Children != null) {
@@ -426,38 +661,35 @@ namespace XData {
     }
     public abstract class XChildList<T> : XChildContainer, IList<T>, IReadOnlyList<T> where T : XChild {
         protected XChildList() {
-            _itemList = new List<T>();
+            _list = new List<T>();
         }
         protected XChildList(IEnumerable<T> items) : this() {
             AddRange(items);
         }
-        private List<T> _itemList;
-        internal override sealed void InternalAdd(XChild child) {
-            Add((T)child);
-        }
+        private List<T> _list;
         public override XObject DeepClone() {
             var obj = (XChildList<T>)base.DeepClone();
-            obj._itemList = new List<T>();
-            foreach (var child in _itemList) {
+            obj._list = new List<T>();
+            foreach (var child in _list) {
                 obj.Add(child);
             }
             return obj;
         }
         public int Count {
             get {
-                return _itemList.Count;
+                return _list.Count;
             }
         }
         public T this[int index] {
             get {
-                return _itemList[index];
+                return _list[index];
             }
             set {
-                _itemList[index] = SetParentTo(value, false);
+                _list[index] = SetParentTo(value, false);
             }
         }
         public void Add(T item) {
-            _itemList.Add(SetParentTo(item, false));
+            _list.Add(SetParentTo(item, false));
         }
         public void AddRange(IEnumerable<T> items) {
             if (items != null) {
@@ -467,28 +699,28 @@ namespace XData {
             }
         }
         public void Insert(int index, T item) {
-            _itemList.Insert(index, SetParentTo(item, false));
+            _list.Insert(index, SetParentTo(item, false));
         }
         public bool Remove(T item) {
-            return _itemList.Remove(item);
+            return _list.Remove(item);
         }
         public void RemoveAt(int index) {
-            _itemList.RemoveAt(index);
+            _list.RemoveAt(index);
         }
         public void Clear() {
-            _itemList.Clear();
+            _list.Clear();
         }
         public int IndexOf(T item) {
-            return _itemList.IndexOf(item);
+            return _list.IndexOf(item);
         }
         public bool Contains(T item) {
-            return _itemList.Contains(item);
+            return _list.Contains(item);
         }
         public void CopyTo(T[] array, int arrayIndex) {
-            _itemList.CopyTo(array, arrayIndex);
+            _list.CopyTo(array, arrayIndex);
         }
         public List<T>.Enumerator GetEnumerator() {
-            return _itemList.GetEnumerator();
+            return _list.GetEnumerator();
         }
         IEnumerator<T> IEnumerable<T>.GetEnumerator() {
             return GetEnumerator();
@@ -502,7 +734,7 @@ namespace XData {
             }
         }
         protected IEnumerator<U> GetEnumeratorCore<U>() where U : T {
-            foreach (var item in _itemList) {
+            foreach (var item in _list) {
                 yield return item as U;
             }
         }
@@ -513,12 +745,12 @@ namespace XData {
             if (arrayIndex < 0 || arrayIndex > array.Length) {
                 throw new ArgumentOutOfRangeException("arrayIndex");
             }
-            var count = _itemList.Count;
+            var count = _list.Count;
             if (array.Length - arrayIndex < count) {
                 throw new ArgumentException("Insufficient array space.");
             }
             for (var i = 0; i < count; ++i) {
-                array[arrayIndex++] = _itemList[i] as U;
+                array[arrayIndex++] = _list[i] as U;
             }
         }
         public ChildListInfo ChildListInfo {
@@ -526,20 +758,28 @@ namespace XData {
                 return (ChildListInfo)ObjectInfo;
             }
         }
+        internal override sealed IEnumerable<XChild> InternalChildren {
+            get {
+                return _list;
+            }
+        }
+        internal override sealed void InternalAdd(XChild child) {
+            Add((T)child);
+        }
         internal override sealed void Save(SavingContext context) {
-            foreach (var item in _itemList) {
+            foreach (var item in _list) {
                 item.Save(context);
             }
         }
         internal override bool TryValidateCore(DiagContext context) {
             var childListInfo = ChildListInfo;
             var itemInfo = childListInfo.Item;
-            ulong count = 0;
+            ulong itemCount = 0;
             var maxOccurrence = childListInfo.MaxOccurrence;
             var dMarker = context.MarkDiags();
-            foreach (var item in _itemList) {
-                ++count;
-                if (count > maxOccurrence) {
+            foreach (var item in _list) {
+                ++itemCount;
+                if (itemCount > maxOccurrence) {
                     context.AddErrorDiag(new DiagMsg(DiagCode.RedundantChild, item.ObjectInfo.DisplayName), item);
                 }
                 else if (item.EqualTo(itemInfo)) {
@@ -549,9 +789,9 @@ namespace XData {
                     context.AddErrorDiag(new DiagMsg(DiagCode.RedundantChild, item.ObjectInfo.DisplayName), item);
                 }
             }
-            if (count < childListInfo.MinOccurrence) {
+            if (itemCount < childListInfo.MinOccurrence) {
                 context.AddErrorDiag(new DiagMsg(DiagCode.ChildListCountNotGreaterThanOrEqualToMinOccurrence,
-                    childListInfo.DisplayName, count.ToInvString(), childListInfo.MinOccurrence.ToInvString()), this);
+                    childListInfo.DisplayName, itemCount.ToInvString(), childListInfo.MinOccurrence.ToInvString()), this);
             }
             return !dMarker.HasErrors;
         }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using XData.IO.Text;
 
 namespace XData {
@@ -58,9 +59,9 @@ namespace XData {
         }
         public T GetAncestor<T>(bool @try = true, bool testSelf = false) where T : class {
             for (var obj = testSelf ? this : _parent; obj != null; obj = obj._parent) {
-                var res = obj as T;
-                if (res != null) {
-                    return res;
+                var ancestor = obj as T;
+                if (ancestor != null) {
+                    return ancestor;
                 }
             }
             if (!@try) {
@@ -68,6 +69,17 @@ namespace XData {
             }
             return null;
         }
+        public IEnumerable<T> Ancestors<T>(Func<T, bool> filter = null) where T : XObject {
+            for (var obj = _parent; obj != null; obj = obj._parent) {
+                var ancestor = obj as T;
+                if (ancestor != null) {
+                    if (filter == null || filter(ancestor)) {
+                        yield return ancestor;
+                    }
+                }
+            }
+        }
+
         //
         public virtual XObject DeepClone() {
             var obj = (XObject)MemberwiseClone();
@@ -83,16 +95,16 @@ namespace XData {
             return TryValidateCore(context);
         }
         internal abstract bool TryValidateCore(DiagContext context);
-        //internal bool CheckEqualTo(DiagContext context, ObjectInfo otherObjectInfo) {
-        //    var objectInfo = ObjectInfo;
-        //    if (objectInfo != otherObjectInfo) {
-        //        context.AddErrorDiag(new DiagMsg(DiagCode.ObjectNotEqualTo, objectInfo.DisplayName, otherObjectInfo.DisplayName), this);
-        //        return false;
-        //    }
-        //    return true;
-        //}
         internal bool EqualTo(ObjectInfo otherObjectInfo) {
             return ObjectInfo == otherObjectInfo;
+        }
+        internal bool CheckEqualTo(DiagContext context, ObjectInfo otherObjectInfo) {
+            var objectInfo = ObjectInfo;
+            if (objectInfo != otherObjectInfo) {
+                context.AddErrorDiag(new DiagMsg(DiagCode.ObjectNotEqualTo, objectInfo.DisplayName, otherObjectInfo.DisplayName), this);
+                return false;
+            }
+            return true;
         }
 
     }
