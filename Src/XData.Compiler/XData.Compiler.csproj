@@ -69,7 +69,7 @@
     <Compile Include="Parser.cs" />
     <Compile Include="Symbols.cs" />
     <Compile Include="TypeNodes.cs" />
-    <Compile Include="ValueFacetNodes.cs" />
+    <Compile Include="FacetNodes.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\XData\XData.csproj">

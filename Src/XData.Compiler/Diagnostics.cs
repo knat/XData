@@ -17,8 +17,9 @@ namespace XData.Compiler {
         InvalidTypeNameReference,
         //InvalidAttributeNameReference,
         InvalidElementNameReference,
-        UInt64ValueRequired,
-        ByteValueRequired,
+        //UInt64ValueRequired,
+        //ByteValueRequired,
+        PrecisionMustEqualToOrBeGreaterThanScale,
         MaxValueMustEqualToOrBeGreaterThanMinValue,
         MaxValueMustBeGreaterThanZero,
         ValueRestrictionNotApplicable,
@@ -96,14 +97,16 @@ namespace XData.Compiler {
                     return "Duplicate import alias '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.DuplicateNamespaceMember:
                     return "Duplicate namespace member '{0}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.PrecisionMustEqualToOrBeGreaterThanScale:
+                    return "Precision '{0}' must equal to or be greater than scale '{1}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.MaxValueMustEqualToOrBeGreaterThanMinValue:
                     return "Max value '{0}' must equal to or be greater than min value '{1}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.MaxValueMustBeGreaterThanZero:
                     return "Max value must be greater than zero.";
-                case DiagCodeEx.UInt64ValueRequired:
-                    return "UInt64 value required.";
-                case DiagCodeEx.ByteValueRequired:
-                    return "Byte value required.";
+                //case DiagCodeEx.UInt64ValueRequired:
+                //    return "UInt64 value required.";
+                //case DiagCodeEx.ByteValueRequired:
+                //    return "Byte value required.";
                 case DiagCodeEx.ValueRestrictionNotApplicable:
                     return "Value restriction not applicable.";
 

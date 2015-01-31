@@ -44,9 +44,10 @@ namespace XData {
         internal void Save(SavingContext context, TypeInfo declTypeInfo) {
             var typeInfo = TypeInfo;
             if (typeInfo != declTypeInfo) {
-                context.Append('(');
+                var sb = context.StringBuilder;
+                sb.Append('(');
                 context.Append(typeInfo.FullName);
-                context.StringBuilder.Append(')');
+                sb.Append(')');
             }
             SaveValue(context);
         }

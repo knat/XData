@@ -38,11 +38,11 @@ namespace XData.Compiler {
         public TypeListNode(Node parent) : base(parent) { }
         public QualifiableNameNode ItemTypeQName;
         public TypeNode ItemType;
-        public ValueFacetsNode ValueRestrictions;//opt
+        public FacetsNode Facets;//opt
         public override void Resolve() {
             ItemType = NamespaceAncestor.ResolveAsType(ItemTypeQName);
-            if (ValueRestrictions != null && ValueRestrictions.ListItemTypeQName.IsValid) {
-                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), ValueRestrictions.ListItemTypeQName.TextSpan);
+            if (Facets != null && Facets.ListItemTypeQName.IsValid) {
+                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Facets.ListItemTypeQName.TextSpan);
             }
         }
         public override TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
@@ -50,8 +50,8 @@ namespace XData.Compiler {
             if (itemSimpleTypeSymbol == null) {
                 DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.SimpleTypeRequired), ItemTypeQName.TextSpan);
             }
-            if (ValueRestrictions != null) {
-                if (ValueRestrictions.ListItemTypeQName.IsValid) {
+            if (Facets != null) {
+                if (Facets.ListItemTypeQName.IsValid) {
 
                 }
             }
@@ -72,13 +72,13 @@ namespace XData.Compiler {
             }
             return result;
         }
-        public TextSpan OpenToken {
+        public TextSpan OpenTextSpan {
             get {
                 if (Attributes != null) {
-                    return Attributes.OpenBracketToken;
+                    return Attributes.OpenBracketTextSpan;
                 }
                 if (ComplexChildren != null) {
-                    return ComplexChildren.OpenBraceToken;
+                    return ComplexChildren.OpenBraceTextSpan;
                 }
                 return SimpleChildQName.TextSpan;
             }
@@ -145,7 +145,7 @@ namespace XData.Compiler {
                 }
                 if (AttributesChildren.ComplexChildren != null) {
                     if (baseComplexTypeSymbol.SimpleChild != null) {
-                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotExtendSimpleChildWithComplexChildren), AttributesChildren.ComplexChildren.OpenBraceToken);
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotExtendSimpleChildWithComplexChildren), AttributesChildren.ComplexChildren.OpenBraceTextSpan);
                     }
                     complexTypeSymbol.Children = AttributesChildren.ComplexChildren.CreateSymbol(complexTypeSymbol, baseComplexTypeSymbol.ComplexChildren, true);
                 }
@@ -161,11 +161,11 @@ namespace XData.Compiler {
     }
     internal sealed class TypeRestriction : TypeExtension {
         public TypeRestriction(Node parent) : base(parent) { }
-        public ValueFacetsNode ValueRestrictions;
+        public FacetsNode Facets;
         public override void Resolve() {
             base.Resolve();
-            if (ValueRestrictions != null) {
-                ValueRestrictions.Resolve();
+            if (Facets != null) {
+                Facets.Resolve();
             }
         }
         //private static SimpleTypeSymbol CreateSimpleTypeSymbol(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed,
@@ -184,7 +184,7 @@ namespace XData.Compiler {
                     DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotRestrictSysSimpleAtomListType), BaseTypeQName.TextSpan);
                 }
                 if (AttributesChildren != null) {
-                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotRestrictSimpleTypeWithAttributesOrChildren), AttributesChildren.OpenToken);
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotRestrictSimpleTypeWithAttributesOrChildren), AttributesChildren.OpenTextSpan);
                 }
                 return null;// CreateSimpleTypeSymbol(parent, csName, fullName, isAbstract, isSealed, baseSimpleTypeSymbol, ValueRestrictions);
             }
@@ -193,8 +193,8 @@ namespace XData.Compiler {
                 if (baseComplexTypeSymbol == NamespaceSymbol.SystemComplexType) {
                     DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotExtendOrRestrictSysComplexType), BaseTypeQName.TextSpan);
                 }
-                if (ValueRestrictions != null) {
-                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotRestrictComplexTypeWithValueRestrictions), ValueRestrictions.OpenBraceToken);
+                if (Facets != null) {
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotRestrictComplexTypeWithValueRestrictions), Facets.OpenBraceTextSpan);
                 }
                 var complexTypeSymbol = new ComplexTypeSymbol(parent, csName, isAbstract, isSealed, fullName, baseComplexTypeSymbol);
                 if (AttributesChildren != null) {
@@ -203,7 +203,7 @@ namespace XData.Compiler {
                     }
                     if (AttributesChildren.ComplexChildren != null) {
                         if (baseComplexTypeSymbol.SimpleChild != null) {
-                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotRestrictSimpleChildWithComplexChildren), AttributesChildren.ComplexChildren.OpenBraceToken);
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotRestrictSimpleChildWithComplexChildren), AttributesChildren.ComplexChildren.OpenBraceTextSpan);
                         }
                         complexTypeSymbol.Children = AttributesChildren.ComplexChildren.CreateSymbol(complexTypeSymbol, baseComplexTypeSymbol.ComplexChildren, false);
                     }

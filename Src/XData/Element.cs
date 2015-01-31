@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using XData.IO.Text;
 
 namespace XData {
@@ -303,7 +304,19 @@ namespace XData {
     public abstract class XLocalElement : XEntityElement {
     }
     public abstract class XGlobalElement : XEntityElement {
-        internal void SaveAsRoot(SavingContext context) {
+        public void Save(StringBuilder stringBuilder,
+            string indentString = Extensions.DefaultIndentString, string newLineString = Extensions.DefaultNewLineString) {
+            if (stringBuilder == null) throw new ArgumentNullException("stringBuilder");
+            SaveAsRoot(new SavingContext(stringBuilder, indentString, newLineString));
+        }
+        public void Save(System.IO.TextWriter writer,
+            string indentString = Extensions.DefaultIndentString, string newLineString = Extensions.DefaultNewLineString) {
+            if (writer == null) throw new ArgumentNullException("writer");
+            var sb = new StringBuilder(1024 * 2);
+            Save(sb, indentString, newLineString);
+            writer.Write(sb.ToString());
+        }
+        private void SaveAsRoot(SavingContext context) {
             var fullName = FullName;
             var alias = context.AddUri(fullName.Uri);
             var type = Type;

@@ -4,6 +4,8 @@ using System.Collections.Generic;
 namespace XData {
     public static class Extensions {
         public const string SystemUri = "http://xdata-solution.org";
+        public const string DefaultIndentString = "\t";
+        public const string DefaultNewLineString = "\n";
 
         public static IEnumerable<T> Ancestors<T>(this IEnumerable<XObject> source, Func<T, bool> filter = null) where T : XObject {
             if (source == null) throw new ArgumentNullException("source");

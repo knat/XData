@@ -4,18 +4,18 @@ using System.Text;
 
 namespace XData.IO.Text {
     internal class IndentedStringBuilder {
-        public IndentedStringBuilder(StringBuilder stringBuilder, string indentString = DefaultIndentString, string newLineString = DefaultNewLineString) {
+        public IndentedStringBuilder(StringBuilder stringBuilder, string indentString, string newLineString) {
             if (stringBuilder == null) throw new ArgumentNullException("stringBuilder");
             if (string.IsNullOrEmpty(indentString)) throw new ArgumentNullException("indentString");
             if (string.IsNullOrEmpty(newLineString)) throw new ArgumentNullException("newLineString");
             StringBuilder = stringBuilder;
+            StartIndex = stringBuilder.Length;
             IndentString = indentString;
             NewLineString = newLineString;
             _atNewLine = true;
         }
-        public const string DefaultIndentString = "\t";
-        public const string DefaultNewLineString = "\n";
         public readonly StringBuilder StringBuilder;
+        public readonly int StartIndex;
         public readonly string IndentString;
         public readonly string NewLineString;
         private int _indentCount;
@@ -65,14 +65,10 @@ namespace XData.IO.Text {
             AppendLine();
         }
     }
-    internal class SavingContext : IndentedStringBuilder {
-        public SavingContext(StringBuilder stringBuilder, string indentString = DefaultIndentString, string newLineString = DefaultNewLineString) :
+    internal sealed class SavingContext : IndentedStringBuilder {
+        public SavingContext(StringBuilder stringBuilder, string indentString, string newLineString) :
             base(stringBuilder, indentString, newLineString) {
         }
-        //public SavingContext(string indentString = DefaultIndentString, string newLineString = DefaultNewLineString) :
-        //    base(new StringBuilder(StringBuilderCapacity), indentString, newLineString) {
-        //}
-        //public const int StringBuilderCapacity = 1024 * 2;
         private struct AliasUri {
             public AliasUri(string alias, string uri) {
                 Alias = alias;
@@ -81,7 +77,7 @@ namespace XData.IO.Text {
             public readonly string Alias, Uri;
         }
         private List<AliasUri> _aliasUriList;
-        internal string AddUri(string uri) {
+        public string AddUri(string uri) {
             if (string.IsNullOrEmpty(uri)) {
                 return null;
             }
@@ -99,7 +95,7 @@ namespace XData.IO.Text {
             EX.CreateAndAdd(ref _aliasUriList, new AliasUri(alias, uri));
             return alias;
         }
-        internal void Append(FullName fullName) {
+        public void Append(FullName fullName) {
             var alias = AddUri(fullName.Uri);
             if (alias != null) {
                 Append(alias);
@@ -107,7 +103,7 @@ namespace XData.IO.Text {
             }
             Append(fullName.Name);
         }
-        internal void InsertRootElement(string alias, string name) {
+        public void InsertRootElement(string alias, string name) {
             var sb = EX.AcquireStringBuilder();
             if (alias != null) {
                 sb.Append(alias);
@@ -128,7 +124,7 @@ namespace XData.IO.Text {
                 }
                 sb.Append('>');
             }
-            StringBuilder.Insert(0, sb.ToStringAndRelease());
+            StringBuilder.Insert(StartIndex, sb.ToStringAndRelease());
         }
 
     }

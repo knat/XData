@@ -82,7 +82,7 @@ namespace XData.Compiler {
     internal sealed class ComplexChildrenNode : Node {
         public ComplexChildrenNode(Node parent) : base(parent) { }
         public List<MemberChildNode> ChildList;
-        public TextSpan OpenBraceToken, CloseBraceToken;
+        public TextSpan OpenBraceTextSpan, CloseBraceTextSpan;
         public void Resolve() {
             if (ChildList != null) {
                 foreach (var child in ChildList) {
@@ -93,8 +93,8 @@ namespace XData.Compiler {
         public ChildSetSymbol CreateSymbol(ComplexTypeSymbol parent, ChildSetSymbol baseChildSetSymbol, bool isExtension) {
             var baseChildSymbolList = baseChildSetSymbol != null ? baseChildSetSymbol.ChildList : null;
             var nextChildOrder = baseChildSetSymbol != null ? baseChildSetSymbol.NextChildOrder : 0;
-            var displayNameBase = parent.FullName.ToString() + ".{}";
-            var childSetSymbol = new ChildSetSymbol(parent, "CLS_Children", ChildKind.Sequence, displayNameBase, null, 1, 1, -1, null,
+            var displayName = parent.DisplayName + ".{}";
+            var childSetSymbol = new ChildSetSymbol(parent, "CLS_Children", ChildKind.Sequence, displayName, null, 1, 1, -1, null,
                 true, baseChildSetSymbol);
             if (baseChildSymbolList != null) {
                 childSetSymbol.ChildList.AddRange(baseChildSymbolList);
@@ -111,17 +111,17 @@ namespace XData.Compiler {
                                 }
                             }
                         }
-                        childSetSymbol.ChildList.Add(child.CreateSymbol(childSetSymbol, null, nextChildOrder++, displayNameBase));
+                        childSetSymbol.ChildList.Add(child.CreateSymbol(childSetSymbol, null, nextChildOrder++, displayName));
                     }
                 }
                 childSetSymbol.NextChildOrder = nextChildOrder;
             }
             else {//restriction
-                CreateRestrictionSymbols(childSetSymbol, ChildList, displayNameBase);
+                CreateRestrictionSymbols(childSetSymbol, ChildList, displayName);
             }
             return childSetSymbol;
         }
-        public static void CreateRestrictionSymbols(ChildSetSymbol childSetSymbol, List<MemberChildNode> childList, string displayNameBase) {
+        public static void CreateRestrictionSymbols(ChildSetSymbol childSetSymbol, List<MemberChildNode> childList, string parentDisplayName) {
             if (childList != null) {
                 var childSymbolList = childSetSymbol.ChildList;
                 foreach (var child in childList) {
@@ -147,7 +147,7 @@ namespace XData.Compiler {
                     }
                     childSymbolList.RemoveAt(idx);
                     if (!isDelete) {
-                        childSymbolList.Insert(idx, child.CreateSymbol(childSetSymbol, restrictedChildSymbol, restrictedChildSymbol.Order, displayNameBase));
+                        childSymbolList.Insert(idx, child.CreateSymbol(childSetSymbol, restrictedChildSymbol, restrictedChildSymbol.Order, parentDisplayName));
                     }
                 }
             }
@@ -174,14 +174,14 @@ namespace XData.Compiler {
             }
         }
         public abstract void Resolve();
-        public ChildSymbol CreateSymbol(ChildSetSymbol parent, ChildSymbol restrictedChildSymbol, int order, string displayNameBase) {
+        public ChildSymbol CreateSymbol(ChildSetSymbol parent, ChildSymbol restrictedChildSymbol, int order, string parentDisplayName) {
             var minOccurrence = MinOccurrence;
             var maxOccurrence = MaxOccurrence;
             var isList = maxOccurrence > 1;
             ChildSymbol restrictedItemSymbol = restrictedChildSymbol;
             if (restrictedChildSymbol == null) {
                 if (maxOccurrence == 0) {
-                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxOccurrenceCannotBeZeroInExtension), Occurrence.Token);
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxOccurrenceCannotBeZeroInExtension), Occurrence.TextSpan);
                 }
             }
             else {
@@ -200,19 +200,18 @@ namespace XData.Compiler {
                     if (maxOccurrence > restrictedListSymbol.MaxOccurrence) {
                         DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxOccurrenceNotEqualToOrLessThanRestricted,
                             maxOccurrence.ToInvString(), restrictedListSymbol.MaxOccurrence.ToInvString()),
-                            Occurrence.Token.IsValid ? Occurrence.Token : MemberNameNode.TextSpan);
+                            Occurrence.TextSpan.IsValid ? Occurrence.TextSpan : MemberNameNode.TextSpan);
                     }
                 }
                 if (minOccurrence < restrictedMinOccurrence) {
                     DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MinOccurrenceNotEqualToOrGreaterThanRestricted,
                         minOccurrence.ToInvString(), restrictedMinOccurrence.ToInvString()),
-                        Occurrence.Token.IsValid ? Occurrence.Token : MemberNameNode.TextSpan);
+                        Occurrence.TextSpan.IsValid ? Occurrence.TextSpan : MemberNameNode.TextSpan);
                 }
             }
             var memberName = MemberName;
-            var displayName = displayNameBase + "." + memberName;
-            var childSymbol = CreateSymbolCore(parent, restrictedItemSymbol, order,
-                displayName, (isList ? "CLSITEM_" : "CLS_") + memberName);
+            var displayName = parentDisplayName + "." + memberName;
+            var childSymbol = CreateSymbolCore(parent, restrictedItemSymbol, order, displayName, (isList ? "CLSITEM_" : "CLS_") + memberName);
             if (!isList) return childSymbol;
             return new ChildListSymbol(parent, "CLS_" + memberName, displayName, memberName, minOccurrence, maxOccurrence,
                 order, (ChildListSymbol)restrictedChildSymbol, childSymbol);
@@ -352,17 +351,17 @@ namespace XData.Compiler {
         }
     }
     internal struct OccurrenceNode {
-        public OccurrenceNode(ulong minValue, ulong maxValue, TextSpan token) {
+        public OccurrenceNode(ulong minValue, ulong maxValue, TextSpan textSpan) {
             MinValue = minValue;
             MaxValue = maxValue;
-            Token = token;
+            TextSpan = textSpan;
         }
         public readonly ulong MinValue;
         public readonly ulong MaxValue;
-        public readonly TextSpan Token;
+        public readonly TextSpan TextSpan;
         public bool IsValid {
             get {
-                return Token.IsValid;
+                return TextSpan.IsValid;
             }
         }
     }

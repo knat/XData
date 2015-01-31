@@ -5,7 +5,7 @@ namespace XData.Compiler {
     internal sealed class AttributesNode : Node {
         public AttributesNode(Node parent) : base(parent) { }
         public List<AttributeNode> AttributeList;
-        public TextSpan OpenBracketToken, CloseBracketToken;
+        public TextSpan OpenBracketTextSpan, CloseBracketTextSpan;
         public void Resolve() {
             if (AttributeList != null) {
                 foreach (var attribute in AttributeList) {
@@ -15,9 +15,9 @@ namespace XData.Compiler {
         }
         public AttributeSetSymbol CreateSymbol(ComplexTypeSymbol parent, AttributeSetSymbol baseAttributeSetSymbol, bool isExtension) {
             var baseAttributeSymbolList = baseAttributeSetSymbol != null ? baseAttributeSetSymbol.AttributeList : null;
-            var attributeSetSymbol = new AttributeSetSymbol(parent, baseAttributeSetSymbol);
+            var displayName = parent.DisplayName + ".[]";
+            var attributeSetSymbol = new AttributeSetSymbol(parent, baseAttributeSetSymbol, displayName);
             var attributeSymbolList = attributeSetSymbol.AttributeList;
-            var displayNameBase = parent.FullName.ToString() + ".[].";
             if (baseAttributeSymbolList != null) {
                 attributeSymbolList.AddRange(baseAttributeSymbolList);
             }
@@ -32,7 +32,7 @@ namespace XData.Compiler {
                                 }
                             }
                         }
-                        attributeSymbolList.Add(attribute.CreateSymbol(attributeSetSymbol, null, displayNameBase));
+                        attributeSymbolList.Add(attribute.CreateSymbol(attributeSetSymbol, null, displayName));
                     }
                 }
             }
@@ -61,7 +61,7 @@ namespace XData.Compiler {
                         }
                         attributeSymbolList.RemoveAt(idx);
                         if (!isDelete) {
-                            attributeSymbolList.Insert(idx, attribute.CreateSymbol(attributeSetSymbol, restrictedAttributeSymbol, displayNameBase));
+                            attributeSymbolList.Insert(idx, attribute.CreateSymbol(attributeSetSymbol, restrictedAttributeSymbol, displayName));
                         }
                     }
                 }
@@ -101,7 +101,7 @@ namespace XData.Compiler {
         public void Resolve() {
             Type = NamespaceAncestor.ResolveAsType(TypeQName);
         }
-        public AttributeSymbol CreateSymbol(AttributeSetSymbol parent, AttributeSymbol restrictedAttributeSymbol, string displayNameBase) {
+        public AttributeSymbol CreateSymbol(AttributeSetSymbol parent, AttributeSymbol restrictedAttributeSymbol, string parentDisplayName) {
             if (restrictedAttributeSymbol == null) {
                 if (IsDelete) {
                     DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DeletionNotAllowedInExtension), OptionalOrDelete.TextSpan);
@@ -129,7 +129,7 @@ namespace XData.Compiler {
                 }
             }
             var name = Name;
-            return new AttributeSymbol(parent, "CLS_" + name, name, displayNameBase + name, IsOptional, IsNullable, typeSymbol, restrictedAttributeSymbol);
+            return new AttributeSymbol(parent, "CLS_" + name, name, parentDisplayName + "." + name, IsOptional, IsNullable, typeSymbol, restrictedAttributeSymbol);
         }
     }
     internal struct OptionalOrDeleteNode {

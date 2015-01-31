@@ -2,21 +2,17 @@
 using XData.IO.Text;
 
 namespace XData.Compiler {
-    internal sealed class ValueFacetsNode : Node {
-        public ValueFacetsNode(Node parent) : base(parent) { }
-        public IntegerRangeNode<ulong> Lengths;
-        public IntegerRangeNode<byte> Digits;
-        public ValueRangeNode Values;
-        public List<SimpleValueNode> Enums;
+    internal sealed class FacetsNode : Node {
+        public FacetsNode(Node parent) : base(parent) { }
+        public IntegerRangeNode<ulong> LengthRange;
+        public IntegerNode<byte> Precision;
+        public IntegerNode<byte> Scale;
+        public ValueRangeNode ValueRange;
+        public List<SimpleValueNode> Enum;
         public AtomValueNode Pattern;
         public QualifiableNameNode ListItemTypeQName;
         public TypeNode ListItemType;
-        public TextSpan OpenBraceToken, CloseBraceToken;
-        //public bool HasValues {
-        //    get {
-        //        return Lengths.IsValid || Digits.IsValid || Values.IsValid || Enums != null || Pattern.IsValid || ListItemTypeQName.IsValid;
-        //    }
-        //}
+        public TextSpan OpenBraceTextSpan, CloseBraceTextSpan;
         public void Resolve() {
             if (ListItemTypeQName.IsValid) {
                 ListItemType = NamespaceAncestor.ResolveAsType(ListItemTypeQName);
@@ -24,22 +20,22 @@ namespace XData.Compiler {
         }
 
         public void CheckApplicabilities(TypeKind kind) {
-            if (Lengths.IsValid && !Contains(_lengthsTypeKinds, kind)) {
-                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Lengths.DotDotToken);
+            if (LengthRange.IsValid && !Contains(_lengthsTypeKinds, kind)) {
+                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), LengthRange.DotDotTextSpan);
             }
-            if (Digits.IsValid) {
-                if (Digits.MinValue != null && !Contains(_totalDigitsTypeKinds, kind)) {
-                    DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Digits.MinValueNode.TextSpan);
-                }
-                if (Digits.MaxValue != null && kind != TypeKind.Decimal) {
-                    DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Digits.MaxValueNode.TextSpan);
-                }
+            //if (PrecisionAndScale.IsValid) {
+            //    if (PrecisionAndScale.MinValue != null && !Contains(_totalDigitsTypeKinds, kind)) {
+            //        DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), PrecisionAndScale.MinValueNode.TextSpan);
+            //    }
+            //    if (PrecisionAndScale.MaxValue != null && kind != TypeKind.Decimal) {
+            //        DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), PrecisionAndScale.MaxValueNode.TextSpan);
+            //    }
+            //}
+            if (ValueRange.IsValid && !Contains(_valuesTypeKinds, kind)) {
+                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), ValueRange.DotDotToken);
             }
-            if (Values.IsValid && !Contains(_valuesTypeKinds, kind)) {
-                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Values.DotDotToken);
-            }
-            if (Enums != null && (!kind.IsConcreteAtomType())) {
-                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Enums[0].TextSpan);
+            if (Enum != null && (!kind.IsConcreteAtomType())) {
+                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Enum[0].TextSpan);
             }
             if (Pattern.IsValid && !kind.IsConcreteAtomType()) {
                 DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Pattern.TextSpan);
@@ -64,24 +60,40 @@ namespace XData.Compiler {
     }
 
     internal struct IntegerRangeNode<T> where T : struct {
-        public IntegerRangeNode(AtomValueNode minValueNode, T? minValue, AtomValueNode maxValueNode, T? maxValue, TextSpan dotDotToken) {
-            MinValueNode = minValueNode;
+        public IntegerRangeNode(IntegerNode<T> minValue, IntegerNode<T> maxValue, TextSpan dotDotTextSpan) {
             MinValue = minValue;
-            MaxValueNode = maxValueNode;
             MaxValue = maxValue;
-            DotDotToken = dotDotToken;
+            DotDotTextSpan = dotDotTextSpan;
         }
-        public readonly AtomValueNode MinValueNode;
-        public readonly T? MinValue;
-        public readonly AtomValueNode MaxValueNode;
-        public readonly T? MaxValue;
-        public readonly TextSpan DotDotToken;
+        public readonly IntegerNode<T> MinValue;
+        public readonly IntegerNode<T> MaxValue;
+        public readonly TextSpan DotDotTextSpan;
         public bool IsValid {
             get {
-                return DotDotToken.IsValid;
+                return DotDotTextSpan.IsValid;
             }
         }
     }
+
+    internal struct IntegerNode<T> where T : struct {
+        public IntegerNode(AtomValueNode node, T value) {
+            Node = node;
+            Value = value;
+        }
+        public readonly AtomValueNode Node;
+        public readonly T Value;
+        public bool IsValid {
+            get {
+                return Node.IsValid;
+            }
+        }
+        public TextSpan TextSpan {
+            get {
+                return Node.TextSpan;
+            }
+        }
+    }
+
     internal struct ValueRangeNode {
         public ValueRangeNode(ValueBoundaryNode? minValue, ValueBoundaryNode? maxValue, TextSpan dotDotToken) {
             MinValue = minValue;
@@ -99,11 +111,11 @@ namespace XData.Compiler {
 
     }
     internal struct ValueBoundaryNode {
-        public ValueBoundaryNode(SimpleValueNode value, bool isInclusive) {
+        public ValueBoundaryNode(AtomValueNode value, bool isInclusive) {
             Value = value;
             IsInclusive = isInclusive;
         }
-        public readonly SimpleValueNode Value;
+        public readonly AtomValueNode Value;
         public readonly bool IsInclusive;
         public bool IsValid {
             get {

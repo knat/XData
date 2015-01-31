@@ -85,7 +85,6 @@ namespace XData {
         FullName FullName { get; }
     }
 
-
     public abstract class TypeInfo : ObjectInfo, IGlobalObjectInfo {
         protected TypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeInfo baseType)
             : base(clrType, isAbstract, fullName.ToString()) {
