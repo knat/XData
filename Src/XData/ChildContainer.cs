@@ -393,8 +393,10 @@ namespace XData {
                     var found = false;
                     for (var i = 0; i < childList.Count; ++i) {
                         var child = childList[i];
-                        if (child.Order == childInfo.Order && child.EqualTo(childInfo)) {
-                            child.TryValidate(context);
+                        if (child.Order == childInfo.Order) {
+                            if (child.CheckEqualTo(context, childInfo)) {
+                                child.TryValidate(context);
+                            }
                             childList.RemoveAt(i);
                             found = true;
                             break;
@@ -641,8 +643,10 @@ namespace XData {
                 var found = false;
                 if (childSetInfo.Children != null) {
                     foreach (var childInfo in childSetInfo.Children) {
-                        if (choice.Order == childInfo.Order && choice.EqualTo(childInfo)) {
-                            choice.TryValidate(context);
+                        if (choice.Order == childInfo.Order) {
+                            if (choice.CheckEqualTo(context, childInfo)) {
+                                choice.TryValidate(context);
+                            }
                             found = true;
                             break;
                         }
@@ -782,11 +786,8 @@ namespace XData {
                 if (itemCount > maxOccurrence) {
                     context.AddErrorDiag(new DiagMsg(DiagCode.RedundantChild, item.ObjectInfo.DisplayName), item);
                 }
-                else if (item.EqualTo(itemInfo)) {
+                else if (item.CheckEqualTo(context, itemInfo)) {
                     item.TryValidate(context);
-                }
-                else {
-                    context.AddErrorDiag(new DiagMsg(DiagCode.RedundantChild, item.ObjectInfo.DisplayName), item);
                 }
             }
             if (itemCount < childListInfo.MinOccurrence) {

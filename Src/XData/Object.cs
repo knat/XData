@@ -95,13 +95,13 @@ namespace XData {
             return TryValidateCore(context);
         }
         internal abstract bool TryValidateCore(DiagContext context);
-        internal bool EqualTo(ObjectInfo otherObjectInfo) {
-            return ObjectInfo == otherObjectInfo;
-        }
+        //internal bool EqualTo(ObjectInfo otherObjectInfo) {
+        //    return ObjectInfo == otherObjectInfo;
+        //}
         internal bool CheckEqualTo(DiagContext context, ObjectInfo otherObjectInfo) {
             var objectInfo = ObjectInfo;
             if (objectInfo != otherObjectInfo) {
-                context.AddErrorDiag(new DiagMsg(DiagCode.ObjectNotEqualTo, objectInfo.DisplayName, otherObjectInfo.DisplayName), this);
+                context.AddErrorDiag(new DiagMsg(DiagCode.InvalidObject, objectInfo.DisplayName, otherObjectInfo.DisplayName), this);
                 return false;
             }
             return true;

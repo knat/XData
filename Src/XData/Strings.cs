@@ -66,25 +66,7 @@ namespace XData {
             return true;
         }
         internal override sealed void SaveValue(SavingContext context) {
-            var value = _value;
-            var length = value.Length;
-            if (length == 0) {
-                context.Append("\"\"");
-            }
-            else {
-                context.Append("@\"");
-                var sb = context.StringBuilder;
-                for (var i = 0; i < length; ++i) {
-                    var ch = value[i];
-                    if (ch == '"') {
-                        sb.Append("\"\"");
-                    }
-                    else {
-                        sb.Append(ch);
-                    }
-                }
-                sb.Append('"');
-            }
+            EX.GetLiteral(_value, context.StringBuilder);
         }
     }
     public class XString : XStringBase {

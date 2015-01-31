@@ -172,8 +172,10 @@ namespace XData {
                     var found = false;
                     for (var i = 0; i < attributeList.Count; ++i) {
                         var attribute = attributeList[i];
-                        if (attribute.Name == attributeInfo.Name && attribute.EqualTo(attributeInfo)) {
-                            attribute.TryValidate(context);
+                        if (attribute.Name == attributeInfo.Name) {
+                            if (attribute.CheckEqualTo(context, attributeInfo)) {
+                                attribute.TryValidate(context);
+                            }
                             attributeList.RemoveAt(i);
                             found = true;
                             break;

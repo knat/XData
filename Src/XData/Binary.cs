@@ -88,9 +88,10 @@ namespace XData {
             return true;
         }
         internal override sealed void SaveValue(SavingContext context) {
-            context.Append('"');
-            context.StringBuilder.Append(ToString());
-            context.StringBuilder.Append('"');
+            var sb = context.StringBuilder;
+            sb.Append('"');
+            sb.Append(ToString());
+            sb.Append('"');
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
         new public static readonly AtomTypeInfo ThisInfo = TypeKind.Binary.ToAtomTypeInfo(typeof(XBinary), XAtomType.ThisInfo);

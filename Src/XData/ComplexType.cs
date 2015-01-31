@@ -178,7 +178,6 @@ namespace XData {
             return Enumerable.Empty<T>();
         }
         #endregion LINQ
-
         //
         public ComplexTypeInfo ComplexTypeInfo {
             get {

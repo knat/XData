@@ -11,7 +11,7 @@ namespace XData {
         DuplicateUriAlias,
         InvalidUriAlias,
         //object
-        ObjectNotEqualTo,
+        InvalidObject,
 
         //types
         InvalidTypeName,
@@ -87,8 +87,8 @@ namespace XData {
                 case DiagCode.InvalidUriAlias:
                     return "Invalid uri alias '{0}'.".InvFormat(_msgArgs);
                 //object
-                case DiagCode.ObjectNotEqualTo:
-                    return "Object '{0}' not equal to '{1}'.".InvFormat(_msgArgs);
+                case DiagCode.InvalidObject:
+                    return "Invalid object '{0}'. '{1}' expected.".InvFormat(_msgArgs);
                 //
                 //types
                 case DiagCode.InvalidTypeName:
@@ -261,7 +261,6 @@ namespace XData {
 
 
     public class DiagContext : List<Diag> {
-        public DiagContext() { }
         public void AddDiag(DiagSeverity severity, int rawCode, string message, TextSpan textSpan, XObject obj) {
             Add(new Diag(severity, rawCode, message, textSpan, obj));
         }
@@ -293,10 +292,6 @@ namespace XData {
             }
             return false;
         }
-        public virtual void Reset() {
-            Clear();
-        }
-
         public struct DiagMarker {
             internal DiagMarker(DiagContext context) {
                 Context = context;
@@ -316,6 +311,36 @@ namespace XData {
         public DiagMarker MarkDiags() {
             return new DiagMarker(this);
         }
+
+        private struct ValidationResult {
+            public ValidationResult(XObject obj, bool result) {
+                Object = obj;
+                Result = result;
+            }
+            public readonly XObject Object;
+            public readonly bool Result;
+        }
+        private List<ValidationResult> _validationResultList;
+        internal bool? GetValidationResult(XObject obj) {
+            if (_validationResultList.CountOrZero() > 0) {
+                foreach (var i in _validationResultList) {
+                    if (i.Object == obj) {
+                        return i.Result;
+                    }
+                }
+            }
+            return null;
+        }
+        internal void SetValidationResult(XObject obj, bool result) {
+            EX.CreateAndAdd(ref _validationResultList, new ValidationResult(obj, result));
+        }
+        public virtual void Reset() {
+            Clear();
+            if (_validationResultList != null) {
+                _validationResultList.Clear();
+            }
+        }
+
     }
 
 

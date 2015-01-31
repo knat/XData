@@ -98,14 +98,15 @@ namespace XData {
             return false;
         }
         internal override void SaveValue(SavingContext context) {
+            var sb = context.StringBuilder;
             string result;
             if (GetString(out result)) {
-                context.Append(result);
+                sb.Append(result);
             }
             else {
-                context.Append('"');
-                context.StringBuilder.Append(result);
-                context.StringBuilder.Append('"');
+                sb.Append('"');
+                sb.Append(result);
+                sb.Append('"');
             }
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }
@@ -228,14 +229,15 @@ namespace XData {
             return false;
         }
         internal override sealed void SaveValue(SavingContext context) {
+            var sb = context.StringBuilder;
             string result;
             if (GetString(out result)) {
-                context.Append(result);
+                sb.Append(result);
             }
             else {
-                context.Append('"');
-                context.StringBuilder.Append(result);
-                context.StringBuilder.Append('"');
+                sb.Append('"');
+                sb.Append(result);
+                sb.Append('"');
             }
         }
         public override ObjectInfo ObjectInfo { get { return ThisInfo; } }

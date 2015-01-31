@@ -67,7 +67,7 @@ namespace XData {
         }
         internal virtual void TryValidateFacetsEx(DiagContext context, FacetSetInfo facets) { }
         internal override void SaveValue(SavingContext context) {
-            context.Append(ToString());
+            context.StringBuilder.Append(ToString());
         }
         internal static bool TryCreate(DiagContext context, ProgramInfo programInfo, SimpleTypeInfo simpleTypeInfo,
             SimpleValueNode simpleValueNode, out XSimpleType result) {

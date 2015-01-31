@@ -102,6 +102,31 @@ namespace XData {
         public static bool TryToInvByte(this string s, out byte result) {
             return byte.TryParse(s, NumberStyles.AllowLeadingSign, NumberFormatInfo.InvariantInfo, out result);
         }
+        //
+        public static void GetLiteral(string value, StringBuilder sb) {
+            var length = value.Length;
+            if (length == 0) {
+                sb.Append("\"\"");
+            }
+            else {
+                sb.Append("@\"");
+                for (var i = 0; i < length; ++i) {
+                    var ch = value[i];
+                    if (ch == '"') {
+                        sb.Append("\"\"");
+                    }
+                    else {
+                        sb.Append(ch);
+                    }
+                }
+                sb.Append('"');
+            }
+        }
+        public static string ToLiteral(this string value) {
+            var sb = AcquireStringBuilder();
+            GetLiteral(value, sb);
+            return sb.ToStringAndRelease();
+        }
 
         //
         public static int AggregateHash(int hash, int newValue) {

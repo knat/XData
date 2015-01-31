@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace XData.IO.Text {
-    public class IndentedStringBuilder {
+    internal class IndentedStringBuilder {
         public IndentedStringBuilder(StringBuilder stringBuilder, string indentString = DefaultIndentString, string newLineString = DefaultNewLineString) {
             if (stringBuilder == null) throw new ArgumentNullException("stringBuilder");
             if (string.IsNullOrEmpty(indentString)) throw new ArgumentNullException("indentString");
@@ -65,15 +65,14 @@ namespace XData.IO.Text {
             AppendLine();
         }
     }
-    public class SavingContext : IndentedStringBuilder {
+    internal class SavingContext : IndentedStringBuilder {
         public SavingContext(StringBuilder stringBuilder, string indentString = DefaultIndentString, string newLineString = DefaultNewLineString) :
             base(stringBuilder, indentString, newLineString) {
-            _aliasUriList = new List<AliasUri>();
         }
-        public SavingContext(string indentString = DefaultIndentString, string newLineString = DefaultNewLineString) :
-            this(new StringBuilder(StringBuilderCapacity), indentString, newLineString) {
-        }
-        public const int StringBuilderCapacity = 1024 * 2;
+        //public SavingContext(string indentString = DefaultIndentString, string newLineString = DefaultNewLineString) :
+        //    base(new StringBuilder(StringBuilderCapacity), indentString, newLineString) {
+        //}
+        //public const int StringBuilderCapacity = 1024 * 2;
         private struct AliasUri {
             public AliasUri(string alias, string uri) {
                 Alias = alias;
@@ -81,24 +80,26 @@ namespace XData.IO.Text {
             }
             public readonly string Alias, Uri;
         }
-        private readonly List<AliasUri> _aliasUriList;
-        public string AddUri(string uri) {
+        private List<AliasUri> _aliasUriList;
+        internal string AddUri(string uri) {
             if (string.IsNullOrEmpty(uri)) {
                 return null;
             }
             if (uri == Extensions.SystemUri) {
                 return "sys";
             }
-            foreach (var au in _aliasUriList) {
-                if (au.Uri == uri) {
-                    return au.Alias;
+            if (_aliasUriList != null) {
+                foreach (var au in _aliasUriList) {
+                    if (au.Uri == uri) {
+                        return au.Alias;
+                    }
                 }
             }
             var alias = "a" + _aliasUriList.Count.ToInvString();
-            _aliasUriList.Add(new AliasUri(alias, uri));
+            EX.CreateAndAdd(ref _aliasUriList, new AliasUri(alias, uri));
             return alias;
         }
-        public void Append(FullName fullName) {
+        internal void Append(FullName fullName) {
             var alias = AddUri(fullName.Uri);
             if (alias != null) {
                 Append(alias);
@@ -106,7 +107,29 @@ namespace XData.IO.Text {
             }
             Append(fullName.Name);
         }
-
+        internal void InsertRootElement(string alias, string name) {
+            var sb = EX.AcquireStringBuilder();
+            if (alias != null) {
+                sb.Append(alias);
+                sb.Append(':');
+            }
+            sb.Append(name);
+            var auCount = _aliasUriList.CountOrZero();
+            if (auCount > 0) {
+                sb.Append(" <");
+                for (var i = 0; i < auCount; ++i) {
+                    if (i > 0) {
+                        sb.Append(' ');
+                    }
+                    var au = _aliasUriList[i];
+                    sb.Append(au.Alias);
+                    sb.Append(" = ");
+                    sb.Append(au.Uri.ToLiteral());
+                }
+                sb.Append('>');
+            }
+            StringBuilder.Insert(0, sb.ToStringAndRelease());
+        }
 
     }
 

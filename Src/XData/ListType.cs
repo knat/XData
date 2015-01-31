@@ -207,15 +207,16 @@ namespace XData {
             return !dMarker.HasErrors;
         }
         internal override sealed void SaveValue(SavingContext context) {
-            context.Append("#[");
+            var sb = context.StringBuilder;
+            sb.Append("#[");
             var count = _itemList.Count;
             for (var i = 0; i < count; ++i) {
                 if (i > 0) {
-                    context.Append(' ');
+                    sb.Append(' ');
                 }
                 _itemList[i].SaveValue(context);
             }
-            context.Append(']');
+            sb.Append(']');
         }
     }
 }

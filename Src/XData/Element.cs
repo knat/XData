@@ -167,9 +167,6 @@ namespace XData {
 
 
         #endregion LINQ
-
-
-
         //
         public ElementInfo ElementInfo {
             get {
@@ -278,12 +275,6 @@ namespace XData {
         }
 
         //
-
-
-        //
-        public void SaveAsRoot(SavingContext context) {
-
-        }
         internal override sealed void Save(SavingContext context) {
             context.Append(_fullName);
             if (_type != null) {
@@ -291,15 +282,6 @@ namespace XData {
                 _type.Save(context, ElementInfo.Type);
                 context.AppendLine();
             }
-        }
-        internal bool CheckEqualToOrSubstituteFor(DiagContext context, ElementInfo otherElementInfo) {
-            var elementInfo = ElementInfo;
-            if (!elementInfo.EqualToOrSubstituteFor(otherElementInfo)) {
-                context.AddErrorDiag(new DiagMsg(DiagCode.ElementNotEqualToOrSubstituteFor,
-                    elementInfo.DisplayName, otherElementInfo.DisplayName), this);
-                return false;
-            }
-            return true;
         }
         internal override bool TryValidateCore(DiagContext context) {
             var elementInfo = ElementInfo;
@@ -317,6 +299,39 @@ namespace XData {
             }
             return true;
         }
+    }
+    public abstract class XLocalElement : XEntityElement {
+    }
+    public abstract class XGlobalElement : XEntityElement {
+        internal void SaveAsRoot(SavingContext context) {
+            var fullName = FullName;
+            var alias = context.AddUri(fullName.Uri);
+            var type = Type;
+            if (type != null) {
+                context.StringBuilder.Append(" = ");
+                type.Save(context, ElementInfo.Type);
+                context.AppendLine();
+            }
+            context.InsertRootElement(alias, fullName.Name);
+        }
+        internal bool CheckEqualToOrSubstituteFor(DiagContext context, ElementInfo otherElementInfo) {
+            var elementInfo = ElementInfo;
+            if (!elementInfo.EqualToOrSubstituteFor(otherElementInfo)) {
+                context.AddErrorDiag(new DiagMsg(DiagCode.ElementNotEqualToOrSubstituteFor,
+                    elementInfo.DisplayName, otherElementInfo.DisplayName), this);
+                return false;
+            }
+            return true;
+        }
+        internal override sealed bool TryValidateCore(DiagContext context) {
+            var result = context.GetValidationResult(this);
+            if (result != null) {
+                return result.Value;
+            }
+            var success = base.TryValidateCore(context);
+            context.SetValidationResult(this, success);
+            return success;
+        }
         internal static bool TryCreate<T>(DiagContext context, ElementInfo elementInfo, ElementNode elementNode, out T result) where T : XEntityElement {
             if (!elementInfo.IsGlobal) throw new ArgumentException("!elementInfo.IsGlobal");
             result = null;
@@ -333,10 +348,7 @@ namespace XData {
             result = (T)child;
             return true;
         }
-    }
-    public abstract class XLocalElement : XEntityElement {
-    }
-    public abstract class XGlobalElement : XEntityElement {
+
     }
     public abstract class XGlobalElementRef : XElement {
         private XGlobalElement _globalElement;
@@ -390,7 +402,7 @@ namespace XData {
                 _globalElement.Save(context);
             }
         }
-        internal override bool TryValidateCore(DiagContext context) {
+        internal override sealed bool TryValidateCore(DiagContext context) {
             if (_globalElement == null) {
                 context.AddErrorDiag(new DiagMsg(DiagCode.EntityElementIsNull), this);
                 return false;
