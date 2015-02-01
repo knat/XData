@@ -31,6 +31,9 @@ namespace XData {
                 SetDoubleValue(value);
             }
         }
+        public override object GetValue() {
+            return Value;
+        }
         public override bool Equals(XSimpleType other) {
             if ((object)this == other) return true;
             var otherType = other as XDouble;
@@ -139,6 +142,9 @@ namespace XData {
             set {
                 SetSingleValue(value);
             }
+        }
+        public override object GetValue() {
+            return Value;
         }
         public override double GetDoubleValue() {
             return Value;

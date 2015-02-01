@@ -20,6 +20,9 @@
                 _value = value;
             }
         }
+        public override object GetValue() {
+            return _value;
+        }
         public override bool Equals(XSimpleType other) {
             if ((object)this == other) return true;
             var otherType = other as XBoolean;

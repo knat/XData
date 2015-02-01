@@ -56,7 +56,24 @@ namespace XData {
                             length.ToInvString(), maxLength.Value.ToInvString()), this);
                     }
                 }
-                TryValidateFacetsEx(context, facets);
+                //
+                string valueString = null;
+                if (facets.Enum != null) {
+                    var @enum = facets.Enum.Value;
+                    var found = false;
+                    foreach (var item in @enum.Items) {
+                        if (ValueEquals(item.Value)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        context.AddErrorDiag(new DiagMsg(DiagCode.ValueNotInEnumeration,
+                            GetValueString(ref valueString), @enum.Text), this);
+                    }
+                }
+                //
+                TryValidateFacetsEx(context, facets, valueString);
                 return !dMarker.HasErrors;
             }
             return true;
@@ -65,7 +82,13 @@ namespace XData {
             result = 0;
             return false;
         }
-        internal virtual void TryValidateFacetsEx(DiagContext context, FacetSetInfo facets) { }
+        internal string GetValueString(ref string str) {
+            if (str == null) {
+                str = ToString();
+            }
+            return str;
+        }
+        internal virtual void TryValidateFacetsEx(DiagContext context, FacetSetInfo facets, string valueString) { }
         internal override void SaveValue(SavingContext context) {
             context.StringBuilder.Append(ToString());
         }

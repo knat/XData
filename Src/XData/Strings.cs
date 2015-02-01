@@ -22,6 +22,9 @@ namespace XData {
                 _value = value ?? string.Empty;
             }
         }
+        public override sealed object GetValue() {
+            return _value;
+        }
         protected abstract bool ValueEquals(string a, string b);
         protected abstract int GetValueHashCode(string s);
         protected abstract int CompareValue(string a, string b);

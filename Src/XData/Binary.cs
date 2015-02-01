@@ -26,6 +26,9 @@ namespace XData {
                 _value = value ?? _emptyValue;
             }
         }
+        public override object GetValue() {
+            return _value;
+        }
         public override XObject DeepClone() {
             var obj = (XBinary)base.DeepClone();
             if (_value.Length > 0) {

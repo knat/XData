@@ -29,6 +29,9 @@ namespace XData {
                 SetDecimalValue(value);
             }
         }
+        public override object GetValue() {
+            return Value;
+        }
         public override bool Equals(XSimpleType other) {
             if ((object)this == other) return true;
             var otherType = other as XDecimal;
@@ -136,6 +139,9 @@ namespace XData {
                 SetInt64Value(value);
             }
         }
+        public override object GetValue() {
+            return Value;
+        }
         public override decimal GetDecimalValue() {
             return Value;
         }
@@ -219,6 +225,9 @@ namespace XData {
             set {
                 SetInt32Value(value);
             }
+        }
+        public override object GetValue() {
+            return Value;
         }
         public override long GetInt64Value() {
             return Value;
@@ -315,6 +324,9 @@ namespace XData {
             set {
                 SetInt16Value(value);
             }
+        }
+        public override object GetValue() {
+            return Value;
         }
         public override int GetInt32Value() {
             return Value;
@@ -423,6 +435,9 @@ namespace XData {
             set {
                 SetSByteValue(value);
             }
+        }
+        public override object GetValue() {
+            return Value;
         }
         public override short GetInt16Value() {
             return Value;
@@ -545,6 +560,9 @@ namespace XData {
                 SetUInt64Value(value);
             }
         }
+        public override object GetValue() {
+            return Value;
+        }
         public override decimal GetDecimalValue() {
             return Value;
         }
@@ -628,6 +646,9 @@ namespace XData {
             set {
                 SetUInt32Value(value);
             }
+        }
+        public override object GetValue() {
+            return Value;
         }
         public override ulong GetUInt64Value() {
             return Value;
@@ -724,6 +745,9 @@ namespace XData {
             set {
                 SetUInt16Value(value);
             }
+        }
+        public override object GetValue() {
+            return Value;
         }
         public override uint GetUInt32Value() {
             return Value;
@@ -832,6 +856,9 @@ namespace XData {
             set {
                 SetByteValue(value);
             }
+        }
+        public override object GetValue() {
+            return Value;
         }
         public override ushort GetUInt16Value() {
             return Value;

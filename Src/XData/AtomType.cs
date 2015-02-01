@@ -7,6 +7,7 @@ namespace XData {
     }
 
     public abstract class XAtomType : XSimpleType, ITryComparable<XAtomType> {
+        public abstract object GetValue();
         public abstract bool TryParseAndSet(string literal);
         public virtual bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
@@ -65,7 +66,7 @@ namespace XData {
             scale = 0;
             return false;
         }
-        internal override sealed void TryValidateFacetsEx(DiagContext context, FacetSetInfo facets) {
+        internal override sealed void TryValidateFacetsEx(DiagContext context, FacetSetInfo facets, string valueString) {
             var precision = facets.Precision;
             var scale = facets.Scale;
             if (precision != null || scale != null) {
@@ -86,70 +87,50 @@ namespace XData {
                     }
                 }
             }
-            string str = null;
+            
             if (facets.MinValue != null) {
                 var minValue = facets.MinValue.Value;
                 int result;
-                if (!TryCompareValueTo(minValue.ValueText.Value, out result)) {
+                if (!TryCompareValueTo(minValue.Value.Value, out result)) {
                     throw new InvalidOperationException("!TryCompareValueTo()");
                 }
                 if (minValue.IsInclusive) {
                     if (result < 0) {
                         context.AddErrorDiag(new DiagMsg(DiagCode.ValueNotGreaterThanOrEqualTo,
-                            GetString(ref str), minValue.ValueText.Text), this);
+                            GetValueString(ref valueString), minValue.Value.NameOrText), this);
                     }
                 }
                 else if (result <= 0) {
                     context.AddErrorDiag(new DiagMsg(DiagCode.ValueNotGreaterThan,
-                        GetString(ref str), minValue.ValueText.Text), this);
+                        GetValueString(ref valueString), minValue.Value.NameOrText), this);
                 }
             }
             if (facets.MaxValue != null) {
                 var maxValue = facets.MaxValue.Value;
                 int result;
-                if (!TryCompareValueTo(maxValue.ValueText.Value, out result)) {
+                if (!TryCompareValueTo(maxValue.Value.Value, out result)) {
                     throw new InvalidOperationException("!TryCompareValueTo()");
                 }
                 if (maxValue.IsInclusive) {
                     if (result > 0) {
                         context.AddErrorDiag(new DiagMsg(DiagCode.ValueNotLessThanOrEqualTo,
-                            GetString(ref str), maxValue.ValueText.Text), this);
+                            GetValueString(ref valueString), maxValue.Value.NameOrText), this);
                     }
                 }
                 else if (result >= 0) {
                     context.AddErrorDiag(new DiagMsg(DiagCode.ValueNotLessThan,
-                        GetString(ref str), maxValue.ValueText.Text), this);
-                }
-            }
-            if (facets.Enum != null) {
-                var @enum = facets.Enum.Value;
-                var found = false;
-                foreach (var item in @enum.Items) {
-                    if (ValueEquals(item.Value)) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    context.AddErrorDiag(new DiagMsg(DiagCode.ValueNotInEnumeration,
-                        GetString(ref str), @enum.TotalText), this);
+                        GetValueString(ref valueString), maxValue.Value.NameOrText), this);
                 }
             }
             if (facets.Patterns != null) {
-                GetString(ref str);
+                GetValueString(ref valueString);
                 foreach (var pattern in facets.Patterns) {
-                    var match = pattern.Regex.Match(str);
-                    if (!(match.Success && match.Index == 0 && match.Length == str.Length)) {
-                        context.AddErrorDiag(new DiagMsg(DiagCode.LiteralNotMatchWithPattern, str, pattern.Pattern), this);
+                    var match = pattern.Regex.Match(valueString);
+                    if (!(match.Success && match.Index == 0 && match.Length == valueString.Length)) {
+                        context.AddErrorDiag(new DiagMsg(DiagCode.LiteralNotMatchWithPattern, valueString, pattern.Pattern), this);
                     }
                 }
             }
-        }
-        private string GetString(ref string str) {
-            if (str == null) {
-                str = ToString();
-            }
-            return str;
         }
         internal static bool TryCreate(DiagContext context, AtomTypeInfo atomTypeInfo,
             AtomValueNode atomValueNode, out XAtomType result) {

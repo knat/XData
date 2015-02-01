@@ -148,10 +148,9 @@ namespace XData.IO.Text {
         }
         protected NameNode NameExpected() {
             NameNode name;
-            if (Name(out name)) {
-                return name;
+            if (!Name(out name)) {
+                ErrorDiagAndThrow("Name expected.");
             }
-            ErrorDiagAndThrow("Name expected.");
             return name;
         }
         protected bool Keyword(string keywordValue) {
@@ -203,10 +202,9 @@ namespace XData.IO.Text {
         }
         protected QualifiableNameNode QualifiableNameExpected() {
             QualifiableNameNode qName;
-            if (QualifiableName(out qName)) {
-                return qName;
+            if (!QualifiableName(out qName)) {
+                ErrorDiagAndThrow("Qualifiable name expected.");
             }
-            ErrorDiagAndThrow("Qualifiable name expected.");
             return qName;
         }
         protected bool AtomValue(out AtomValueNode result, AtomValueKind expectedKind = AtomValueKind.None) {
@@ -245,11 +243,10 @@ namespace XData.IO.Text {
         }
         protected AtomValueNode AtomValueExpected(AtomValueKind expectedKind = AtomValueKind.None) {
             AtomValueNode atomValue;
-            if (AtomValue(out atomValue, expectedKind)) {
-                return atomValue;
+            if (!AtomValue(out atomValue, expectedKind)) {
+                ErrorDiagAndThrow(expectedKind == AtomValueKind.None ? "Atom value expected." :
+                    expectedKind.ToString() + " value expected.");
             }
-            ErrorDiagAndThrow(expectedKind == AtomValueKind.None ? "Atom value expected." :
-                expectedKind.ToString() + " value expected.");
             return atomValue;
         }
         protected bool StringValue(out AtomValueNode result) {
@@ -264,7 +261,6 @@ namespace XData.IO.Text {
         protected AtomValueNode IntegerValueExpected() {
             return AtomValueExpected(AtomValueKind.Integer);
         }
-
         protected bool TypeIndicator(out QualifiableNameNode result) {
             if (Token('(')) {
                 result = QualifiableNameExpected();
@@ -299,22 +295,21 @@ namespace XData.IO.Text {
         }
         protected SimpleValueNode SimpleValueExpected() {
             SimpleValueNode value;
-            if (SimpleValue(out value)) {
-                return value;
+            if (!SimpleValue(out value)) {
+                ErrorDiagAndThrow("Simple value expected.");
             }
-            ErrorDiagAndThrow("Simple value expected.");
             return value;
         }
-        protected bool List<T>(int startRawKind, int endRawKind, NodeGetter<T> nodeGetter, string errorMsg, out NodeList<T> result) {
+        protected bool List<T>(int openTokenKind, int closeTokenKind, NodeGetter<T> nodeGetter, string errorMsg, out NodeList<T> result) {
             TextSpan openTokenTextSpan, closeTokenTextSpan;
-            if (Token(startRawKind, out openTokenTextSpan)) {
+            if (Token(openTokenKind, out openTokenTextSpan)) {
                 var list = new NodeList<T>(openTokenTextSpan);
                 while (true) {
                     T item;
                     if (nodeGetter(out item)) {
                         list.Add(item);
                     }
-                    else if (Token(endRawKind, out closeTokenTextSpan)) {
+                    else if (Token(closeTokenKind, out closeTokenTextSpan)) {
                         list.CloseTokenTextSpan = closeTokenTextSpan;
                         result = list;
                         return true;
@@ -327,16 +322,16 @@ namespace XData.IO.Text {
             result = null;
             return false;
         }
-        protected bool List<T>(int startRawKind, int endRawKind, NodeGetterWithList<T> nodeGetterWithList, string errorMsg, out NodeList<T> result) {
+        protected bool List<T>(int openTokenKind, int closeTokenKind, NodeGetterWithList<T> nodeGetterWithList, string errorMsg, out NodeList<T> result) {
             TextSpan openTokenTextSpan, closeTokenTextSpan;
-            if (Token(startRawKind, out openTokenTextSpan)) {
+            if (Token(openTokenKind, out openTokenTextSpan)) {
                 var list = new NodeList<T>(openTokenTextSpan);
                 while (true) {
                     T item;
                     if (nodeGetterWithList(list, out item)) {
                         list.Add(item);
                     }
-                    else if (Token(endRawKind, out closeTokenTextSpan)) {
+                    else if (Token(closeTokenKind, out closeTokenTextSpan)) {
                         list.CloseTokenTextSpan = closeTokenTextSpan;
                         result = list;
                         return true;

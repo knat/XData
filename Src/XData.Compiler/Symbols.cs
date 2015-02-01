@@ -161,28 +161,39 @@ namespace XData.Compiler {
         }
 
     }
+    internal sealed class FacetSetSymbol : FacetSetInfo {
+        public FacetSetSymbol(
+            ulong? minLength, ulong? maxLength,
+            byte? precision, byte? scale,
+            ValueBoundaryInfo? minValue, ValueBoundaryInfo? maxValue,
+            EnumInfo? @enum, PatternInfo[] patterns,
+            FacetSetSymbol baseFacetSet) :
+            base(minLength, maxLength, precision, scale, minValue, maxValue, @enum, patterns) {
+            BaseFacetSet = baseFacetSet;
+        }
+        public readonly FacetSetSymbol BaseFacetSet;
+    }
+
     internal class SimpleTypeSymbol : TypeSymbol {
         public SimpleTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
             NameSyntax csBaseFullName, NameSyntax[] csItfNames, FullName fullName, TypeKind kind, SimpleTypeSymbol baseType,
-            FacetSetInfo facets)
+            FacetSetSymbol facets)
             : base(parent, csName, isAbstract, isSealed, csBaseFullName, csItfNames, fullName, kind, baseType) {
             Facets = facets;
         }
-        public readonly FacetSetInfo Facets;
+        public readonly FacetSetSymbol Facets;
     }
     internal sealed class AtomTypeSymbol : SimpleTypeSymbol {
         public AtomTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
-            FullName fullName, TypeKind kind, SimpleTypeSymbol baseType, FacetSetInfo valueRestrictions,
-            TypeSyntax facets)
-            : base(parent, csName, isAbstract, isSealed, baseType.CSFullName, null, fullName, kind, baseType, valueRestrictions) {
-            ValueCSFullName = facets;
+            FullName fullName, TypeKind kind, SimpleTypeSymbol baseType, FacetSetSymbol facets, TypeSyntax valueCSFullName)
+            : base(parent, csName, isAbstract, isSealed, baseType.CSFullName, null, fullName, kind, baseType, facets) {
+            ValueCSFullName = valueCSFullName;
         }
         public readonly TypeSyntax ValueCSFullName;
     }
     internal sealed class ListTypeSymbol : SimpleTypeSymbol {
         public ListTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
-            FullName fullName, SimpleTypeSymbol baseType, FacetSetInfo facets,
-            NameSyntax[] csItfNames, SimpleTypeSymbol itemType)
+            FullName fullName, SimpleTypeSymbol baseType, FacetSetSymbol facets, NameSyntax[] csItfNames, SimpleTypeSymbol itemType)
             : base(parent, csName, isAbstract, isSealed, baseType.CSFullName, csItfNames, fullName, TypeKind.ListType, baseType, facets) {
             ItemType = itemType;
         }

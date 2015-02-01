@@ -42,12 +42,12 @@ namespace XData.Compiler {
         public override void Resolve() {
             ItemType = NamespaceAncestor.ResolveAsType(ItemTypeQName);
             if (Facets != null && Facets.ListItemTypeQName.IsValid) {
-                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.ValueRestrictionNotApplicable), Facets.ListItemTypeQName.TextSpan);
+                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotApplicable), Facets.ListItemTypeQName.TextSpan);
             }
         }
         public override TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
-            var itemSimpleTypeSymbol = ItemType.CreateSymbol() as SimpleTypeSymbol;
-            if (itemSimpleTypeSymbol == null) {
+            var itemTypeSymbol = ItemType.CreateSymbol() as SimpleTypeSymbol;
+            if (itemTypeSymbol == null) {
                 DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.SimpleTypeRequired), ItemTypeQName.TextSpan);
             }
             if (Facets != null) {

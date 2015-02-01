@@ -104,12 +104,12 @@ namespace XData {
         }
     }
 
-    public sealed class FacetSetInfo {
+    public class FacetSetInfo {
         public FacetSetInfo(
-            ulong? minLength = null, ulong? maxLength = null,
-            byte? precision = null, byte? scale = null,
-            ValueBoundaryInfo? minValue = null, ValueBoundaryInfo? maxValue = null,
-            EnumInfo? @enum = null, PatternInfo[] patterns = null) {
+            ulong? minLength, ulong? maxLength,
+            byte? precision, byte? scale,
+            ValueBoundaryInfo? minValue, ValueBoundaryInfo? maxValue,
+            EnumInfo? @enum, PatternInfo[] patterns) {
             MinLength = minLength;
             MaxLength = maxLength;
             Precision = precision;
@@ -129,28 +129,28 @@ namespace XData {
         public readonly PatternInfo[] Patterns;
     }
     public struct ValueBoundaryInfo {
-        public ValueBoundaryInfo(ValueTextInfo valueText, bool isInclusive) {
-            ValueText = valueText;
+        public ValueBoundaryInfo(ValueInfo value, bool isInclusive) {
+            Value = value;
             IsInclusive = isInclusive;
         }
-        public readonly ValueTextInfo ValueText;
+        public readonly ValueInfo Value;
         public readonly bool IsInclusive;
     }
-    public struct ValueTextInfo {
-        public ValueTextInfo(object value, string text) {
+    public struct ValueInfo {
+        public ValueInfo(object value, string nameOrText) {
             Value = value;
-            Text = text;
+            NameOrText = nameOrText;
         }
         public readonly object Value;
-        public readonly string Text;
+        public readonly string NameOrText;
     }
     public struct EnumInfo {
-        public EnumInfo(ValueTextInfo[] items, string totalText) {
+        public EnumInfo(ValueInfo[] items, string text) {
             Items = items;
-            TotalText = totalText;
+            Text = text;
         }
-        public readonly ValueTextInfo[] Items;
-        public readonly string TotalText;
+        public readonly ValueInfo[] Items;
+        public readonly string Text;
     }
     public struct PatternInfo {
         public PatternInfo(string pattern) {

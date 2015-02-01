@@ -114,7 +114,7 @@ namespace XData.Compiler {
                 }
             }
             if (!@try) {
-                throw new InvalidOperationException("Cannot get ancestor: " + typeof(T).FullName);
+                throw new InvalidOperationException("Cannot get ancestor " + typeof(T).FullName);
             }
             return null;
         }

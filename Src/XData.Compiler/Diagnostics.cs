@@ -11,19 +11,28 @@ namespace XData.Compiler {
         DuplicateImportAlias,
         InvalidImportUri,
         DuplicateNamespaceMember,
+        DuplicateEnumItemName,
         InvalidQualifiableNameAlias,
         AmbiguousNameReference,
         InvalidNameReference,
         InvalidTypeNameReference,
-        //InvalidAttributeNameReference,
         InvalidElementNameReference,
-        //UInt64ValueRequired,
-        //ByteValueRequired,
-        PrecisionMustEqualToOrBeGreaterThanScale,
-        MaxValueMustEqualToOrBeGreaterThanMinValue,
-        MaxValueMustBeGreaterThanZero,
-        ValueRestrictionNotApplicable,
+        //facets
+        UInt64ValueRequired,
+        ByteValueRequired,
+        FacetNotApplicable,
+        MaxLengthNotEqualToOrGreaterThanMinLength,
+        MinLengthNotEqualToOrGreaterThanBaseMinLength,
+        MaxLengthNotEqualToOrLessThanBaseMaxLength,
+        ScaleNotEqualToOrLessThanPrecision,
+        PrecisionNotEqualToOrLessThanBasePrecision,
+        ScaleNotEqualToOrLessThanBaseScale,
+        InvalidLiteral,
 
+
+
+
+        //
         DuplicateMemberName,
         DuplicateAttributeName,
         InvalidIndicatorNamespaceName,
@@ -59,6 +68,7 @@ namespace XData.Compiler {
         ElementIsNullableButSubstitutedIsNotNullable,
         MaxOccurrenceCannotBeZeroInExtension,
         ChildKindNotEqualToRestricted,
+        MaxOccurrenceNotEqualToOrGreaterThanMinOccurrence,
         MinOccurrenceNotEqualToOrGreaterThanRestricted,
         MaxOccurrenceNotEqualToOrLessThanRestricted,
         ElementNameNotEqualToRestricted,
@@ -97,18 +107,30 @@ namespace XData.Compiler {
                     return "Duplicate import alias '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.DuplicateNamespaceMember:
                     return "Duplicate namespace member '{0}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.PrecisionMustEqualToOrBeGreaterThanScale:
-                    return "Precision '{0}' must equal to or be greater than scale '{1}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.MaxValueMustEqualToOrBeGreaterThanMinValue:
-                    return "Max value '{0}' must equal to or be greater than min value '{1}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.MaxValueMustBeGreaterThanZero:
-                    return "Max value must be greater than zero.";
-                //case DiagCodeEx.UInt64ValueRequired:
-                //    return "UInt64 value required.";
-                //case DiagCodeEx.ByteValueRequired:
-                //    return "Byte value required.";
-                case DiagCodeEx.ValueRestrictionNotApplicable:
-                    return "Value restriction not applicable.";
+                case DiagCodeEx.DuplicateEnumItemName:
+                    return "Duplicate enum item name '{0}'.".InvFormat(_msgArgs);
+                //facets
+                case DiagCodeEx.UInt64ValueRequired:
+                    return "UInt64 value required.";
+                case DiagCodeEx.ByteValueRequired:
+                    return "Byte value required.";
+                case DiagCodeEx.FacetNotApplicable:
+                    return "Facet not applicable.";
+                case DiagCodeEx.MaxLengthNotEqualToOrGreaterThanMinLength:
+                    return "Max length '{0}' not equal to or greater than min length '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.MinLengthNotEqualToOrGreaterThanBaseMinLength:
+                    return "Min length '{0}' not equal to or greater than base min length '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.MaxLengthNotEqualToOrLessThanBaseMaxLength:
+                    return "Max length '{0}' not equal to or less than base max length '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.ScaleNotEqualToOrLessThanPrecision:
+                    return "Scale '{0}' not equal to or less than precision '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.PrecisionNotEqualToOrLessThanBasePrecision:
+                    return "Precision '{0}' not equal to or less than base precision '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.ScaleNotEqualToOrLessThanBaseScale:
+                    return "Scale '{0}' not equal to or less than base scale '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.InvalidLiteral:
+                    return "Invalid literal '{0}'.".InvFormat(_msgArgs);
+
 
 
                 case DiagCodeEx.DuplicateMemberName:
@@ -193,6 +215,8 @@ namespace XData.Compiler {
                     return "Max occurrence cannot be zero in extension.";
                 case DiagCodeEx.ChildKindNotEqualToRestricted:
                     return "Child kind '{0}' not equal to the restricted '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.MaxOccurrenceNotEqualToOrGreaterThanMinOccurrence:
+                    return "Max occurrence '{0}' not equal to or greater than min occurrence '{1}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.MinOccurrenceNotEqualToOrGreaterThanRestricted:
                     return "Min occurrence '{0}' not equal to or greater than the restricted '{1}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.MaxOccurrenceNotEqualToOrLessThanRestricted:

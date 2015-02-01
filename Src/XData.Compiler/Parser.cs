@@ -340,6 +340,7 @@ namespace XData.Compiler {
             result = null;
             return false;
         }
+        #region facets
         private bool Facets(Node parent, out FacetsNode result) {
             TextSpan openBraceTextSpan;
             if (Token((int)TokenKind.DollarOpenBrace, out openBraceTextSpan)) {
@@ -388,8 +389,8 @@ namespace XData.Compiler {
                             var p = result.Precision.Value;
                             var s = result.Scale.Value;
                             if (p < s) {
-                                ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.PrecisionMustEqualToOrBeGreaterThanScale,
-                                    p.ToInvString(), s.ToInvString()), result.Precision.TextSpan);
+                                ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ScaleNotEqualToOrLessThanPrecision,
+                                     s.ToInvString(), p.ToInvString()), result.Scale.TextSpan);
                             }
                         }
                         return true;
@@ -402,14 +403,35 @@ namespace XData.Compiler {
             result = null;
             return false;
         }
-        protected override bool SimpleValue(out SimpleValueNode result) {
-            return SimpleValue(default(QualifiableNameNode), out result);
+        private bool LengthRange(out IntegerRangeNode<ulong> result) {
+            if (Keyword(LengthRangeKeyword)) {
+                result = UInt64RangeExpected(false, DiagCodeEx.MaxLengthNotEqualToOrGreaterThanMinLength);
+                return true;
+            }
+            result = default(IntegerRangeNode<ulong>);
+            return false;
+        }
+        private bool Precision(out IntegerNode<byte> result) {
+            if (Keyword(PrecisionKeyword)) {
+                result = ByteValueExpected();
+                return true;
+            }
+            result = default(IntegerNode<byte>);
+            return false;
+        }
+        private bool Scale(out IntegerNode<byte> result) {
+            if (Keyword(ScaleKeyword)) {
+                result = ByteValueExpected();
+                return true;
+            }
+            result = default(IntegerNode<byte>);
+            return false;
         }
         private bool ValueRange(out ValueRangeNode result) {
             if (Keyword(ValueRangeKeyword)) {
                 bool? minIsInclusive = null, maxIsInclusive = null;
                 AtomValueNode minValue = default(AtomValueNode), maxValue;
-                TextSpan dotDot;
+                TextSpan dotDotTextSpan;
                 if (Token('(')) {
                     minIsInclusive = false;
                 }
@@ -419,7 +441,7 @@ namespace XData.Compiler {
                 if (minIsInclusive != null) {
                     minValue = AtomValueExpected();
                 }
-                TokenExpected((int)TokenKind.DotDot, ".. expected.", out dotDot);
+                TokenExpected((int)TokenKind.DotDot, ".. expected.", out dotDotTextSpan);
                 if (AtomValue(out maxValue)) {
                     if (Token(')')) {
                         maxIsInclusive = false;
@@ -432,32 +454,55 @@ namespace XData.Compiler {
                 else if (minIsInclusive == null) {
                     ErrorDiagAndThrow("Max value expected.");
                 }
-                result = new ValueRangeNode(minIsInclusive == null ? default(ValueBoundaryNode?) : new ValueBoundaryNode(minValue, minIsInclusive.Value),
-                    maxIsInclusive == null ? default(ValueBoundaryNode?) : new ValueBoundaryNode(maxValue, maxIsInclusive.Value), dotDot);
+                result = new ValueRangeNode(minIsInclusive == null ? default(ValueBoundaryNode) : new ValueBoundaryNode(minValue, minIsInclusive.Value),
+                    maxIsInclusive == null ? default(ValueBoundaryNode) : new ValueBoundaryNode(maxValue, maxIsInclusive.Value), dotDotTextSpan);
                 return true;
             }
             result = default(ValueRangeNode);
             return false;
         }
-        private bool Enum(out List<SimpleValueNode> result) {
+        private bool Enum(out List<EnumItemNode> result) {
             if (Keyword(EnumKeyword)) {
-                var list = new List<SimpleValueNode>();
+                var list = new List<EnumItemNode>();
                 while (true) {
-                    SimpleValueNode item;
-                    if (SimpleValue(out item)) {
+                    EnumItemNode item;
+                    if (EnumItem(list, out item)) {
                         list.Add(item);
                     }
                     else {
                         if (list.Count > 0) {
                             break;
                         }
-                        ErrorDiagAndThrow("Simple value expected.");
+                        ErrorDiagAndThrow("Enum item expected.");
                     }
                 }
                 result = list;
                 return true;
             }
             result = null;
+            return false;
+        }
+        //protected override bool SimpleValue(out SimpleValueNode result) {
+        //    return SimpleValue(default(QualifiableNameNode), out result);
+        //}
+        private bool EnumItem(List<EnumItemNode> list, out EnumItemNode result) {
+            AtomValueNode value;
+            if (AtomValue(out value)) {
+                NameNode name = default(NameNode);
+                if (Keyword(AsKeyword)) {
+                    name = NameExpected();
+                    if (list.CountOrZero() > 0) {
+                        foreach (var item in list) {
+                            if (item.Name.IsValid && item.Name == name) {
+                                ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateEnumItemName, name.ToString()), name.TextSpan);
+                            }
+                        }
+                    }
+                }
+                result = new EnumItemNode(value, name);
+                return true;
+            }
+            result = default(EnumItemNode);
             return false;
         }
         private bool Pattern(out AtomValueNode result) {
@@ -476,15 +521,7 @@ namespace XData.Compiler {
             result = default(QualifiableNameNode);
             return false;
         }
-        private bool LengthRange(out IntegerRangeNode<ulong> result) {
-            if (Keyword(LengthRangeKeyword)) {
-                result = UInt64RangeExpected(false);
-                return true;
-            }
-            result = default(IntegerRangeNode<ulong>);
-            return false;
-        }
-        private bool UInt64Range(bool minValueRequired, out IntegerRangeNode<ulong> result) {
+        private bool UInt64Range(bool minValueRequired, DiagCodeEx diagCode, out IntegerRangeNode<ulong> result) {
             IntegerNode<ulong> minValue, maxValue;
             TextSpan dotdotTextSpan = default(TextSpan);
             if (!UInt64Value(out minValue)) {
@@ -499,7 +536,7 @@ namespace XData.Compiler {
             if (UInt64Value(out maxValue)) {
                 if (minValue.IsValid) {
                     if (maxValue.Value < minValue.Value) {
-                        ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxValueMustEqualToOrBeGreaterThanMinValue,
+                        ErrorDiagAndThrow(new DiagMsgEx(diagCode,
                             maxValue.Value.ToInvString(), minValue.Value.ToInvString()), maxValue.TextSpan);
                     }
                 }
@@ -512,28 +549,12 @@ namespace XData.Compiler {
             result = new IntegerRangeNode<ulong>(minValue, maxValue, dotdotTextSpan);
             return true;
         }
-        private IntegerRangeNode<ulong> UInt64RangeExpected(bool minValueRequired) {
+        private IntegerRangeNode<ulong> UInt64RangeExpected(bool minValueRequired, DiagCodeEx diagCode) {
             IntegerRangeNode<ulong> result;
-            if (!UInt64Range(minValueRequired, out result)) {
+            if (!UInt64Range(minValueRequired, diagCode, out result)) {
                 ErrorDiagAndThrow("UInt64 range expected.");
             }
             return result;
-        }
-        private bool Precision(out IntegerNode<byte> result) {
-            if (Keyword(PrecisionKeyword)) {
-                result = ByteValueExpected();
-                return true;
-            }
-            result = default(IntegerNode<byte>);
-            return false;
-        }
-        private bool Scale(out IntegerNode<byte> result) {
-            if (Keyword(ScaleKeyword)) {
-                result = ByteValueExpected();
-                return true;
-            }
-            result = default(IntegerNode<byte>);
-            return false;
         }
         private bool ByteValue(out IntegerNode<byte> result) {
             AtomValueNode node;
@@ -575,7 +596,7 @@ namespace XData.Compiler {
             }
             return result;
         }
-
+        #endregion facets
         private bool Attributes(Node parent, out AttributesNode result) {
             TextSpan openBracketToken;
             if (Token('[', out openBracketToken)) {
@@ -767,7 +788,7 @@ namespace XData.Compiler {
             }
             else {
                 IntegerRangeNode<ulong> range;
-                if (UInt64Range(true, out range)) {
+                if (UInt64Range(true, DiagCodeEx.MaxOccurrenceNotEqualToOrGreaterThanMinOccurrence, out range)) {
                     minValue = range.MinValue.Value;
                     if (range.MaxValue.IsValid) {
                         maxValue = range.MaxValue.Value;
@@ -786,11 +807,11 @@ namespace XData.Compiler {
             return false;
         }
 
-        private bool Unordered<T>(NodeGetter<T> getter, out T value, string errMsg, int startToken = '<', int endToken = '>') {
+        private bool Unordered<T>(NodeGetter<T> getter, out T value, string errMsg, int openTokenKind = '<', int closeTokenKind = '>') {
             value = default(T);
-            if (Token(startToken)) {
+            if (Token(openTokenKind)) {
                 getter(out value);
-                if (Token(endToken)) {
+                if (Token(closeTokenKind)) {
                     return true;
                 }
                 ErrorDiagAndThrow(errMsg);
@@ -798,10 +819,10 @@ namespace XData.Compiler {
             return false;
         }
         private bool Unordered<T1, T2>(NodeGetter<T1> getter1, NodeGetter<T2> getter2,
-            out T1 value1, out T2 value2, string errMsg, int startToken = '<', int endToken = '>') {
+            out T1 value1, out T2 value2, string errMsg, int openTokenKind = '<', int closeTokenKind = '>') {
             value1 = default(T1);
             value2 = default(T2);
-            if (Token(startToken)) {
+            if (Token(openTokenKind)) {
                 bool hasv1 = false, hasv2 = false;
                 while (true) {
                     var get = false;
@@ -815,7 +836,7 @@ namespace XData.Compiler {
                             get = true;
                         }
                     }
-                    if (Token(endToken)) {
+                    if (Token(closeTokenKind)) {
                         return true;
                     }
                     if (!get) {
@@ -826,11 +847,11 @@ namespace XData.Compiler {
             return false;
         }
         private bool Unordered<T1, T2, T3>(NodeGetter<T1> getter1, NodeGetter<T2> getter2, NodeGetter<T3> getter3,
-            out T1 value1, out T2 value2, out T3 value3, string errMsg, int startToken = '<', int endToken = '>') {
+            out T1 value1, out T2 value2, out T3 value3, string errMsg, int openTokenKind = '<', int closeTokenKind = '>') {
             value1 = default(T1);
             value2 = default(T2);
             value3 = default(T3);
-            if (Token(startToken)) {
+            if (Token(openTokenKind)) {
                 bool hasv1 = false, hasv2 = false, hasv3 = false;
                 while (true) {
                     var get = false;
@@ -849,7 +870,7 @@ namespace XData.Compiler {
                             get = true;
                         }
                     }
-                    if (Token(endToken)) {
+                    if (Token(closeTokenKind)) {
                         return true;
                     }
                     if (!get) {
@@ -860,12 +881,12 @@ namespace XData.Compiler {
             return false;
         }
         private bool Unordered<T1, T2, T3, T4>(NodeGetter<T1> getter1, NodeGetter<T2> getter2, NodeGetter<T3> getter3, NodeGetter<T4> getter4,
-            out T1 value1, out T2 value2, out T3 value3, out T4 value4, string errMsg, int startToken = '<', int endToken = '>') {
+            out T1 value1, out T2 value2, out T3 value3, out T4 value4, string errMsg, int openTokenKind = '<', int closeTokenKind = '>') {
             value1 = default(T1);
             value2 = default(T2);
             value3 = default(T3);
             value4 = default(T4);
-            if (Token(startToken)) {
+            if (Token(openTokenKind)) {
                 bool hasv1 = false, hasv2 = false, hasv3 = false, hasv4 = false;
                 while (true) {
                     var get = false;
@@ -889,7 +910,7 @@ namespace XData.Compiler {
                             get = true;
                         }
                     }
-                    if (Token(endToken)) {
+                    if (Token(closeTokenKind)) {
                         return true;
                     }
                     if (!get) {
@@ -899,15 +920,14 @@ namespace XData.Compiler {
             }
             return false;
         }
-
         private bool Unordered<T1, T2, T3, T4, T5>(NodeGetter<T1> getter1, NodeGetter<T2> getter2, NodeGetter<T3> getter3, NodeGetter<T4> getter4, NodeGetter<T5> getter5,
-            out T1 value1, out T2 value2, out T3 value3, out T4 value4, out T5 value5, string errMsg, int startToken = '<', int endToken = '>') {
+            out T1 value1, out T2 value2, out T3 value3, out T4 value4, out T5 value5, string errMsg, int openTokenKind = '<', int closeTokenKind = '>') {
             value1 = default(T1);
             value2 = default(T2);
             value3 = default(T3);
             value4 = default(T4);
             value5 = default(T5);
-            if (Token(startToken)) {
+            if (Token(openTokenKind)) {
                 bool hasv1 = false, hasv2 = false, hasv3 = false, hasv4 = false, hasv5 = false;
                 while (true) {
                     var get = false;
@@ -936,7 +956,7 @@ namespace XData.Compiler {
                             get = true;
                         }
                     }
-                    if (Token(endToken)) {
+                    if (Token(closeTokenKind)) {
                         return true;
                     }
                     if (!get) {
