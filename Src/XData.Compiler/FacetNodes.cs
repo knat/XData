@@ -19,7 +19,7 @@ namespace XData.Compiler {
                 ListItemType = NamespaceAncestor.ResolveAsType(ListItemTypeQName);
             }
         }
-        public FacetSetSymbol CreateSymbol(TypeKind typeKind, FacetSetSymbol baseFacetSet) {
+        public FacetSetSymbol CreateSymbol(SimpleTypeSymbol parent, TypeKind typeKind, FacetSetSymbol baseFacetSet) {
             if (LengthRange.IsValid && !System.Linq.Enumerable.Contains(_lengthRangeTypeKinds, typeKind)) {
                 DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotAllowed), LengthRange.TextSpan);
             }
@@ -229,7 +229,7 @@ namespace XData.Compiler {
                 }
             }
             //
-            return new FacetSetSymbol(baseFacetSet, minLength, maxLength, precision, scale, minValue, maxValue, @enum, patternList);
+            return new FacetSetSymbol(parent, baseFacetSet, minLength, maxLength, precision, scale, minValue, maxValue, @enum, patternList);
         }
         private XAtomType CreateXAtomType(TypeKind typeKind) {
             switch (typeKind) {

@@ -222,6 +222,9 @@ namespace XData.Compiler {
         internal static SyntaxTokenList PublicAbstractPartialTokenList {
             get { return SyntaxFactory.TokenList(PublicToken, AbstractToken, PartialToken); }
         }
+        internal static SyntaxTokenList NewPublicAbstractPartialTokenList {
+            get { return SyntaxFactory.TokenList(NewToken, PublicToken, AbstractToken, PartialToken); }
+        }
         internal static SyntaxTokenList PublicVirtualTokenList {
             get { return SyntaxFactory.TokenList(PublicToken, VirtualToken); }
         }
@@ -330,47 +333,6 @@ namespace XData.Compiler {
         internal static LiteralExpressionSyntax NullLiteral {
             get { return SyntaxFactory.LiteralExpression(SyntaxKind.NullLiteralExpression); }
         }
-        internal static ExpressionSyntax TryToLiteral(object value) {
-            if (value == null) {
-                return NullLiteral;
-            }
-            switch (Type.GetTypeCode(value.GetType())) {
-                case TypeCode.String: return Literal((string)value);
-                case TypeCode.Boolean: return Literal((bool)value);
-                case TypeCode.DateTime: return Literal((DateTime)value);
-                case TypeCode.Single: return Literal((float)value);
-                case TypeCode.Double: return Literal((double)value);
-                case TypeCode.Decimal: return Literal((decimal)value);
-                case TypeCode.Int64: return Literal((long)value);
-                case TypeCode.Int32: return Literal((int)value);
-                case TypeCode.Int16: return Literal((short)value);
-                case TypeCode.SByte: return Literal((sbyte)value);
-                case TypeCode.UInt64: return Literal((ulong)value);
-                case TypeCode.UInt32: return Literal((uint)value);
-                case TypeCode.UInt16: return Literal((ushort)value);
-                case TypeCode.Byte: return Literal((byte)value);
-            }
-            var bytes = value as byte[];
-            if (bytes != null) {
-                return Literal(bytes);
-            }
-            if (value is TimeSpan) {
-                return Literal((TimeSpan)value);
-            }
-            if (value is DateTimeOffset) {
-                return Literal((DateTimeOffset)value);
-            }
-            if (value is Guid) {
-                return Literal((Guid)value);
-            }
-            //var xNs = value as System.Xml.Linq.XNamespace;
-            //if (xNs != null) return Literal(xNs);
-            //var xName = value as System.Xml.Linq.XName;
-            //if (xName != null) return Literal(xName);
-            //var uri = value as Uri;
-            //if (uri != null) return Literal(uri);
-            return null;
-        }
         //
         internal static PredefinedTypeSyntax BoolType {
             get { return SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.BoolKeyword)); }
@@ -388,7 +350,8 @@ namespace XData.Compiler {
             return value ? TrueLiteral : FalseLiteral;
         }
         internal static ExpressionSyntax Literal(bool? value) {
-            return SyntaxFactory.CastExpression(BoolNullableType, value == null ? NullLiteral : Literal(value.Value));
+            if (value == null) return NullLiteral;
+            return Literal(value.Value);
         }
         //
         internal static PredefinedTypeSyntax StringType {
@@ -398,13 +361,9 @@ namespace XData.Compiler {
             get { return OneDimArrayType(StringType); }
         }
         internal static ExpressionSyntax Literal(string value) {
-            if (value == null) return SyntaxFactory.CastExpression(StringType, NullLiteral);
+            if (value == null) return NullLiteral;
             return SyntaxFactory.LiteralExpression(SyntaxKind.StringLiteralExpression, SyntaxFactory.Literal(value));
         }
-        //internal static ExpressionSyntax Literal(string[] value) {
-        //    if (value == null) return SyntaxFactory.CastExpression(StringArrayType, NullLiteral);
-        //    return 
-        //}
         //
         internal static PredefinedTypeSyntax IntType {
             get { return SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.IntKeyword)); }
@@ -416,7 +375,8 @@ namespace XData.Compiler {
             return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(value));
         }
         internal static ExpressionSyntax Literal(int? value) {
-            return SyntaxFactory.CastExpression(IntNullableType, value == null ? NullLiteral : Literal(value.Value));
+            if (value == null) return NullLiteral;
+            return Literal(value.Value);
         }
         //
         internal static PredefinedTypeSyntax UIntType {
@@ -429,7 +389,8 @@ namespace XData.Compiler {
             return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(value));
         }
         internal static ExpressionSyntax Literal(uint? value) {
-            return SyntaxFactory.CastExpression(UIntNullableType, value == null ? NullLiteral : Literal(value.Value));
+            if (value == null) return NullLiteral;
+            return Literal(value.Value);
         }
         //
         internal static PredefinedTypeSyntax LongType {
@@ -442,7 +403,8 @@ namespace XData.Compiler {
             return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(value));
         }
         internal static ExpressionSyntax Literal(long? value) {
-            return SyntaxFactory.CastExpression(LongNullableType, value == null ? NullLiteral : Literal(value.Value));
+            if (value == null) return NullLiteral;
+            return Literal(value.Value);
         }
         //
         internal static PredefinedTypeSyntax ULongType {
@@ -455,7 +417,8 @@ namespace XData.Compiler {
             return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(value));
         }
         internal static ExpressionSyntax Literal(ulong? value) {
-            return SyntaxFactory.CastExpression(ULongNullableType, value == null ? NullLiteral : Literal(value.Value));
+            if (value == null) return NullLiteral;
+            return Literal(value.Value);
         }
         //
         internal static PredefinedTypeSyntax ShortType {
@@ -468,7 +431,8 @@ namespace XData.Compiler {
             return SyntaxFactory.CastExpression(ShortType, Literal((int)value));
         }
         internal static ExpressionSyntax Literal(short? value) {
-            return SyntaxFactory.CastExpression(ShortNullableType, value == null ? NullLiteral : Literal((int)value.Value));
+            if (value == null) return NullLiteral;
+            return Literal(value.Value);
         }
         //
         internal static PredefinedTypeSyntax UShortType {
@@ -481,7 +445,8 @@ namespace XData.Compiler {
             return SyntaxFactory.CastExpression(UShortType, Literal((int)value));
         }
         internal static ExpressionSyntax Literal(ushort? value) {
-            return SyntaxFactory.CastExpression(UShortNullableType, value == null ? NullLiteral : Literal((int)value.Value));
+            if (value == null) return NullLiteral;
+            return Literal(value.Value);
         }
         //
         internal static PredefinedTypeSyntax ByteType {
@@ -497,10 +462,11 @@ namespace XData.Compiler {
             return SyntaxFactory.CastExpression(ByteType, Literal((int)value));
         }
         internal static ExpressionSyntax Literal(byte? value) {
-            return SyntaxFactory.CastExpression(ByteNullableType, value == null ? NullLiteral : Literal((int)value.Value));
+            if (value == null) return NullLiteral;
+            return Literal(value.Value);
         }
         internal static ExpressionSyntax Literal(byte[] value) {
-            if (value == null) return SyntaxFactory.CastExpression(ByteArrayType, NullLiteral);
+            if (value == null) return NullLiteral;
             return NewArrExpr(ByteArrayType, value.Select(i => Literal((int)i)));
         }
         //
@@ -514,7 +480,8 @@ namespace XData.Compiler {
             return SyntaxFactory.CastExpression(SByteType, Literal((int)value));
         }
         internal static ExpressionSyntax Literal(sbyte? value) {
-            return SyntaxFactory.CastExpression(SByteNullableType, value == null ? NullLiteral : Literal((int)value.Value));
+            if (value == null) return NullLiteral;
+            return Literal(value.Value);
         }
         //
         internal static PredefinedTypeSyntax DecimalType {
@@ -527,7 +494,8 @@ namespace XData.Compiler {
             return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(value));
         }
         internal static ExpressionSyntax Literal(decimal? value) {
-            return SyntaxFactory.CastExpression(DecimalNullableType, value == null ? NullLiteral : Literal(value.Value));
+            if (value == null) return NullLiteral;
+            return Literal(value.Value);
         }
         //
         internal static PredefinedTypeSyntax FloatType {
@@ -540,7 +508,8 @@ namespace XData.Compiler {
             return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(value));
         }
         internal static ExpressionSyntax Literal(float? value) {
-            return SyntaxFactory.CastExpression(FloatNullableType, value == null ? NullLiteral : Literal(value.Value));
+            if (value == null) return NullLiteral;
+            return Literal(value.Value);
         }
         //
         internal static PredefinedTypeSyntax DoubleType {
@@ -553,7 +522,8 @@ namespace XData.Compiler {
             return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(value));
         }
         internal static ExpressionSyntax Literal(double? value) {
-            return SyntaxFactory.CastExpression(DoubleNullableType, value == null ? NullLiteral : Literal(value.Value));
+            if (value == null) return NullLiteral;
+            return Literal(value.Value);
         }
         //
         //global::XXX
@@ -604,7 +574,8 @@ namespace XData.Compiler {
             return NewObjExpr(DateTimeName, Literal(value.Ticks), Literal(value.Kind));
         }
         internal static ExpressionSyntax Literal(DateTime? value) {
-            return SyntaxFactory.CastExpression(DateTimeNullableType, value == null ? NullLiteral : Literal(value.Value));
+            if (value == null) return NullLiteral;
+            return Literal(value.Value);
         }
         //global::System.DateTimeOffset
         internal static QualifiedNameSyntax DateTimeOffsetName {
@@ -617,7 +588,8 @@ namespace XData.Compiler {
             return NewObjExpr(DateTimeOffsetName, Literal(value.Ticks), Literal(value.Offset));
         }
         internal static ExpressionSyntax Literal(DateTimeOffset? value) {
-            return SyntaxFactory.CastExpression(DateTimeOffsetNullableType, value == null ? NullLiteral : Literal(value.Value));
+            if (value == null) return NullLiteral;
+            return Literal(value.Value);
         }
         //global::System.TimeSpan
         internal static QualifiedNameSyntax TimeSpanName {
@@ -630,7 +602,8 @@ namespace XData.Compiler {
             return NewObjExpr(TimeSpanName, Literal(value.Ticks));
         }
         internal static ExpressionSyntax Literal(TimeSpan? value) {
-            return SyntaxFactory.CastExpression(TimeSpanNullableType, value == null ? NullLiteral : Literal(value.Value));
+            if (value == null) return NullLiteral;
+            return Literal(value.Value);
         }
         //global::System.Guid
         internal static QualifiedNameSyntax GuidName {
@@ -643,14 +616,15 @@ namespace XData.Compiler {
             return NewObjExpr(GuidName, Literal(value.ToByteArray()));
         }
         internal static ExpressionSyntax Literal(Guid? value) {
-            return SyntaxFactory.CastExpression(GuidNullableType, value == null ? NullLiteral : Literal(value.Value));
+            if (value == null) return NullLiteral;
+            return Literal(value.Value);
         }
         //global::System.Uri
         internal static QualifiedNameSyntax UriName {
             get { return QualifiedName(GlobalSystemName, "Uri"); }
         }
         internal static ExpressionSyntax Literal(Uri value) {
-            if (value == null) return SyntaxFactory.CastExpression(UriName, NullLiteral);
+            if (value == null) return NullLiteral;
             return NewObjExpr(UriName, Literal(value.ToString()));
         }
         //global::System.IDisposable
@@ -1147,6 +1121,9 @@ namespace XData.Compiler {
         }
         internal static BinaryExpressionSyntax CoalesceExpr(ExpressionSyntax left, ExpressionSyntax right) {
             return SyntaxFactory.BinaryExpression(SyntaxKind.CoalesceExpression, left, right);
+        }
+        internal static TypeOfExpressionSyntax TypeOfExpr(TypeSyntax type) {
+            return SyntaxFactory.TypeOfExpression(type);
         }
         //
         internal static MemberAccessExpressionSyntax MemberAccessExpr(ExpressionSyntax expression, SimpleNameSyntax name) {

@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Linq;
+using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -32,9 +34,100 @@ namespace XData.Compiler {
         internal static QualifiedNameSyntax ObjectInfoName {
             get { return CS.QualifiedName(XDataName, "ObjectInfo"); }
         }
+        #region facets
         internal static QualifiedNameSyntax FacetSetInfoName {
             get { return CS.QualifiedName(XDataName, "FacetSetInfo"); }
         }
+        internal static QualifiedNameSyntax ValueBoundaryInfoName {
+            get { return CS.QualifiedName(XDataName, "ValueBoundaryInfo"); }
+        }
+        internal static QualifiedNameSyntax EnumInfoName {
+            get { return CS.QualifiedName(XDataName, "EnumInfo"); }
+        }
+        internal static QualifiedNameSyntax PatternInfoName {
+            get { return CS.QualifiedName(XDataName, "PatternInfo"); }
+        }
+        internal static ArrayTypeSyntax PatternInfoArrayType {
+            get { return CS.OneDimArrayType(PatternInfoName); }
+        }
+        internal static ExpressionSyntax FacetSetInfo(FacetSetSymbol value) {
+            return CS.NewObjExpr(FacetSetInfoName, CS.Literal(value.MinLength), CS.Literal(value.MaxLength),
+                CS.Literal(value.Precision), CS.Literal(value.Scale),
+                ValueBoundaryInfo(value.MinValue), ValueBoundaryInfo(value.MaxValue),
+                EnumInfo(value.Enum), PatternInfoArray(value.PatternList)
+                );
+        }
+        internal static ExpressionSyntax ValueBoundaryInfo(ValueBoundaryInfo? value) {
+            if (value == null) return CS.NullLiteral;
+            var v = value.Value;
+            return CS.NewObjExpr(ValueBoundaryInfoName, AtomValue(v.Value), CS.Literal(v.Text),
+                CS.Literal(v.IsInclusive));
+        }
+        internal static ExpressionSyntax EnumInfo(EnumInfoEx? value) {
+            if (value == null) return CS.NullLiteral;
+            var v = value.Value;
+            return CS.NewObjExpr(EnumInfoName, CS.NewArrExpr(CS.ObjectArrayType,
+                v.ItemList.Select(i => AtomValue(i.Value))), CS.Literal(v.Text));
+        }
+        internal static ExpressionSyntax PatternInfoArray(List<string> value) {
+            if (value == null) return CS.NullLiteral;
+            return CS.NewArrExpr(PatternInfoArrayType, value.Select(i => CS.NewObjExpr(PatternInfoName, CS.Literal(i))));
+        }
+        internal static ExpressionSyntax AtomValue(object value) {
+            if (value == null) return CS.NullLiteral;
+            switch (Type.GetTypeCode(value.GetType())) {
+                case TypeCode.String: return CS.Literal((string)value);
+                case TypeCode.Boolean: return CS.Literal((bool)value);
+                case TypeCode.Single: return CS.Literal((float)value);
+                case TypeCode.Double: return CS.Literal((double)value);
+                case TypeCode.Decimal: return CS.Literal((decimal)value);
+                case TypeCode.Int64: return CS.Literal((long)value);
+                case TypeCode.Int32: return CS.Literal((int)value);
+                case TypeCode.Int16: return CS.Literal((short)value);
+                case TypeCode.SByte: return CS.Literal((sbyte)value);
+                case TypeCode.UInt64: return CS.Literal((ulong)value);
+                case TypeCode.UInt32: return CS.Literal((uint)value);
+                case TypeCode.UInt16: return CS.Literal((ushort)value);
+                case TypeCode.Byte: return CS.Literal((byte)value);
+            }
+            var bytes = value as byte[];
+            if (bytes != null) {
+                return CS.Literal(bytes);
+            }
+            if (value is Guid) {
+                return CS.Literal((Guid)value);
+            }
+            if (value is DateTimeOffset) {
+                return CS.Literal((DateTimeOffset)value);
+            }
+            if (value is TimeSpan) {
+                return CS.Literal((TimeSpan)value);
+            }
+            throw new InvalidOperationException("Invalid value");
+        }
+        #endregion facets
+        internal static QualifiedNameSyntax FullNameName {
+            get { return CS.QualifiedName(XDataName, "FullName"); }
+        }
+        internal static ExpressionSyntax FullName(FullName value) {
+            return CS.NewObjExpr(FullNameName, CS.Literal(value.Uri), CS.Literal(value.Name));
+        }
+        internal static QualifiedNameSyntax TypeKindName {
+            get { return CS.QualifiedName(XDataName, "TypeKind"); }
+        }
+        internal static ExpressionSyntax TypeKind(TypeKind value) {
+            return SyntaxFactory.CastExpression(TypeKindName, CS.Literal((int)value));
+        }
+        internal static QualifiedNameSyntax AtomTypeInfoName {
+            get { return CS.QualifiedName(XDataName, "AtomTypeInfo"); }
+        }
+        internal static QualifiedNameSyntax ListTypeInfoName {
+            get { return CS.QualifiedName(XDataName, "ListTypeInfo"); }
+        }
+        internal static QualifiedNameSyntax ComplexTypeInfoName {
+            get { return CS.QualifiedName(XDataName, "ComplexTypeInfo"); }
+        }
+
 
         internal static QualifiedNameSyntax ContextName {
             get { return CS.QualifiedName(XDataName, "Context"); }
@@ -70,12 +163,6 @@ namespace XData.Compiler {
 
 
 
-        internal static QualifiedNameSyntax FullNameName {
-            get { return CS.QualifiedName(XDataName, "FullName"); }
-        }
-        internal static ExpressionSyntax Literal(FullName value) {
-            return CS.NewObjExpr(FullNameName, CS.Literal(value.Uri), CS.Literal(value.Name));
-        }
 
         internal static NameSyntax[] IListAndIReadOnlyListOf(TypeSyntax itemType) {
             return new NameSyntax[] { CS.IListOf(itemType), CS.IReadOnlyListOf(itemType) };

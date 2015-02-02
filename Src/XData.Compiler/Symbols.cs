@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace XData.Compiler {
@@ -21,24 +23,26 @@ namespace XData.Compiler {
         }
         public readonly NameSyntax CSFullName;//C# qualified name
         public readonly ExpressionSyntax CSFullExp;//C# member access expr
+        public bool IsGenerated;
         private List<MemberDeclarationSyntax> _csMemberList;
         public List<MemberDeclarationSyntax> CSMemberList {
             get {
                 return _csMemberList ?? (_csMemberList = new List<MemberDeclarationSyntax>());
             }
         }
+
     }
     internal sealed class NamespaceSymbol : ObjectBaseSymbol {
         public NamespaceSymbol(string uri, CSNamespaceNameNode csNamespaceName, bool isCSNamespaceRef)
             : base(csNamespaceName.CSFullName, csNamespaceName.CSFullExp) {
             Uri = uri;
             CSNamespaceName = csNamespaceName;
-            IsCSNamespaceRef = isCSNamespaceRef;
+            IsGenerated = isCSNamespaceRef;
             GlobalObjectList = new List<IGlobalObjectSymbol>();
         }
         public readonly string Uri;
         public readonly CSNamespaceNameNode CSNamespaceName;
-        public readonly bool IsCSNamespaceRef;
+        //public readonly bool IsCSNamespaceRef;
         public readonly List<IGlobalObjectSymbol> GlobalObjectList;
         public IGlobalObjectSymbol TryGetGlobalObject(string name) {
             foreach (var obj in GlobalObjectList) {
@@ -48,14 +52,6 @@ namespace XData.Compiler {
             }
             return null;
         }
-        //public NamedObjectSymbol TryGetGlobalObject(FullName fullName) {
-        //    foreach (var obj in GlobalObjectList) {
-        //        if (obj.FullName == fullName) {
-        //            return obj;
-        //        }
-        //    }
-        //    return null;
-        //}
 
         //
         public static readonly NamespaceSymbol System;
@@ -65,8 +61,10 @@ namespace XData.Compiler {
         public static readonly ComplexTypeSymbol SystemComplexType;
         static NamespaceSymbol() {
             System = new NamespaceSymbol(Extensions.SystemUri, new CSNamespaceNameNode { "XData" }, true);
-            SystemSimpleType = new SimpleTypeSymbol(System, TypeKind.SimpleType.ToClassName(), true, false, null, null, TypeKind.SimpleType.ToFullName(), TypeKind.SimpleType, null, null);
-            SystemAtomType = new AtomTypeSymbol(System, TypeKind.AtomType.ToClassName(), true, false, TypeKind.AtomType.ToFullName(), TypeKind.AtomType, SystemSimpleType, null, null);
+            SystemSimpleType = new SimpleTypeSymbol(System, TypeKind.SimpleType.ToClassName(), true, false, null, null,
+                TypeKind.SimpleType.ToFullName(), TypeKind.SimpleType, null) { IsGenerated = true };
+            SystemAtomType = new AtomTypeSymbol(System, TypeKind.AtomType.ToClassName(), true, false, TypeKind.AtomType.ToFullName(),
+                TypeKind.AtomType, SystemSimpleType, null) { IsGenerated = true };
             CreateAndAdd(SystemAtomType, TypeKind.String, CS.StringType);
             CreateAndAdd(SystemAtomType, TypeKind.IgnoreCaseString, CS.StringType);
             var Decimal = CreateAndAdd(SystemAtomType, TypeKind.Decimal, CS.DecimalType);
@@ -85,8 +83,10 @@ namespace XData.Compiler {
             CreateAndAdd(SystemAtomType, TypeKind.Guid, CS.GuidName);
             CreateAndAdd(SystemAtomType, TypeKind.TimeSpan, CS.TimeSpanName);
             CreateAndAdd(SystemAtomType, TypeKind.DateTimeOffset, CS.DateTimeOffsetName);
-            SystemListType = new ListTypeSymbol(System, TypeKind.ListType.ToClassName(), true, false, TypeKind.ListType.ToFullName(), SystemSimpleType, null, null, null);
-            SystemComplexType = new ComplexTypeSymbol(System, TypeKind.ComplexType.ToClassName(), true, false, TypeKind.ComplexType.ToFullName(), null);
+            SystemListType = new ListTypeSymbol(System, TypeKind.ListType.ToClassName(), true, false, TypeKind.ListType.ToFullName(),
+                SystemSimpleType, null, null) { IsGenerated = true };
+            SystemComplexType = new ComplexTypeSymbol(System, TypeKind.ComplexType.ToClassName(), true, false,
+                TypeKind.ComplexType.ToFullName(), null) { IsGenerated = true };
             var objList = System.GlobalObjectList;
             objList.Add(SystemSimpleType);
             objList.Add(SystemAtomType);
@@ -94,7 +94,9 @@ namespace XData.Compiler {
             objList.Add(SystemComplexType);
         }
         private static AtomTypeSymbol CreateAndAdd(AtomTypeSymbol baseType, TypeKind kind, TypeSyntax valueCSFullName) {
-            var symbol = new AtomTypeSymbol(System, kind.ToClassName(), false, false, kind.ToFullName(), kind, baseType, null, valueCSFullName);
+            var symbol = new AtomTypeSymbol(System, kind.ToClassName(), false, false, kind.ToFullName(), kind, baseType, valueCSFullName) {
+                IsGenerated = true
+            };
             System.GlobalObjectList.Add(symbol);
             return symbol;
         }
@@ -127,11 +129,41 @@ namespace XData.Compiler {
                 return _thisInfoExp ?? (_thisInfoExp = CS.MemberAccessExpr(CSFullExp, "ThisInfo"));
             }
         }
-
-        private bool _isGenerated;
-        public void GenerateCSClass() {
-            if (_isGenerated == false) {
-                _isGenerated = true;
+        public void Generate() {
+            if (!IsGenerated) {
+                IsGenerated = true;
+                GenerateMembers(CSMemberList);
+                var csCls = SyntaxFactory.ClassDeclaration(
+                    attributeLists: default(SyntaxList<AttributeListSyntax>),
+                    modifiers: ModifiersTokenList,
+                    identifier: CS.Id(CSName),
+                    typeParameterList: null,
+                    baseList: CSItfNames == null ? CS.BaseList(CSBaseFullName) : CS.BaseList(GetBaseNames()),
+                    constraintClauses: default(SyntaxList<TypeParameterConstraintClauseSyntax>),
+                    members: SyntaxFactory.List(CSMemberList)
+                    );
+                Parent.CSMemberList.Add(csCls);
+            }
+        }
+        protected abstract void GenerateMembers(List<MemberDeclarationSyntax> csMemberList);
+        private SyntaxTokenList ModifiersTokenList {
+            get {
+                if (IsCSOverride && IsAbstract) {
+                    return CS.NewPublicAbstractPartialTokenList;
+                }
+                if (IsCSOverride) {
+                    return CS.NewPublicPartialTokenList;
+                }
+                if (IsAbstract) {
+                    return CS.PublicAbstractPartialTokenList;
+                }
+                return CS.PublicPartialTokenList;
+            }
+        }
+        private IEnumerable<NameSyntax> GetBaseNames() {
+            yield return CSBaseFullName;
+            foreach (var itfName in CSItfNames) {
+                yield return itfName;
             }
         }
 
@@ -159,14 +191,20 @@ namespace XData.Compiler {
             }
             return false;
         }
-
+        protected override void GenerateMembers(List<MemberDeclarationSyntax> csMemberList) {
+            if (BaseType != null) {
+                BaseType.Generate();
+            }
+        }
     }
+    #region facets
     internal sealed class FacetSetSymbol : Symbol {
-        public FacetSetSymbol(FacetSetSymbol baseFacetSet,
+        public FacetSetSymbol(SimpleTypeSymbol parent, FacetSetSymbol baseFacetSet,
             ulong? minLength, ulong? maxLength,
             byte? precision, byte? scale,
             ValueBoundaryInfo? minValue, ValueBoundaryInfo? maxValue,
             EnumInfoEx? @enum, List<string> patternList) {
+            Parent = parent;
             BaseFacetSet = baseFacetSet;
             MinLength = minLength;
             MaxLength = maxLength;
@@ -177,8 +215,6 @@ namespace XData.Compiler {
             Enum = @enum;
             PatternList = patternList;
         }
-        public readonly FacetSetSymbol BaseFacetSet;
-        //
         public readonly ulong? MinLength;
         public readonly ulong? MaxLength;
         public readonly byte? Precision;
@@ -187,7 +223,20 @@ namespace XData.Compiler {
         public readonly ValueBoundaryInfo? MaxValue;
         public readonly EnumInfoEx? Enum;
         public readonly List<string> PatternList;
-
+        //
+        public readonly SimpleTypeSymbol Parent;
+        public readonly FacetSetSymbol BaseFacetSet;
+        private bool _isGenerated;
+        public ExpressionSyntax ThisFacetSetInfoExp { get; private set; }
+        public void Generate() {
+            if (!_isGenerated) {
+                _isGenerated = true;
+                //>public static readonly FacetSetInfo ThisFacetSetInfo = new ...;
+                Parent.CSMemberList.Add(CS.Field(BaseFacetSet == null ? CS.PublicStaticReadOnlyTokenList : CS.NewPublicStaticReadOnlyTokenList,
+                    CSEX.FacetSetInfoName, "ThisFacetSetInfo", CSEX.FacetSetInfo(this)));
+                ThisFacetSetInfoExp = CS.MemberAccessExpr(Parent.CSFullExp, "ThisFacetSetInfo");
+            }
+        }
     }
     public struct EnumInfoEx {
         public EnumInfoEx(List<EnumItemInfo> itemList, string text) {
@@ -205,32 +254,57 @@ namespace XData.Compiler {
         public readonly object Value;
         public readonly string Name;//opt
     }
-
-
+    #endregion facets
     internal class SimpleTypeSymbol : TypeSymbol {
         public SimpleTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
-            NameSyntax csBaseFullName, NameSyntax[] csItfNames, FullName fullName, TypeKind kind, SimpleTypeSymbol baseType,
-            FacetSetSymbol facets)
+            NameSyntax csBaseFullName, NameSyntax[] csItfNames, FullName fullName, TypeKind kind, SimpleTypeSymbol baseType)
             : base(parent, csName, isAbstract, isSealed, csBaseFullName, csItfNames, fullName, kind, baseType) {
-            Facets = facets;
         }
-        public readonly FacetSetSymbol Facets;
+        public FacetSetSymbol Facets;
+        protected override void GenerateMembers(List<MemberDeclarationSyntax> csMemberList) {
+            base.GenerateMembers(csMemberList);
+        }
     }
     internal sealed class AtomTypeSymbol : SimpleTypeSymbol {
         public AtomTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
-            FullName fullName, TypeKind kind, SimpleTypeSymbol baseType, FacetSetSymbol facets, TypeSyntax valueCSFullName)
-            : base(parent, csName, isAbstract, isSealed, baseType.CSFullName, null, fullName, kind, baseType, facets) {
+            FullName fullName, TypeKind kind, SimpleTypeSymbol baseType, TypeSyntax valueCSFullName)
+            : base(parent, csName, isAbstract, isSealed, baseType.CSFullName, null, fullName, kind, baseType) {
             ValueCSFullName = valueCSFullName;
         }
         public readonly TypeSyntax ValueCSFullName;
+        protected override void GenerateMembers(List<MemberDeclarationSyntax> csMemberList) {
+            base.GenerateMembers(csMemberList);
+            if (Facets != null) {
+                Facets.Generate();
+                if (Facets.Enum != null) {
+                    foreach (var item in Facets.Enum.Value.ItemList) {
+                        if (item.Name != null) {
+                            //>public static readonly ValueCSFullName E_Name = ...;
+                            csMemberList.Add(CS.Field(CS.PublicStaticReadOnlyTokenList, ValueCSFullName, "E_" + item.Name, CSEX.AtomValue(item.Value)));
+                        }
+                    }
+                }
+            }
+            //>>new public static readonly AtomTypeInfo ThisInfo = ...;
+            csMemberList.Add(CS.Field(CS.NewPublicStaticReadOnlyTokenList, CSEX.AtomTypeInfoName, "ThisInfo",
+                CS.NewObjExpr(CSEX.AtomTypeInfoName, CS.TypeOfExpr(CSFullName), CS.Literal(IsAbstract), CSEX.FullName(FullName),
+                BaseType.ThisInfoExp, Facets == null ? CS.NullLiteral : Facets.ThisFacetSetInfoExp, CSEX.TypeKind(Kind))));
+        }
     }
     internal sealed class ListTypeSymbol : SimpleTypeSymbol {
         public ListTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
-            FullName fullName, SimpleTypeSymbol baseType, FacetSetSymbol facets, NameSyntax[] csItfNames, SimpleTypeSymbol itemType)
-            : base(parent, csName, isAbstract, isSealed, baseType.CSFullName, csItfNames, fullName, TypeKind.ListType, baseType, facets) {
+            FullName fullName, SimpleTypeSymbol baseType, NameSyntax[] csItfNames, SimpleTypeSymbol itemType)
+            : base(parent, csName, isAbstract, isSealed, baseType.CSFullName, csItfNames, fullName, TypeKind.ListType, baseType) {
             ItemType = itemType;
         }
         public readonly SimpleTypeSymbol ItemType;
+        protected override void GenerateMembers(List<MemberDeclarationSyntax> csMemberList) {
+            base.GenerateMembers(csMemberList);
+            if (Facets != null) {
+                Facets.Generate();
+            }
+
+        }
     }
     internal sealed class ComplexTypeSymbol : TypeSymbol {
         public ComplexTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
@@ -250,6 +324,10 @@ namespace XData.Compiler {
                 return Children as ChildSetSymbol;
             }
         }
+        protected override void GenerateMembers(List<MemberDeclarationSyntax> csMemberList) {
+            base.GenerateMembers(csMemberList);
+
+        }
     }
     internal sealed class AttributeSetSymbol : ObjectSymbol {
         public AttributeSetSymbol(ComplexTypeSymbol parent, AttributeSetSymbol baseAttributeSet, string displayName) :
@@ -260,6 +338,9 @@ namespace XData.Compiler {
         }
         public readonly AttributeSetSymbol BaseAttributeSet;//opt
         public readonly List<AttributeSymbol> AttributeList;
+        protected override void GenerateMembers(List<MemberDeclarationSyntax> csMemberList) {
+
+        }
     }
     internal sealed class AttributeSymbol : ObjectSymbol {
         public AttributeSymbol(AttributeSetSymbol parent, string csName,
@@ -277,6 +358,9 @@ namespace XData.Compiler {
         public readonly bool IsNullable;
         public readonly SimpleTypeSymbol Type;
         public readonly AttributeSymbol RestrictedAttribute;
+        protected override void GenerateMembers(List<MemberDeclarationSyntax> csMemberList) {
+
+        }
     }
 
     internal abstract class ChildSymbol : ObjectSymbol {
@@ -365,6 +449,9 @@ namespace XData.Compiler {
                 return ReferencedElement.GlobalElementNode.HasIntersection(fullName);
             }
             return false;
+        }
+        protected override void GenerateMembers(List<MemberDeclarationSyntax> csMemberList) {
+
         }
     }
     internal abstract class ChildContainerSymbol : ChildSymbol {
@@ -475,6 +562,9 @@ namespace XData.Compiler {
             }
             return false;
         }
+        protected override void GenerateMembers(List<MemberDeclarationSyntax> csMemberList) {
+
+        }
     }
     internal sealed class ChildListSymbol : ChildContainerSymbol {
         public ChildListSymbol(ChildSetSymbol parent, string csName,
@@ -489,6 +579,9 @@ namespace XData.Compiler {
         public readonly ChildSymbol Item;
         public override bool HasIntersection(FullName fullName, bool forChoice) {
             return Item.HasIntersection(fullName, forChoice);
+        }
+        protected override void GenerateMembers(List<MemberDeclarationSyntax> csMemberList) {
+
         }
     }
 

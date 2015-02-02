@@ -50,9 +50,12 @@ namespace XData.Compiler {
             if (itemTypeSymbol == null) {
                 DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.SimpleTypeRequired), ItemTypeQName.TextSpan);
             }
-            var facetsSymbol = Facets == null ? null : Facets.CreateSymbol(TypeKind.ListType, null);
-            return new ListTypeSymbol(parent, csName, isAbstract, isSealed, fullName, NamespaceSymbol.SystemListType, facetsSymbol,
+            var listTypeSymbol = new ListTypeSymbol(parent, csName, isAbstract, isSealed, fullName, NamespaceSymbol.SystemListType,
                 null, itemTypeSymbol);
+            if (Facets != null) {
+                listTypeSymbol.Facets = Facets.CreateSymbol(listTypeSymbol, TypeKind.ListType, null);
+            }
+            return listTypeSymbol;
         }
     }
     internal sealed class AttributesChildrenNode : Node {
@@ -175,14 +178,14 @@ namespace XData.Compiler {
             }
             var baseSimpleTypeSymbol = baseTypeSymbol as SimpleTypeSymbol;
             if (baseSimpleTypeSymbol != null) {
-                if (baseSimpleTypeSymbol == NamespaceSymbol.SystemSimpleType || baseSimpleTypeSymbol == NamespaceSymbol.SystemAtomType || baseSimpleTypeSymbol == NamespaceSymbol.SystemListType) {
+                if (baseSimpleTypeSymbol == NamespaceSymbol.SystemSimpleType || baseSimpleTypeSymbol == NamespaceSymbol.SystemAtomType
+                    || baseSimpleTypeSymbol == NamespaceSymbol.SystemListType) {
                     DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotRestrictSysSimpleAtomListType), BaseTypeQName.TextSpan);
                 }
                 if (AttributesChildren != null) {
                     DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AttributesChildrenNotAllowedInSimpleTypeRestriction), AttributesChildren.OpenTextSpan);
                 }
                 var typeKind = baseSimpleTypeSymbol.Kind;
-                var facetsSymbol = Facets == null ? baseSimpleTypeSymbol.Facets : Facets.CreateSymbol(typeKind, baseSimpleTypeSymbol.Facets);
                 if (typeKind == TypeKind.ListType) {
                     SimpleTypeSymbol itemTypeSymbol = null;
                     var baseListTypeSymbol = (ListTypeSymbol)baseSimpleTypeSymbol;
@@ -199,13 +202,17 @@ namespace XData.Compiler {
                                 itemTypeSymbol.DisplayName, baseListTypeSymbol.ItemType.DisplayName), Facets.ListItemTypeQName.TextSpan);
                         }
                     }
-                    return new ListTypeSymbol(parent, csName, isAbstract, isSealed, fullName, baseListTypeSymbol, facetsSymbol,
+                    var listTypeSymbol = new ListTypeSymbol(parent, csName, isAbstract, isSealed, fullName, baseListTypeSymbol,
                         itemTypeSymbol == null ? null : CSEX.IListAndIReadOnlyListOf(itemTypeSymbol.CSFullName),
                         itemTypeSymbol ?? baseListTypeSymbol.ItemType);
+                    listTypeSymbol.Facets = Facets == null ? baseSimpleTypeSymbol.Facets : Facets.CreateSymbol(listTypeSymbol, typeKind, baseSimpleTypeSymbol.Facets);
+                    return listTypeSymbol;
                 }
                 else {
-                    return new AtomTypeSymbol(parent, csName, isAbstract, isSealed, fullName, typeKind, baseSimpleTypeSymbol, facetsSymbol,
+                    var atomTypeSymbol = new AtomTypeSymbol(parent, csName, isAbstract, isSealed, fullName, typeKind, baseSimpleTypeSymbol,
                        ((AtomTypeSymbol)baseSimpleTypeSymbol).ValueCSFullName);
+                    atomTypeSymbol.Facets = Facets == null ? baseSimpleTypeSymbol.Facets : Facets.CreateSymbol(atomTypeSymbol, typeKind, baseSimpleTypeSymbol.Facets);
+                    return atomTypeSymbol;
                 }
             }
             else {

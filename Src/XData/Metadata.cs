@@ -214,8 +214,8 @@ namespace XData {
         public readonly TypeKind Kind;
     }
     public sealed class ListTypeInfo : SimpleTypeInfo {
-        public ListTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo baseType, SimpleTypeInfo itemType,
-            FacetSetInfo facets)
+        public ListTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo baseType,
+            FacetSetInfo facets, SimpleTypeInfo itemType)
             : base(clrType, isAbstract, fullName, baseType, facets) {
             ItemType = itemType;
         }
