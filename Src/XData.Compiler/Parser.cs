@@ -389,7 +389,7 @@ namespace XData.Compiler {
                             var p = result.Precision.Value;
                             var s = result.Scale.Value;
                             if (p < s) {
-                                ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ScaleNotEqualToOrLessThanPrecision,
+                                ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ScaleNotLessThanOrEqualToPrecision,
                                      s.ToInvString(), p.ToInvString()), result.Scale.TextSpan);
                             }
                         }
@@ -405,7 +405,7 @@ namespace XData.Compiler {
         }
         private bool LengthRange(out IntegerRangeNode<ulong> result) {
             if (Keyword(LengthRangeKeyword)) {
-                result = UInt64RangeExpected(false, DiagCodeEx.MaxLengthNotEqualToOrGreaterThanMinLength);
+                result = UInt64RangeExpected(false, DiagCodeEx.MaxLengthNotGreaterThanOrEqualToMinLength);
                 return true;
             }
             result = default(IntegerRangeNode<ulong>);

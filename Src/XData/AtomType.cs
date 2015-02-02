@@ -87,39 +87,38 @@ namespace XData {
                     }
                 }
             }
-            
             if (facets.MinValue != null) {
                 var minValue = facets.MinValue.Value;
                 int result;
-                if (!TryCompareValueTo(minValue.Value.Value, out result)) {
+                if (!TryCompareValueTo(minValue.Value, out result)) {
                     throw new InvalidOperationException("!TryCompareValueTo()");
                 }
                 if (minValue.IsInclusive) {
                     if (result < 0) {
-                        context.AddErrorDiag(new DiagMsg(DiagCode.ValueNotGreaterThanOrEqualTo,
-                            GetValueString(ref valueString), minValue.Value.NameOrText), this);
+                        context.AddErrorDiag(new DiagMsg(DiagCode.ValueNotGreaterThanOrEqualToMinValue,
+                            GetValueString(ref valueString), minValue.Text), this);
                     }
                 }
                 else if (result <= 0) {
-                    context.AddErrorDiag(new DiagMsg(DiagCode.ValueNotGreaterThan,
-                        GetValueString(ref valueString), minValue.Value.NameOrText), this);
+                    context.AddErrorDiag(new DiagMsg(DiagCode.ValueNotGreaterThanMinValue,
+                        GetValueString(ref valueString), minValue.Text), this);
                 }
             }
             if (facets.MaxValue != null) {
                 var maxValue = facets.MaxValue.Value;
                 int result;
-                if (!TryCompareValueTo(maxValue.Value.Value, out result)) {
+                if (!TryCompareValueTo(maxValue.Value, out result)) {
                     throw new InvalidOperationException("!TryCompareValueTo()");
                 }
                 if (maxValue.IsInclusive) {
                     if (result > 0) {
-                        context.AddErrorDiag(new DiagMsg(DiagCode.ValueNotLessThanOrEqualTo,
-                            GetValueString(ref valueString), maxValue.Value.NameOrText), this);
+                        context.AddErrorDiag(new DiagMsg(DiagCode.ValueNotLessThanOrEqualToMaxValue,
+                            GetValueString(ref valueString), maxValue.Text), this);
                     }
                 }
                 else if (result >= 0) {
-                    context.AddErrorDiag(new DiagMsg(DiagCode.ValueNotLessThan,
-                        GetValueString(ref valueString), maxValue.Value.NameOrText), this);
+                    context.AddErrorDiag(new DiagMsg(DiagCode.ValueNotLessThanMaxValue,
+                        GetValueString(ref valueString), maxValue.Text), this);
                 }
             }
             if (facets.Patterns != null) {

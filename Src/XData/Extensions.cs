@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace XData {
     public static class Extensions {
-        public const string SystemUri = "http://xdata-solution.org";
+        public const string SystemUri = "http://xdata-io.org";
         public const string DefaultIndentString = "\t";
         public const string DefaultNewLineString = "\n";
 

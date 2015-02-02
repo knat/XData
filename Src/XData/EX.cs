@@ -161,15 +161,15 @@ namespace XData {
         public static int CountOrZero<T>(this List<T> list) {
             return list == null ? 0 : list.Count;
         }
-        public static T[] Add<T>(this T[] array, T item) {
-            var length = array.Length;
-            var newArray = new T[length + 1];
-            for (var i = 0; i < length; ++i) {
-                newArray[i] = array[i];
-            }
-            newArray[length] = item;
-            return newArray;
-        }
+        //public static T[] Add<T>(this T[] array, T item) {
+        //    var length = array.Length;
+        //    var newArray = new T[length + 1];
+        //    for (var i = 0; i < length; ++i) {
+        //        newArray[i] = array[i];
+        //    }
+        //    newArray[length] = item;
+        //    return newArray;
+        //}
 
         //
         //

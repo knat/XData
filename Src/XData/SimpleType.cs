@@ -48,11 +48,11 @@ namespace XData {
                         }
                     }
                     else if (length < minLength) {
-                        context.AddErrorDiag(new DiagMsg(DiagCode.LengthNotGreaterThanOrEqualTo,
+                        context.AddErrorDiag(new DiagMsg(DiagCode.LengthNotGreaterThanOrEqualToMinLength,
                             length.ToInvString(), minLength.Value.ToInvString()), this);
                     }
                     else if (length > maxLength) {
-                        context.AddErrorDiag(new DiagMsg(DiagCode.LengthNotLessThanOrEqualTo,
+                        context.AddErrorDiag(new DiagMsg(DiagCode.LengthNotLessThanOrEqualToMaxLength,
                             length.ToInvString(), maxLength.Value.ToInvString()), this);
                     }
                 }
@@ -62,7 +62,7 @@ namespace XData {
                     var @enum = facets.Enum.Value;
                     var found = false;
                     foreach (var item in @enum.Items) {
-                        if (ValueEquals(item.Value)) {
+                        if (ValueEquals(item)) {
                             found = true;
                             break;
                         }

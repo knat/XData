@@ -21,27 +21,27 @@ namespace XData.Compiler {
         }
         public FacetSetSymbol CreateSymbol(TypeKind typeKind, FacetSetSymbol baseFacetSet) {
             if (LengthRange.IsValid && !System.Linq.Enumerable.Contains(_lengthRangeTypeKinds, typeKind)) {
-                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotApplicable), LengthRange.TextSpan);
+                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotAllowed), LengthRange.TextSpan);
             }
             if (typeKind != TypeKind.Decimal) {
                 if (Precision.IsValid) {
-                    DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotApplicable), Precision.TextSpan);
+                    DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotAllowed), Precision.TextSpan);
                 }
                 if (Scale.IsValid) {
-                    DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotApplicable), Scale.TextSpan);
+                    DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotAllowed), Scale.TextSpan);
                 }
             }
             if (ValueRange.IsValid && !System.Linq.Enumerable.Contains(_valueRangeTypeKinds, typeKind)) {
-                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotApplicable), ValueRange.TextSpan);
+                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotAllowed), ValueRange.TextSpan);
             }
             if (Enum != null && !typeKind.IsConcreteAtomType()) {
-                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotApplicable), Enum[0].TextSpan);
+                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotAllowed), Enum[0].TextSpan);
             }
             if (Pattern.IsValid && !typeKind.IsConcreteAtomType()) {
-                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotApplicable), Pattern.TextSpan);
+                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotAllowed), Pattern.TextSpan);
             }
             if (typeKind != TypeKind.ListType && ListItemTypeQName.IsValid) {
-                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotApplicable), ListItemTypeQName.TextSpan);
+                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotAllowed), ListItemTypeQName.TextSpan);
             }
             DiagContextEx.ThrowIfHasErrors();
             ulong? minLength = baseFacetSet != null ? baseFacetSet.MinLength : null;
@@ -50,12 +50,12 @@ namespace XData.Compiler {
             byte? scale = baseFacetSet != null ? baseFacetSet.Scale : null;
             ValueBoundaryInfo? minValue = baseFacetSet != null ? baseFacetSet.MinValue : null;
             ValueBoundaryInfo? maxValue = baseFacetSet != null ? baseFacetSet.MaxValue : null;
-            EnumInfo? @enum = baseFacetSet != null ? baseFacetSet.Enum : null;
-            PatternInfo[] patterns = baseFacetSet != null ? baseFacetSet.Patterns : null;
+            EnumInfoEx? @enum = baseFacetSet != null ? baseFacetSet.Enum : null;
+            List<string> patternList = baseFacetSet != null ? baseFacetSet.PatternList : null;
             if (LengthRange.IsValid) {
                 if (LengthRange.MinValue.IsValid) {
                     if (LengthRange.MinValue.Value < minLength) {
-                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MinLengthNotEqualToOrGreaterThanBaseMinLength,
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MinLengthNotGreaterThanOrEqualToBaseMinLength,
                             LengthRange.MinValue.Value.ToInvString(), minLength.Value.ToInvString()), LengthRange.MinValue.TextSpan);
                     }
                     else {
@@ -64,7 +64,7 @@ namespace XData.Compiler {
                 }
                 if (LengthRange.MaxValue.IsValid) {
                     if (LengthRange.MaxValue.Value > maxLength) {
-                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxLengthNotEqualToOrLessThanBaseMaxLength,
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxLengthNotLessThanOrEqualToBaseMaxLength,
                             LengthRange.MaxValue.Value.ToInvString(), maxLength.Value.ToInvString()), LengthRange.MaxValue.TextSpan);
                     }
                     else {
@@ -72,7 +72,7 @@ namespace XData.Compiler {
                     }
                 }
                 if (minLength > maxLength) {
-                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxLengthNotEqualToOrGreaterThanMinLength,
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxLengthNotGreaterThanOrEqualToMinLength,
                         maxLength.Value.ToInvString(), minLength.Value.ToInvString()),
                         LengthRange.MaxValue.IsValid ? LengthRange.MaxValue.TextSpan : LengthRange.MinValue.TextSpan);
                 }
@@ -80,7 +80,7 @@ namespace XData.Compiler {
             if (Precision.IsValid || Scale.IsValid) {
                 if (Precision.IsValid) {
                     if (Precision.Value > precision) {
-                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.PrecisionNotEqualToOrLessThanBasePrecision,
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.PrecisionNotLessThanOrEqualToBasePrecision,
                             Precision.Value.ToInvString(), precision.Value.ToInvString()), Precision.TextSpan);
                     }
                     else {
@@ -89,7 +89,7 @@ namespace XData.Compiler {
                 }
                 if (Scale.IsValid) {
                     if (Scale.Value > scale) {
-                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ScaleNotEqualToOrLessThanBaseScale,
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ScaleNotLessThanOrEqualToBaseScale,
                             Scale.Value.ToInvString(), scale.Value.ToInvString()), Scale.TextSpan);
                     }
                     else {
@@ -97,60 +97,139 @@ namespace XData.Compiler {
                     }
                 }
                 if (scale > precision) {
-                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ScaleNotEqualToOrLessThanPrecision,
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ScaleNotLessThanOrEqualToPrecision,
                         scale.Value.ToInvString(), precision.Value.ToInvString()),
                         Scale.IsValid ? Scale.TextSpan : Precision.TextSpan);
                 }
             }
             if (Pattern.IsValid) {
                 var patternValue = Pattern.Value;
-                if (patterns == null) {
-                    patterns = new PatternInfo[] { new PatternInfo(patternValue) };
+                if (patternList == null) {
+                    patternList = new List<string> { patternValue };
                 }
                 else {
-                    var found = false;
-                    foreach (var pi in patterns) {
-                        if (pi.Pattern == patternValue) {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        patterns = patterns.Add(new PatternInfo(patternValue));
+                    if (!patternList.Contains(patternValue)) {
+                        patternList.Add(patternValue);
                     }
                 }
             }
-            if (ValueRange.IsValid || Enum != null) {
+            if (Enum != null) {
                 var typeObj = CreateXAtomType(typeKind);
-                if (Enum != null) {
-                    foreach (var item in Enum) {
-                        var literal = item.Value.Value;
-                        if (!typeObj.TryParseAndSet(literal)) {
-                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidLiteral, literal), item.TextSpan);
+                var itemList = new List<EnumItemInfo>();
+                var textsb = EX.AcquireStringBuilder();
+                for (var i = 0; i < Enum.Count; ++i) {
+                    var item = Enum[i];
+                    if (item.Name.IsValid && @enum != null) {
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.EnumItemNameNotAllowedInRestriction), item.Name.TextSpan);
+                    }
+                    var literal = item.Value.Value;
+                    if (!typeObj.TryParseAndSet(literal)) {
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidLiteral, literal), item.TextSpan);
+                    }
+                    if (@enum != null) {
+                        var found = false;
+                        foreach (var baseItem in @enum.Value.ItemList) {
+                            if (typeObj.ValueEquals(baseItem.Value)) {
+                                found = true;
+                                break;
+                            }
                         }
-                        var valueObj = typeObj.GetValue();
-                        var name = item.Name.Value;
-                        if (@enum != null) {
-                            var found = false;
-                            foreach (var baseItem in @enum.Value.Items) {
-                                if (typeObj.ValueEquals(baseItem.Value)) {
-                                    found = true;
-                                    break;
-                                }
+                        if (!found) {
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.EnumItemNotInBaseEnum, literal), item.TextSpan);
+                        }
+                    }
+                    itemList.Add(new EnumItemInfo(typeObj.GetValue(), item.Name.Value));
+                    if (i > 0) {
+                        textsb.Append(", ");
+                    }
+                    textsb.Append(literal);
+                }
+                @enum = new EnumInfoEx(itemList, textsb.ToStringAndRelease());
+            }
+            if (ValueRange.IsValid) {
+                XAtomType minTypeObj = null, maxTypeObj = null;
+                if (ValueRange.MinValue.IsValid) {
+                    minTypeObj = CreateXAtomType(typeKind);
+                    var literal = ValueRange.MinValue.Value.Value;
+                    if (!minTypeObj.TryParseAndSet(literal)) {
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidLiteral, literal), ValueRange.MinValue.TextSpan);
+                    }
+                    if (minValue != null) {
+                        var minValueV = minValue.Value;
+                        int result;
+                        if (!minTypeObj.TryCompareValueTo(minValueV.Value, out result)) {
+                            throw new InvalidOperationException("!TryCompareValueTo()");
+                        }
+                        if (minValueV.IsInclusive) {
+                            if (result < 0) {
+                                DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MinValueNotGreaterThanOrEqualToBaseMinValue,
+                                    literal, minValueV.Text), ValueRange.MinValue.TextSpan);
                             }
-                            if (!found) {
-
+                        }
+                        else if (result <= 0) {
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MinValueNotGreaterThanBaseMinValue,
+                                literal, minValueV.Text), ValueRange.MinValue.TextSpan);
+                        }
+                    }
+                    minValue = new ValueBoundaryInfo(minTypeObj.GetValue(), literal, ValueRange.MinValue.IsInclusive);
+                }
+                if (ValueRange.MaxValue.IsValid) {
+                    maxTypeObj = CreateXAtomType(typeKind);
+                    var literal = ValueRange.MaxValue.Value.Value;
+                    if (!maxTypeObj.TryParseAndSet(literal)) {
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidLiteral, literal), ValueRange.MaxValue.TextSpan);
+                    }
+                    if (maxValue != null) {
+                        var maxValueV = maxValue.Value;
+                        int result;
+                        if (!maxTypeObj.TryCompareValueTo(maxValueV.Value, out result)) {
+                            throw new InvalidOperationException("!TryCompareValueTo()");
+                        }
+                        if (maxValueV.IsInclusive) {
+                            if (result > 0) {
+                                DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxValueNotLessThanOrEqualToBaseMaxValue,
+                                    literal, maxValueV.Text), ValueRange.MaxValue.TextSpan);
                             }
+                        }
+                        else if (result >= 0) {
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxValueNotLessThanBaseMaxValue,
+                                literal, maxValueV.Text), ValueRange.MaxValue.TextSpan);
+                        }
+                    }
+                    maxValue = new ValueBoundaryInfo(maxTypeObj.GetValue(), literal, ValueRange.MaxValue.IsInclusive);
+                }
+                if (minValue != null && maxValue != null) {
+                    var minValueV = minValue.Value;
+                    var maxValueV = maxValue.Value;
+                    int result;
+                    if (minTypeObj != null) {
+                        if (!minTypeObj.TryCompareValueTo(maxValueV.Value, out result)) {
+                            throw new InvalidOperationException("!TryCompareValueTo()");
+                        }
+                        if (result > 0) {
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxValueNotGreaterThanOrEqualToMinValue,
+                                maxValueV.Text, minValueV.Text), ValueRange.MaxValue.IsValid ? ValueRange.MaxValue.TextSpan : ValueRange.MinValue.TextSpan);
+                        }
+                    }
+                    else {
+                        if (!maxTypeObj.TryCompareValueTo(minValueV.Value, out result)) {
+                            throw new InvalidOperationException("!TryCompareValueTo()");
+                        }
+                        if (result < 0) {
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxValueNotGreaterThanOrEqualToMinValue,
+                                maxValueV.Text, minValueV.Text), ValueRange.MaxValue.IsValid ? ValueRange.MaxValue.TextSpan : ValueRange.MinValue.TextSpan);
+                        }
+                    }
+                    if (result == 0) {
+                        if (!minValueV.IsInclusive || !maxValueV.IsInclusive) {
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxValueNotGreaterThanMinValue,
+                                maxValueV.Text, minValueV.Text), ValueRange.MaxValue.IsValid ? ValueRange.MaxValue.TextSpan : ValueRange.MinValue.TextSpan);
                         }
                     }
                 }
-
-
             }
-
-
-
-            return null;
+            //
+            return new FacetSetSymbol(baseFacetSet, minLength, maxLength, precision, scale, minValue, maxValue, @enum, patternList);
         }
         private XAtomType CreateXAtomType(TypeKind typeKind) {
             switch (typeKind) {

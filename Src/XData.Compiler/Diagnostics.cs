@@ -20,17 +20,22 @@ namespace XData.Compiler {
         //facets
         UInt64ValueRequired,
         ByteValueRequired,
-        FacetNotApplicable,
-        MaxLengthNotEqualToOrGreaterThanMinLength,
-        MinLengthNotEqualToOrGreaterThanBaseMinLength,
-        MaxLengthNotEqualToOrLessThanBaseMaxLength,
-        ScaleNotEqualToOrLessThanPrecision,
-        PrecisionNotEqualToOrLessThanBasePrecision,
-        ScaleNotEqualToOrLessThanBaseScale,
+        FacetNotAllowed,
+        MaxLengthNotGreaterThanOrEqualToMinLength,
+        MinLengthNotGreaterThanOrEqualToBaseMinLength,
+        MaxLengthNotLessThanOrEqualToBaseMaxLength,
+        ScaleNotLessThanOrEqualToPrecision,
+        PrecisionNotLessThanOrEqualToBasePrecision,
+        ScaleNotLessThanOrEqualToBaseScale,
         InvalidLiteral,
-
-
-
+        EnumItemNameNotAllowedInRestriction,
+        EnumItemNotInBaseEnum,
+        MinValueNotGreaterThanOrEqualToBaseMinValue,
+        MinValueNotGreaterThanBaseMinValue,
+        MaxValueNotLessThanOrEqualToBaseMaxValue,
+        MaxValueNotLessThanBaseMaxValue,
+        MaxValueNotGreaterThanOrEqualToMinValue,
+        MaxValueNotGreaterThanMinValue,
 
         //
         DuplicateMemberName,
@@ -49,9 +54,9 @@ namespace XData.Compiler {
         CannotRestrictSimpleChildWithComplexChildren,
         CannotRestrictComplexChildrenWithSimpleChild,
         CannotRestrictNullSimpleChild,
-        CannotRestrictSimpleTypeWithAttributesOrChildren,
-        CannotRestrictComplexTypeWithValueRestrictions,
-        IsNotEqualToOrDeriveFrom,
+        AttributesChildrenNotAllowedInSimpleTypeRestriction,
+        FacetsNotAllowedInComplexTypeRestriction,
+        TypeNotEqualToOrDeriveFrom,
         CannotFindRestrictedAttribute,
         AttributeFullNameNotEqualToRestricted,
         AttributeIsOptionalButRestrictedIsRequired,
@@ -114,23 +119,38 @@ namespace XData.Compiler {
                     return "UInt64 value required.";
                 case DiagCodeEx.ByteValueRequired:
                     return "Byte value required.";
-                case DiagCodeEx.FacetNotApplicable:
-                    return "Facet not applicable.";
-                case DiagCodeEx.MaxLengthNotEqualToOrGreaterThanMinLength:
-                    return "Max length '{0}' not equal to or greater than min length '{1}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.MinLengthNotEqualToOrGreaterThanBaseMinLength:
-                    return "Min length '{0}' not equal to or greater than base min length '{1}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.MaxLengthNotEqualToOrLessThanBaseMaxLength:
-                    return "Max length '{0}' not equal to or less than base max length '{1}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.ScaleNotEqualToOrLessThanPrecision:
-                    return "Scale '{0}' not equal to or less than precision '{1}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.PrecisionNotEqualToOrLessThanBasePrecision:
-                    return "Precision '{0}' not equal to or less than base precision '{1}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.ScaleNotEqualToOrLessThanBaseScale:
-                    return "Scale '{0}' not equal to or less than base scale '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.FacetNotAllowed:
+                    return "Facet not allowed.";
+                case DiagCodeEx.MaxLengthNotGreaterThanOrEqualToMinLength:
+                    return "Max length '{0}' not greater than or equal to min length '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.MinLengthNotGreaterThanOrEqualToBaseMinLength:
+                    return "Min length '{0}' not greater than or equal to base min length '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.MaxLengthNotLessThanOrEqualToBaseMaxLength:
+                    return "Max length '{0}' not less than or equal to base max length '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.ScaleNotLessThanOrEqualToPrecision:
+                    return "Scale '{0}' not less than or equal to precision '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.PrecisionNotLessThanOrEqualToBasePrecision:
+                    return "Precision '{0}' not less than or equal to base precision '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.ScaleNotLessThanOrEqualToBaseScale:
+                    return "Scale '{0}' not less than or equal to base scale '{1}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.InvalidLiteral:
                     return "Invalid literal '{0}'.".InvFormat(_msgArgs);
-
+                case DiagCodeEx.EnumItemNameNotAllowedInRestriction:
+                    return "Enum item name not allowed in restriction.";
+                case DiagCodeEx.EnumItemNotInBaseEnum:
+                    return "Enum item '{0}' not in base enum.".InvFormat(_msgArgs);
+                case DiagCodeEx.MinValueNotGreaterThanOrEqualToBaseMinValue:
+                    return "Min value '{0}' not greater than or equal to base min value '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.MinValueNotGreaterThanBaseMinValue:
+                    return "Min value '{0}' not greater than base min value '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.MaxValueNotLessThanOrEqualToBaseMaxValue:
+                    return "Max value '{0}' not less than or equal to base max value '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.MaxValueNotLessThanBaseMaxValue:
+                    return "Max value '{0}' not less than base max value '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.MaxValueNotGreaterThanOrEqualToMinValue:
+                    return "Max value '{0}' not greater than or equal to min value '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.MaxValueNotGreaterThanMinValue:
+                    return "Max value '{0}' not greater than min value '{1}'.".InvFormat(_msgArgs);
 
 
                 case DiagCodeEx.DuplicateMemberName:
@@ -179,12 +199,12 @@ namespace XData.Compiler {
                     return "Cannot restrict complex children with simple child.";
                 case DiagCodeEx.CannotRestrictNullSimpleChild:
                     return "Cannot restrict null simple child.";
-                case DiagCodeEx.CannotRestrictSimpleTypeWithAttributesOrChildren:
-                    return "Cannot restrict simple type with attributes or children.";
-                case DiagCodeEx.CannotRestrictComplexTypeWithValueRestrictions:
-                    return "Cannot restrict complex type with value restrictions.";
-                case DiagCodeEx.IsNotEqualToOrDeriveFrom:
-                    return "'{0} is not equal to or derive from '{1}'.";
+                case DiagCodeEx.AttributesChildrenNotAllowedInSimpleTypeRestriction:
+                    return "Attributes/children not allowed in simple type restriction.";
+                case DiagCodeEx.FacetsNotAllowedInComplexTypeRestriction:
+                    return "Facets not allowed in complex type restriction.";
+                case DiagCodeEx.TypeNotEqualToOrDeriveFrom:
+                    return "Type '{0} not equal to or derive from '{1}'.";
                 case DiagCodeEx.CannotFindRestrictedAttribute:
                     return "Cannot find the restricted attribute '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.AttributeFullNameNotEqualToRestricted:

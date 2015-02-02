@@ -282,7 +282,7 @@ namespace XData.IO.Text {
             result = new SimpleValueNode(typeQName, atom, list);
             return true;
         }
-        protected virtual bool SimpleValue(out SimpleValueNode result) {
+        protected /*virtual*/ bool SimpleValue(out SimpleValueNode result) {
             QualifiableNameNode typeQName;
             var hasTypeQName = TypeIndicator(out typeQName);
             if (SimpleValue(typeQName, out result)) {

@@ -104,7 +104,7 @@ namespace XData {
         }
     }
 
-    public class FacetSetInfo {
+    public sealed class FacetSetInfo {
         public FacetSetInfo(
             ulong? minLength, ulong? maxLength,
             byte? precision, byte? scale,
@@ -129,27 +129,21 @@ namespace XData {
         public readonly PatternInfo[] Patterns;
     }
     public struct ValueBoundaryInfo {
-        public ValueBoundaryInfo(ValueInfo value, bool isInclusive) {
+        public ValueBoundaryInfo(object value, string text, bool isInclusive) {
             Value = value;
+            Text = text;
             IsInclusive = isInclusive;
         }
-        public readonly ValueInfo Value;
+        public readonly object Value;
+        public readonly string Text;
         public readonly bool IsInclusive;
     }
-    public struct ValueInfo {
-        public ValueInfo(object value, string nameOrText) {
-            Value = value;
-            NameOrText = nameOrText;
-        }
-        public readonly object Value;
-        public readonly string NameOrText;
-    }
     public struct EnumInfo {
-        public EnumInfo(ValueInfo[] items, string text) {
+        public EnumInfo(object[] items, string text) {
             Items = items;
             Text = text;
         }
-        public readonly ValueInfo[] Items;
+        public readonly object[] Items;
         public readonly string Text;
     }
     public struct PatternInfo {
@@ -187,8 +181,8 @@ namespace XData {
         //DOT NOT CHANGE THE ORDER
         ComplexType,
         SimpleType,
-        AtomType,
         ListType,
+        AtomType,
         String,
         IgnoreCaseString,
         Decimal,

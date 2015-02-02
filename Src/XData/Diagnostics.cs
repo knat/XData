@@ -25,14 +25,14 @@ namespace XData {
 
         //facets
         LengthNotEqualTo,
-        LengthNotGreaterThanOrEqualTo,
-        LengthNotLessThanOrEqualTo,
+        LengthNotGreaterThanOrEqualToMinLength,
+        LengthNotLessThanOrEqualToMaxLength,
         PrecisionNotLessThanOrEqualTo,
         ScaleNotLessThanOrEqualTo,
-        ValueNotGreaterThanOrEqualTo,
-        ValueNotGreaterThan,
-        ValueNotLessThanOrEqualTo,
-        ValueNotLessThan,
+        ValueNotGreaterThanOrEqualToMinValue,
+        ValueNotGreaterThanMinValue,
+        ValueNotLessThanOrEqualToMaxValue,
+        ValueNotLessThanMaxValue,
         ValueNotInEnumeration,
         LiteralNotMatchWithPattern,
 
@@ -107,22 +107,22 @@ namespace XData {
                 //facets
                 case DiagCode.LengthNotEqualTo:
                     return "Length '{0}' not equal to '{1}'.".InvFormat(_msgArgs);
-                case DiagCode.LengthNotGreaterThanOrEqualTo:
-                    return "Length '{0}' not greater than or equal to '{1}'.".InvFormat(_msgArgs);
-                case DiagCode.LengthNotLessThanOrEqualTo:
-                    return "Length '{0}' not less than or equal to '{1}'.".InvFormat(_msgArgs);
+                case DiagCode.LengthNotGreaterThanOrEqualToMinLength:
+                    return "Length '{0}' not greater than or equal to min length '{1}'.".InvFormat(_msgArgs);
+                case DiagCode.LengthNotLessThanOrEqualToMaxLength:
+                    return "Length '{0}' not less than or equal to max length '{1}'.".InvFormat(_msgArgs);
                 case DiagCode.PrecisionNotLessThanOrEqualTo:
                     return "Precision '{0}' not less than or equal to '{1}'.".InvFormat(_msgArgs);
                 case DiagCode.ScaleNotLessThanOrEqualTo:
                     return "Scale '{0}' not less than or equal to '{1}'.".InvFormat(_msgArgs);
-                case DiagCode.ValueNotGreaterThanOrEqualTo:
-                    return "Value '{0}' not greater than or equal to '{1}'.".InvFormat(_msgArgs);
-                case DiagCode.ValueNotGreaterThan:
-                    return "Value '{0}' not greater than '{1}'.".InvFormat(_msgArgs);
-                case DiagCode.ValueNotLessThanOrEqualTo:
-                    return "Value '{0}' not less than or equal to '{1}'.".InvFormat(_msgArgs);
-                case DiagCode.ValueNotLessThan:
-                    return "Value '{0}' not less than '{1}'.".InvFormat(_msgArgs);
+                case DiagCode.ValueNotGreaterThanOrEqualToMinValue:
+                    return "Value '{0}' not greater than or equal to min value '{1}'.".InvFormat(_msgArgs);
+                case DiagCode.ValueNotGreaterThanMinValue:
+                    return "Value '{0}' not greater than min value '{1}'.".InvFormat(_msgArgs);
+                case DiagCode.ValueNotLessThanOrEqualToMaxValue:
+                    return "Value '{0}' not less than or equal to max value '{1}'.".InvFormat(_msgArgs);
+                case DiagCode.ValueNotLessThanMaxValue:
+                    return "Value '{0}' not less than max value '{1}'.".InvFormat(_msgArgs);
                 case DiagCode.ValueNotInEnumeration:
                     return "Value '{0}' not in enumeration '{1}'.".InvFormat(_msgArgs);
                 case DiagCode.LiteralNotMatchWithPattern:

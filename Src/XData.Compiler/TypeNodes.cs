@@ -42,7 +42,7 @@ namespace XData.Compiler {
         public override void Resolve() {
             ItemType = NamespaceAncestor.ResolveAsType(ItemTypeQName);
             if (Facets != null && Facets.ListItemTypeQName.IsValid) {
-                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotApplicable), Facets.ListItemTypeQName.TextSpan);
+                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotAllowed), Facets.ListItemTypeQName.TextSpan);
             }
         }
         public override TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
@@ -50,13 +50,9 @@ namespace XData.Compiler {
             if (itemTypeSymbol == null) {
                 DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.SimpleTypeRequired), ItemTypeQName.TextSpan);
             }
-            if (Facets != null) {
-                if (Facets.ListItemTypeQName.IsValid) {
-
-                }
-            }
-
-            return null;// new ListTypeSymbol(parent, csName, isAbstract, isSealed, fullName, itemSymbol);
+            var facetsSymbol = Facets == null ? null : Facets.CreateSymbol(TypeKind.ListType, null);
+            return new ListTypeSymbol(parent, csName, isAbstract, isSealed, fullName, NamespaceSymbol.SystemListType, facetsSymbol,
+                null, itemTypeSymbol);
         }
     }
     internal sealed class AttributesChildrenNode : Node {
@@ -138,14 +134,18 @@ namespace XData.Compiler {
             if (baseComplexTypeSymbol == NamespaceSymbol.SystemComplexType) {
                 DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotExtendOrRestrictSysComplexType), BaseTypeQName.TextSpan);
             }
-            var complexTypeSymbol = new ComplexTypeSymbol(parent, csName, isAbstract, isSealed, fullName, baseComplexTypeSymbol);
+            var complexTypeSymbol = new ComplexTypeSymbol(parent, csName, isAbstract, isSealed, fullName, baseComplexTypeSymbol) {
+                Attributes = baseComplexTypeSymbol.Attributes,
+                Children = baseComplexTypeSymbol.Children
+            };
             if (AttributesChildren != null) {
                 if (AttributesChildren.Attributes != null) {
                     complexTypeSymbol.Attributes = AttributesChildren.Attributes.CreateSymbol(complexTypeSymbol, baseComplexTypeSymbol.Attributes, true);
                 }
                 if (AttributesChildren.ComplexChildren != null) {
                     if (baseComplexTypeSymbol.SimpleChild != null) {
-                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotExtendSimpleChildWithComplexChildren), AttributesChildren.ComplexChildren.OpenBraceTextSpan);
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotExtendSimpleChildWithComplexChildren),
+                            AttributesChildren.ComplexChildren.OpenBraceTextSpan);
                     }
                     complexTypeSymbol.Children = AttributesChildren.ComplexChildren.CreateSymbol(complexTypeSymbol, baseComplexTypeSymbol.ComplexChildren, true);
                 }
@@ -168,11 +168,6 @@ namespace XData.Compiler {
                 Facets.Resolve();
             }
         }
-        //private static SimpleTypeSymbol CreateSimpleTypeSymbol(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed,
-        //    SimpleTypeSymbol baseSimpleTypeSymbol, ValueRestrictionsNode valueRestrictions) {
-
-        //    return null;
-        //}
         public override TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
             var baseTypeSymbol = (TypeSymbol)BaseType.CreateSymbol();
             if (baseTypeSymbol.IsSealed) {
@@ -184,9 +179,34 @@ namespace XData.Compiler {
                     DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotRestrictSysSimpleAtomListType), BaseTypeQName.TextSpan);
                 }
                 if (AttributesChildren != null) {
-                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotRestrictSimpleTypeWithAttributesOrChildren), AttributesChildren.OpenTextSpan);
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AttributesChildrenNotAllowedInSimpleTypeRestriction), AttributesChildren.OpenTextSpan);
                 }
-                return null;// CreateSimpleTypeSymbol(parent, csName, fullName, isAbstract, isSealed, baseSimpleTypeSymbol, ValueRestrictions);
+                var typeKind = baseSimpleTypeSymbol.Kind;
+                var facetsSymbol = Facets == null ? baseSimpleTypeSymbol.Facets : Facets.CreateSymbol(typeKind, baseSimpleTypeSymbol.Facets);
+                if (typeKind == TypeKind.ListType) {
+                    SimpleTypeSymbol itemTypeSymbol = null;
+                    var baseListTypeSymbol = (ListTypeSymbol)baseSimpleTypeSymbol;
+                    if (Facets != null && Facets.ListItemType != null) {
+                        itemTypeSymbol = Facets.ListItemType.CreateSymbol() as SimpleTypeSymbol;
+                        if (itemTypeSymbol == null) {
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.SimpleTypeRequired), Facets.ListItemTypeQName.TextSpan);
+                        }
+                        if (itemTypeSymbol == baseListTypeSymbol.ItemType) {
+                            itemTypeSymbol = null;
+                        }
+                        else if (!itemTypeSymbol.EqualToOrDeriveFrom(baseListTypeSymbol.ItemType)) {
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.TypeNotEqualToOrDeriveFrom,
+                                itemTypeSymbol.DisplayName, baseListTypeSymbol.ItemType.DisplayName), Facets.ListItemTypeQName.TextSpan);
+                        }
+                    }
+                    return new ListTypeSymbol(parent, csName, isAbstract, isSealed, fullName, baseListTypeSymbol, facetsSymbol,
+                        itemTypeSymbol == null ? null : CSEX.IListAndIReadOnlyListOf(itemTypeSymbol.CSFullName),
+                        itemTypeSymbol ?? baseListTypeSymbol.ItemType);
+                }
+                else {
+                    return new AtomTypeSymbol(parent, csName, isAbstract, isSealed, fullName, typeKind, baseSimpleTypeSymbol, facetsSymbol,
+                       ((AtomTypeSymbol)baseSimpleTypeSymbol).ValueCSFullName);
+                }
             }
             else {
                 var baseComplexTypeSymbol = (ComplexTypeSymbol)baseTypeSymbol;
@@ -194,30 +214,37 @@ namespace XData.Compiler {
                     DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotExtendOrRestrictSysComplexType), BaseTypeQName.TextSpan);
                 }
                 if (Facets != null) {
-                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotRestrictComplexTypeWithValueRestrictions), Facets.OpenBraceTextSpan);
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.FacetsNotAllowedInComplexTypeRestriction), Facets.OpenBraceTextSpan);
                 }
-                var complexTypeSymbol = new ComplexTypeSymbol(parent, csName, isAbstract, isSealed, fullName, baseComplexTypeSymbol);
+                var complexTypeSymbol = new ComplexTypeSymbol(parent, csName, isAbstract, isSealed, fullName, baseComplexTypeSymbol) {
+                    Attributes = baseComplexTypeSymbol.Attributes,
+                    Children = baseComplexTypeSymbol.Children
+                };
                 if (AttributesChildren != null) {
                     if (AttributesChildren.Attributes != null) {
                         complexTypeSymbol.Attributes = AttributesChildren.Attributes.CreateSymbol(complexTypeSymbol, baseComplexTypeSymbol.Attributes, false);
                     }
                     if (AttributesChildren.ComplexChildren != null) {
                         if (baseComplexTypeSymbol.SimpleChild != null) {
-                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotRestrictSimpleChildWithComplexChildren), AttributesChildren.ComplexChildren.OpenBraceTextSpan);
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotRestrictSimpleChildWithComplexChildren),
+                                AttributesChildren.ComplexChildren.OpenBraceTextSpan);
                         }
                         complexTypeSymbol.Children = AttributesChildren.ComplexChildren.CreateSymbol(complexTypeSymbol, baseComplexTypeSymbol.ComplexChildren, false);
                     }
                     else if (AttributesChildren.SimpleChild != null) {
                         if (baseComplexTypeSymbol.ComplexChildren != null) {
-                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotRestrictComplexChildrenWithSimpleChild), AttributesChildren.SimpleChildQName.TextSpan);
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotRestrictComplexChildrenWithSimpleChild),
+                                AttributesChildren.SimpleChildQName.TextSpan);
                         }
                         var baseSimpleChildSymbol = baseComplexTypeSymbol.SimpleChild;
                         if (baseSimpleChildSymbol == null) {
-                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotRestrictNullSimpleChild), AttributesChildren.SimpleChildQName.TextSpan);
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotRestrictNullSimpleChild),
+                                AttributesChildren.SimpleChildQName.TextSpan);
                         }
                         var simpleChildSymbol = AttributesChildren.CreateSimpleChildSymbol();
                         if (!simpleChildSymbol.EqualToOrDeriveFrom(baseSimpleChildSymbol)) {
-                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.IsNotEqualToOrDeriveFrom, simpleChildSymbol.FullName.ToString(), baseSimpleChildSymbol.FullName.ToString()), AttributesChildren.SimpleChildQName.TextSpan);
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.TypeNotEqualToOrDeriveFrom,
+                                simpleChildSymbol.DisplayName, baseSimpleChildSymbol.DisplayName), AttributesChildren.SimpleChildQName.TextSpan);
                         }
                         complexTypeSymbol.Children = simpleChildSymbol;
                     }

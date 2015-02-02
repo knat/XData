@@ -161,18 +161,51 @@ namespace XData.Compiler {
         }
 
     }
-    internal sealed class FacetSetSymbol : FacetSetInfo {
-        public FacetSetSymbol(
+    internal sealed class FacetSetSymbol : Symbol {
+        public FacetSetSymbol(FacetSetSymbol baseFacetSet,
             ulong? minLength, ulong? maxLength,
             byte? precision, byte? scale,
             ValueBoundaryInfo? minValue, ValueBoundaryInfo? maxValue,
-            EnumInfo? @enum, PatternInfo[] patterns,
-            FacetSetSymbol baseFacetSet) :
-            base(minLength, maxLength, precision, scale, minValue, maxValue, @enum, patterns) {
+            EnumInfoEx? @enum, List<string> patternList) {
             BaseFacetSet = baseFacetSet;
+            MinLength = minLength;
+            MaxLength = maxLength;
+            Precision = precision;
+            Scale = scale;
+            MinValue = minValue;
+            MaxValue = maxValue;
+            Enum = @enum;
+            PatternList = patternList;
         }
         public readonly FacetSetSymbol BaseFacetSet;
+        //
+        public readonly ulong? MinLength;
+        public readonly ulong? MaxLength;
+        public readonly byte? Precision;
+        public readonly byte? Scale;
+        public readonly ValueBoundaryInfo? MinValue;
+        public readonly ValueBoundaryInfo? MaxValue;
+        public readonly EnumInfoEx? Enum;
+        public readonly List<string> PatternList;
+
     }
+    public struct EnumInfoEx {
+        public EnumInfoEx(List<EnumItemInfo> itemList, string text) {
+            ItemList = itemList;
+            Text = text;
+        }
+        public readonly List<EnumItemInfo> ItemList;
+        public readonly string Text;
+    }
+    public struct EnumItemInfo {
+        public EnumItemInfo(object value, string nameOrText) {
+            Value = value;
+            Name = nameOrText;
+        }
+        public readonly object Value;
+        public readonly string Name;//opt
+    }
+
 
     internal class SimpleTypeSymbol : TypeSymbol {
         public SimpleTypeSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
