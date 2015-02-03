@@ -59,22 +59,6 @@ namespace XData {
                 Children = value;
             }
         }
-        public XSimpleType SimpleChild {
-            get {
-                return _children as XSimpleType;
-            }
-            set {
-                Children = value;
-            }
-        }
-        public XChildSequence ComplexChildren {
-            get {
-                return _children as XChildSequence;
-            }
-            set {
-                Children = value;
-            }
-        }
         public T EnsureChildren<T>(bool @try = false) where T : XObject {
             var obj = _children as T;
             if (obj != null) {
@@ -87,9 +71,13 @@ namespace XData {
                 }
                 throw new InvalidOperationException("Children not allowed.");
             }
-            obj = complexTypeInfo.Children.CreateInstance<T>();
-            Children = obj;
+            if ((obj = complexTypeInfo.Children.CreateInstance<T>(@try)) != null) {
+                Children = obj;
+            }
             return obj;
+        }
+        public XObject EnsureChildren(bool @try = false) {
+            return EnsureChildren<XObject>(@try);
         }
         //
         #region LINQ
@@ -99,81 +87,88 @@ namespace XData {
             }
             return Enumerable.Empty<T>();
         }
-        public IEnumerable<T> SelfAttributeTypes<T>(Func<XAttribute, bool> attributeFilter = null, Func<T, bool> typeFilter = null) where T : XSimpleType {
+        public IEnumerable<T> SelfAttributeTypes<T>(Func<XAttribute, bool> attributeFilter = null, 
+            Func<T, bool> typeFilter = null) where T : XSimpleType {
             if (_attributes != null) {
                 return _attributes.SelfAttributeTypes(attributeFilter, typeFilter);
             }
             return Enumerable.Empty<T>();
         }
-        public IEnumerable<T> ChildrenElements<T>(Func<T, bool> filter = null) where T : XElement {
-            var complexChildren = ComplexChildren;
+        public IEnumerable<T> SubElements<T>(Func<T, bool> filter = null) where T : XElement {
+            var complexChildren = _children as XChildSequence;
             if (complexChildren != null) {
-                return complexChildren.ChildrenElements(filter);
+                return complexChildren.SubElements(filter);
             }
             return Enumerable.Empty<T>();
         }
-        public IEnumerable<T> ChildrenElementTypes<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> typeFilter = null) where T : XType {
-            var complexChildren = ComplexChildren;
+        public IEnumerable<T> SubElementTypes<T>(Func<XElement, bool> elementFilter = null,
+            Func<T, bool> typeFilter = null) where T : XType {
+            var complexChildren = _children as XChildSequence;
             if (complexChildren != null) {
-                return complexChildren.ChildrenElementTypes(elementFilter, typeFilter);
+                return complexChildren.SubElementTypes(elementFilter, typeFilter);
             }
             return Enumerable.Empty<T>();
         }
-        public IEnumerable<T> ChildrenSimpleChildren<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> simpleChildFilter = null) where T : XSimpleType {
-            var complexChildren = ComplexChildren;
+        public IEnumerable<T> SubElementAttributes<T>(Func<XElement, bool> elementFilter = null, 
+            Func<T, bool> attributeFilter = null) where T : XAttribute {
+            var complexChildren = _children as XChildSequence;
             if (complexChildren != null) {
-                return complexChildren.ChildrenSimpleChildren(elementFilter, simpleChildFilter);
+                return complexChildren.SubElementAttributes(elementFilter, attributeFilter);
             }
             return Enumerable.Empty<T>();
         }
-        public IEnumerable<T> ChildrenAttributes<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> attributeFilter = null) where T : XAttribute {
-            var complexChildren = ComplexChildren;
-            if (complexChildren != null) {
-                return complexChildren.ChildrenAttributes(elementFilter, attributeFilter);
-            }
-            return Enumerable.Empty<T>();
-        }
-        public IEnumerable<T> ChildrenAttributeTypes<T>(Func<XElement, bool> elementFilter = null,
+        public IEnumerable<T> SubElementAttributeTypes<T>(Func<XElement, bool> elementFilter = null,
             Func<XAttribute, bool> attributeFilter = null, Func<T, bool> typeFilter = null) where T : XSimpleType {
-            var complexChildren = ComplexChildren;
+            var complexChildren = _children as XChildSequence;
             if (complexChildren != null) {
-                return complexChildren.ChildrenAttributeTypes(elementFilter, attributeFilter, typeFilter);
+                return complexChildren.SubElementAttributeTypes(elementFilter, attributeFilter, typeFilter);
+            }
+            return Enumerable.Empty<T>();
+        }
+        public IEnumerable<T> SubElementChildren<T>(Func<XElement, bool> elementFilter = null,
+            Func<T, bool> childrenFilter = null) where T : XObject {
+            var complexChildren = _children as XChildSequence;
+            if (complexChildren != null) {
+                return complexChildren.SubElementChildren(elementFilter, childrenFilter);
             }
             return Enumerable.Empty<T>();
         }
         public IEnumerable<T> DescendantElements<T>(Func<T, bool> filter = null) where T : XElement {
-            var complexChildren = ComplexChildren;
+            var complexChildren = _children as XChildSequence;
             if (complexChildren != null) {
                 return complexChildren.DescendantElements(filter);
             }
             return Enumerable.Empty<T>();
         }
-        public IEnumerable<T> DescendantElementTypes<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> typeFilter = null) where T : XType {
-            var complexChildren = ComplexChildren;
+        public IEnumerable<T> DescendantElementTypes<T>(Func<XElement, bool> elementFilter = null,
+            Func<T, bool> typeFilter = null) where T : XType {
+            var complexChildren = _children as XChildSequence;
             if (complexChildren != null) {
                 return complexChildren.DescendantElementTypes(elementFilter, typeFilter);
             }
             return Enumerable.Empty<T>();
         }
-        public IEnumerable<T> DescendantSimpleChildren<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> simpleChildFilter = null) where T : XSimpleType {
-            var complexChildren = ComplexChildren;
+        public IEnumerable<T> DescendantElementAttributes<T>(Func<XElement, bool> elementFilter = null,
+            Func<T, bool> attributeFilter = null) where T : XAttribute {
+            var complexChildren = _children as XChildSequence;
             if (complexChildren != null) {
-                return complexChildren.DescendantSimpleChildren(elementFilter, simpleChildFilter);
+                return complexChildren.DescendantElementAttributes(elementFilter, attributeFilter);
             }
             return Enumerable.Empty<T>();
         }
-        public IEnumerable<T> DescendantAttributes<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> attributeFilter = null) where T : XAttribute {
-            var complexChildren = ComplexChildren;
-            if (complexChildren != null) {
-                return complexChildren.DescendantAttributes(elementFilter, attributeFilter);
-            }
-            return Enumerable.Empty<T>();
-        }
-        public IEnumerable<T> DescendantAttributeTypes<T>(Func<XElement, bool> elementFilter = null,
+        public IEnumerable<T> DescendantElementAttributeTypes<T>(Func<XElement, bool> elementFilter = null,
             Func<XAttribute, bool> attributeFilter = null, Func<T, bool> typeFilter = null) where T : XSimpleType {
-            var complexChildren = ComplexChildren;
+            var complexChildren = _children as XChildSequence;
             if (complexChildren != null) {
-                return complexChildren.DescendantAttributeTypes(elementFilter, attributeFilter, typeFilter);
+                return complexChildren.DescendantElementAttributeTypes(elementFilter, attributeFilter, typeFilter);
+            }
+            return Enumerable.Empty<T>();
+        }
+        public IEnumerable<T> DescendantElementChildren<T>(Func<XElement, bool> elementFilter = null,
+            Func<T, bool> childrenFilter = null) where T : XObject {
+            var complexChildren = _children as XChildSequence;
+            if (complexChildren != null) {
+                return complexChildren.DescendantElementChildren(elementFilter, childrenFilter);
             }
             return Enumerable.Empty<T>();
         }
@@ -193,7 +188,7 @@ namespace XData {
             }
             var simpleChildInfo = ComplexTypeInfo.SimpleChild;
             if (simpleChildInfo != null) {
-                var simpleChild = SimpleChild;
+                var simpleChild = _children as XSimpleType;
                 if (simpleChild != null) {
                     if (_attributes != null) {
                         context.AppendLine();
@@ -207,7 +202,7 @@ namespace XData {
                 }
             }
             else {
-                var complexChildren = ComplexChildren;
+                var complexChildren = _children as XChildSequence;
                 if (complexChildren != null) {
                     context.AppendLine();
                     context.PushIndent();
@@ -240,7 +235,7 @@ namespace XData {
             //
             var simpleTypeInfo = complexTypeInfo.SimpleChild;
             if (simpleTypeInfo != null) {
-                var simpleChild = SimpleChild;
+                var simpleChild = _children as XSimpleType;
                 if ((object)simpleChild != null) {
                     if (simpleChild.CheckEqualTo(context, simpleTypeInfo)) {
                         simpleChild.TryValidate(context);
@@ -253,7 +248,7 @@ namespace XData {
             else {
                 var complexChildrenInfo = complexTypeInfo.ComplexChildren;
                 if (complexChildrenInfo != null) {
-                    var complexChildren = ComplexChildren;
+                    var complexChildren = _children as XChildSequence;
                     if (complexChildren != null) {
                         if (complexChildren.CheckEqualTo(context, complexChildrenInfo)) {
                             complexChildren.TryValidate(context);

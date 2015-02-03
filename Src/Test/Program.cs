@@ -55,15 +55,24 @@ namespace Test {
     }
 
     class Program {
+        public static void PublicParameterlessConstructorRequired<T>() where T : new() { }
 
+        class Test {
+            //internal Test() { }
+            //public Test(int i) { }
+        }
         static void Main() {
-            var list = new List<int> { 1, 2, 3, 4 };
-            for(var i = 0; i < list.Count; ++i) {
-                if (list[i] == 3) {
-                    list.RemoveAt(i);
-                    break;
-                }
-            }
+            //System.Diagnostics.Debug
+
+            global::Test.Program.PublicParameterlessConstructorRequired<global::Test.Program.Test>();
+
+            //var list = new List<int> { 1, 2, 3, 4 };
+            //for(var i = 0; i < list.Count; ++i) {
+            //    if (list[i] == 3) {
+            //        list.RemoveAt(i);
+            //        break;
+            //    }
+            //}
         }
 
         static byte GetPAndS(decimal d, out byte s) {
@@ -102,12 +111,12 @@ namespace Test {
         static void Display(decimal d) {
             byte p, s;
             p = GetPAndS(d, out s);
-           // Console.WriteLine("d: {0}, P={1}, S={2}", d.ToInvString(), p.ToInvString(), s.ToInvString());
+            // Console.WriteLine("d: {0}, P={1}, S={2}", d.ToInvString(), p.ToInvString(), s.ToInvString());
         }
         static void Display2(decimal d) {
             //byte p, s;
             //p = GetPAndS2(d, out s);
-           // Console.WriteLine("d: {0}, P={1}, S={2}", d.ToInvString(), p.ToInvString(), s.ToInvString());
+            // Console.WriteLine("d: {0}, P={1}, S={2}", d.ToInvString(), p.ToInvString(), s.ToInvString());
         }
         static void TestDecimal() {
             Stopwatch sw1 = new Stopwatch();

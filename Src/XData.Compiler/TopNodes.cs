@@ -118,12 +118,12 @@ namespace XData.Compiler {
             }
             return null;
         }
-        private ProgramNode _programAncestor;
-        public ProgramNode ProgramAncestor {
-            get {
-                return _programAncestor ?? (_programAncestor = GetAncestor<ProgramNode>());
-            }
-        }
+        //private ProgramNode _programAncestor;
+        //public ProgramNode ProgramAncestor {
+        //    get {
+        //        return _programAncestor ?? (_programAncestor = GetAncestor<ProgramNode>());
+        //    }
+        //}
         private CompilationUnitNode _compilationUnitAncestor;
         public CompilationUnitNode CompilationUnitAncestor {
             get {

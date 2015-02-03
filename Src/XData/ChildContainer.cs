@@ -31,7 +31,7 @@ namespace XData {
         internal abstract IEnumerable<XChild> InternalChildren { get; }
         internal abstract void InternalAdd(XChild child);
         #region LINQ
-        public IEnumerable<T> ChildrenElements<T>(Func<T, bool> filter = null) where T : XElement {
+        public IEnumerable<T> SubElements<T>(Func<T, bool> filter = null) where T : XElement {
             foreach (var child in InternalChildren) {
                 var element = child as T;
                 if (element != null) {
@@ -40,13 +40,14 @@ namespace XData {
                     }
                 }
                 else {
-                    foreach (var i in ((XChildContainer)child).ChildrenElements(filter)) {
+                    foreach (var i in ((XChildContainer)child).SubElements(filter)) {
                         yield return i;
                     }
                 }
             }
         }
-        public IEnumerable<T> ChildrenElementTypes<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> typeFilter = null) where T : XType {
+        public IEnumerable<T> SubElementTypes<T>(Func<XElement, bool> elementFilter = null,
+            Func<T, bool> typeFilter = null) where T : XType {
             foreach (var child in InternalChildren) {
                 var element = child as XElement;
                 if (element != null) {
@@ -60,33 +61,14 @@ namespace XData {
                     }
                 }
                 else {
-                    foreach (var i in ((XChildContainer)child).ChildrenElementTypes(elementFilter, typeFilter)) {
+                    foreach (var i in ((XChildContainer)child).SubElementTypes(elementFilter, typeFilter)) {
                         yield return i;
                     }
                 }
             }
         }
-        public IEnumerable<T> ChildrenSimpleChildren<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> simpleChildFilter = null) where T : XSimpleType {
-            foreach (var child in InternalChildren) {
-                var element = child as XElement;
-                if (element != null) {
-                    if (elementFilter == null || elementFilter(element)) {
-                        var simpleChild = element.SimpleChild as T;
-                        if ((object)simpleChild != null) {
-                            if (simpleChildFilter == null || simpleChildFilter(simpleChild)) {
-                                yield return simpleChild;
-                            }
-                        }
-                    }
-                }
-                else {
-                    foreach (var i in ((XChildContainer)child).ChildrenSimpleChildren(elementFilter, simpleChildFilter)) {
-                        yield return i;
-                    }
-                }
-            }
-        }
-        public IEnumerable<T> ChildrenAttributes<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> attributeFilter = null) where T : XAttribute {
+        public IEnumerable<T> SubElementAttributes<T>(Func<XElement, bool> elementFilter = null,
+            Func<T, bool> attributeFilter = null) where T : XAttribute {
             foreach (var child in InternalChildren) {
                 var element = child as XElement;
                 if (element != null) {
@@ -97,13 +79,13 @@ namespace XData {
                     }
                 }
                 else {
-                    foreach (var i in ((XChildContainer)child).ChildrenAttributes(elementFilter, attributeFilter)) {
+                    foreach (var i in ((XChildContainer)child).SubElementAttributes(elementFilter, attributeFilter)) {
                         yield return i;
                     }
                 }
             }
         }
-        public IEnumerable<T> ChildrenAttributeTypes<T>(Func<XElement, bool> elementFilter = null,
+        public IEnumerable<T> SubElementAttributeTypes<T>(Func<XElement, bool> elementFilter = null,
             Func<XAttribute, bool> attributeFilter = null, Func<T, bool> typeFilter = null) where T : XSimpleType {
             foreach (var child in InternalChildren) {
                 var element = child as XElement;
@@ -115,7 +97,28 @@ namespace XData {
                     }
                 }
                 else {
-                    foreach (var i in ((XChildContainer)child).ChildrenAttributeTypes(elementFilter, attributeFilter, typeFilter)) {
+                    foreach (var i in ((XChildContainer)child).SubElementAttributeTypes(elementFilter, attributeFilter, typeFilter)) {
+                        yield return i;
+                    }
+                }
+            }
+        }
+        public IEnumerable<T> SubElementChildren<T>(Func<XElement, bool> elementFilter = null,
+            Func<T, bool> childrenFilter = null) where T : XObject {
+            foreach (var child in InternalChildren) {
+                var element = child as XElement;
+                if (element != null) {
+                    if (elementFilter == null || elementFilter(element)) {
+                        var children = element.Children as T;
+                        if (children != null) {
+                            if (childrenFilter == null || childrenFilter(children)) {
+                                yield return children;
+                            }
+                        }
+                    }
+                }
+                else {
+                    foreach (var i in ((XChildContainer)child).SubElementChildren(elementFilter, childrenFilter)) {
                         yield return i;
                     }
                 }
@@ -139,7 +142,8 @@ namespace XData {
                 }
             }
         }
-        public IEnumerable<T> DescendantElementTypes<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> typeFilter = null) where T : XType {
+        public IEnumerable<T> DescendantElementTypes<T>(Func<XElement, bool> elementFilter = null,
+            Func<T, bool> typeFilter = null) where T : XType {
             foreach (var child in InternalChildren) {
                 var element = child as XElement;
                 if (element != null) {
@@ -162,30 +166,8 @@ namespace XData {
                 }
             }
         }
-        public IEnumerable<T> DescendantSimpleChildren<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> simpleChildFilter = null) where T : XSimpleType {
-            foreach (var child in InternalChildren) {
-                var element = child as XElement;
-                if (element != null) {
-                    if (elementFilter == null || elementFilter(element)) {
-                        var simpleChild = element.SimpleChild as T;
-                        if ((object)simpleChild != null) {
-                            if (simpleChildFilter == null || simpleChildFilter(simpleChild)) {
-                                yield return simpleChild;
-                            }
-                        }
-                    }
-                    foreach (var i in element.DescendantSimpleChildren(elementFilter, simpleChildFilter)) {
-                        yield return i;
-                    }
-                }
-                else {
-                    foreach (var i in ((XChildContainer)child).DescendantSimpleChildren(elementFilter, simpleChildFilter)) {
-                        yield return i;
-                    }
-                }
-            }
-        }
-        public IEnumerable<T> DescendantAttributes<T>(Func<XElement, bool> elementFilter = null, Func<T, bool> attributeFilter = null) where T : XAttribute {
+        public IEnumerable<T> DescendantElementAttributes<T>(Func<XElement, bool> elementFilter = null,
+            Func<T, bool> attributeFilter = null) where T : XAttribute {
             foreach (var child in InternalChildren) {
                 var element = child as XElement;
                 if (element != null) {
@@ -194,18 +176,18 @@ namespace XData {
                             yield return i;
                         }
                     }
-                    foreach (var i in element.DescendantAttributes(elementFilter, attributeFilter)) {
+                    foreach (var i in element.DescendantElementAttributes(elementFilter, attributeFilter)) {
                         yield return i;
                     }
                 }
                 else {
-                    foreach (var i in ((XChildContainer)child).DescendantAttributes(elementFilter, attributeFilter)) {
+                    foreach (var i in ((XChildContainer)child).DescendantElementAttributes(elementFilter, attributeFilter)) {
                         yield return i;
                     }
                 }
             }
         }
-        public IEnumerable<T> DescendantAttributeTypes<T>(Func<XElement, bool> elementFilter = null,
+        public IEnumerable<T> DescendantElementAttributeTypes<T>(Func<XElement, bool> elementFilter = null,
             Func<XAttribute, bool> attributeFilter = null, Func<T, bool> typeFilter = null) where T : XSimpleType {
             foreach (var child in InternalChildren) {
                 var element = child as XElement;
@@ -215,12 +197,36 @@ namespace XData {
                             yield return i;
                         }
                     }
-                    foreach (var i in element.DescendantAttributeTypes(elementFilter, attributeFilter, typeFilter)) {
+                    foreach (var i in element.DescendantElementAttributeTypes(elementFilter, attributeFilter, typeFilter)) {
                         yield return i;
                     }
                 }
                 else {
-                    foreach (var i in ((XChildContainer)child).DescendantAttributeTypes(elementFilter, attributeFilter, typeFilter)) {
+                    foreach (var i in ((XChildContainer)child).DescendantElementAttributeTypes(elementFilter, attributeFilter, typeFilter)) {
+                        yield return i;
+                    }
+                }
+            }
+        }
+        public IEnumerable<T> DescendantElementChildren<T>(Func<XElement, bool> elementFilter = null,
+            Func<T, bool> childrenFilter = null) where T : XObject {
+            foreach (var child in InternalChildren) {
+                var element = child as XElement;
+                if (element != null) {
+                    if (elementFilter == null || elementFilter(element)) {
+                        var children = element.Children as T;
+                        if (children != null) {
+                            if (childrenFilter == null || childrenFilter(children)) {
+                                yield return children;
+                            }
+                        }
+                    }
+                    foreach (var i in element.DescendantElementChildren(elementFilter, childrenFilter)) {
+                        yield return i;
+                    }
+                }
+                else {
+                    foreach (var i in ((XChildContainer)child).DescendantElementChildren(elementFilter, childrenFilter)) {
                         yield return i;
                     }
                 }

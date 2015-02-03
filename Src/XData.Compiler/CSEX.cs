@@ -34,6 +34,32 @@ namespace XData.Compiler {
         internal static QualifiedNameSyntax ObjectInfoName {
             get { return CS.QualifiedName(XDataName, "ObjectInfo"); }
         }
+        //global::XData.Extensions
+        internal static MemberAccessExpressionSyntax ExtensionsExp {
+            get { return CS.MemberAccessExpr(XDataName, "Extensions"); }
+        }
+
+        //>public override ObjectInfo ObjectInfo { 
+        //  get { 
+        //    global::XData.Extensions.PublicParameterlessConstructorRequired<CSFullName>();
+        //    return ThisInfo;
+        //  }
+        //}
+        internal static PropertyDeclarationSyntax ObjectInfoProperty(bool isAbstract, NameSyntax csFullName) {
+            StatementSyntax[] stms;
+            if (isAbstract) {
+                stms = new[] { CS.ReturnStm(CS.IdName("ThisInfo")) };
+            }
+            else {
+                stms = new StatementSyntax[] {
+                    CS.ExprStm(CS.InvoExpr(CS.MemberAccessExpr(ExtensionsExp, CS.GenericName("PublicParameterlessConstructorRequired", csFullName)))),
+                    CS.ReturnStm(CS.IdName("ThisInfo"))
+                };
+            }
+            return CS.Property(CS.PublicOverrideTokenList, ObjectInfoName, "ObjectInfo", true,
+                default(SyntaxTokenList), stms);
+        }
+
         #region facets
         internal static QualifiedNameSyntax FacetSetInfoName {
             get { return CS.QualifiedName(XDataName, "FacetSetInfo"); }
@@ -78,8 +104,6 @@ namespace XData.Compiler {
             switch (Type.GetTypeCode(value.GetType())) {
                 case TypeCode.String: return CS.Literal((string)value);
                 case TypeCode.Boolean: return CS.Literal((bool)value);
-                case TypeCode.Single: return CS.Literal((float)value);
-                case TypeCode.Double: return CS.Literal((double)value);
                 case TypeCode.Decimal: return CS.Literal((decimal)value);
                 case TypeCode.Int64: return CS.Literal((long)value);
                 case TypeCode.Int32: return CS.Literal((int)value);
@@ -89,6 +113,8 @@ namespace XData.Compiler {
                 case TypeCode.UInt32: return CS.Literal((uint)value);
                 case TypeCode.UInt16: return CS.Literal((ushort)value);
                 case TypeCode.Byte: return CS.Literal((byte)value);
+                case TypeCode.Double: return CS.Literal((double)value);
+                case TypeCode.Single: return CS.Literal((float)value);
             }
             var bytes = value as byte[];
             if (bytes != null) {

@@ -14,6 +14,12 @@ namespace XData.Compiler {
         public QualifiableNameNode ListItemTypeQName;
         public TypeNode ListItemType;
         public TextSpan OpenBraceTextSpan, CloseBraceTextSpan;
+        public bool HasCoreFacets {
+            get {
+                return LengthRange.IsValid || ValueRange.IsValid || Enum != null || Pattern.IsValid
+                    || Precision.IsValid || Scale.IsValid;
+            }
+        }
         public void Resolve() {
             if (ListItemTypeQName.IsValid) {
                 ListItemType = NamespaceAncestor.ResolveAsType(ListItemTypeQName);
@@ -44,6 +50,9 @@ namespace XData.Compiler {
                 DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotAllowed), ListItemTypeQName.TextSpan);
             }
             DiagContextEx.ThrowIfHasErrors();
+            if (!HasCoreFacets) {
+                return baseFacetSet;
+            }
             ulong? minLength = baseFacetSet != null ? baseFacetSet.MinLength : null;
             ulong? maxLength = baseFacetSet != null ? baseFacetSet.MaxLength : null;
             byte? precision = baseFacetSet != null ? baseFacetSet.Precision : null;
