@@ -6,24 +6,25 @@ using XData.IO.Text;
 namespace XData {
     public abstract class XAttributeSet : XObject, ICollection<XAttribute>, IReadOnlyCollection<XAttribute> {
         protected XAttributeSet() {
-            _attributeList = new List<XAttribute>();
+            _list = new List<XAttribute>();
         }
-        private List<XAttribute> _attributeList;
+        private List<XAttribute> _list;
         internal void InternalAdd(XAttribute attribute) {
-            _attributeList.Add(SetParentTo(attribute));
+            _list.Add(SetParentTo(attribute));
         }
         public override XObject DeepClone() {
             var obj = (XAttributeSet)base.DeepClone();
-            obj._attributeList = new List<XAttribute>();
-            foreach (var attribute in _attributeList) {
-                obj._attributeList.Add(obj.SetParentTo(attribute));
+            obj._list = new List<XAttribute>();
+            foreach (var attribute in _list) {
+                obj._list.Add(obj.SetParentTo(attribute));
             }
             return obj;
         }
         private int IndexOf(string name) {
-            var count = _attributeList.Count;
+            var list = _list;
+            var count = list.Count;
             for (var i = 0; i < count; ++i) {
-                if (_attributeList[i].Name == name) {
+                if (list[i].Name == name) {
                     return i;
                 }
             }
@@ -40,50 +41,48 @@ namespace XData {
             if (Contains(attribute)) {
                 throw new ArgumentException("Attribute '{0}' already exists.".InvFormat(attribute.Name));
             }
-            _attributeList.Add(SetParentTo(attribute));
+            _list.Add(SetParentTo(attribute));
         }
-        public void AddOrSet(XAttribute attribute) {
+        public void AddOrSetAttribute(XAttribute attribute) {
             if (attribute == null) {
                 throw new ArgumentNullException("attribute");
             }
             var idx = IndexOf(attribute.Name);
             if (idx == -1) {
-                _attributeList.Add(SetParentTo(attribute));
+                _list.Add(SetParentTo(attribute));
             }
             else {
-                _attributeList[idx] = SetParentTo(attribute);
+                _list[idx] = SetParentTo(attribute);
             }
         }
-        public bool Contains(string name) {
+        public bool ContainsAttribute(string name) {
             return IndexOf(name) != -1;
         }
         public bool Contains(XAttribute attribute) {
             if (attribute == null) {
                 throw new ArgumentNullException("attribute");
             }
-            return Contains(attribute.Name);
+            return ContainsAttribute(attribute.Name);
         }
-        public XAttribute TryGet(string name) {
-            foreach (var attribute in _attributeList) {
-                if (attribute.Name == name) {
-                    return attribute;
+        public XAttribute TryGetAttribute(string name) {
+            var list = _list;
+            var count = list.Count;
+            for (var i = 0; i < count; ++i) {
+                if (list[i].Name == name) {
+                    return list[i];
                 }
             }
             return null;
         }
-        public bool TryGet(string name, out XAttribute attribute) {
-            attribute = TryGet(name);
-            return attribute != null;
-        }
         public int Count {
             get {
-                return _attributeList.Count;
+                return _list.Count;
             }
         }
-        public bool Remove(string name) {
+        public bool RemoveAttribute(string name) {
             var idx = IndexOf(name);
             if (idx != -1) {
-                _attributeList.RemoveAt(idx);
+                _list.RemoveAt(idx);
                 return true;
             }
             return false;
@@ -92,13 +91,13 @@ namespace XData {
             if (attribute == null) {
                 throw new ArgumentNullException("attribute");
             }
-            return Remove(attribute.Name);
+            return RemoveAttribute(attribute.Name);
         }
         public void Clear() {
-            _attributeList.Clear();
+            _list.Clear();
         }
         public List<XAttribute>.Enumerator GetEnumerator() {
-            return _attributeList.GetEnumerator();
+            return _list.GetEnumerator();
         }
         IEnumerator<XAttribute> IEnumerable<XAttribute>.GetEnumerator() {
             return GetEnumerator();
@@ -107,31 +106,31 @@ namespace XData {
             return GetEnumerator();
         }
         public void CopyTo(XAttribute[] array, int arrayIndex) {
-            _attributeList.CopyTo(array, arrayIndex);
+            _list.CopyTo(array, arrayIndex);
         }
         bool ICollection<XAttribute>.IsReadOnly {
             get {
                 return false;
             }
         }
-        public AttributeSetInfo AttributeSetInfo {
-            get {
-                return (AttributeSetInfo)ObjectInfo;
-            }
-        }
-        protected T CreateAttribute<T>(string name, bool @try = false) where T : XAttribute {
+        public T CreateAttribute<T>(string name, bool @try = false) where T : XAttribute {
             var attributeInfo = AttributeSetInfo.TryGetAttribute(name);
             if (attributeInfo == null) {
                 if (@try) {
                     return null;
                 }
-                throw new InvalidOperationException("Attribute '{0}' not exists in the attribute set.".InvFormat(name));
+                throw new InvalidOperationException("Cannot find attribute '{0}'.".InvFormat(name));
             }
             return attributeInfo.CreateInstance<T>(@try);
         }
+        public AttributeSetInfo AttributeSetInfo {
+            get {
+                return (AttributeSetInfo)ObjectInfo;
+            }
+        }
         //
         public IEnumerable<T> SelfAttributes<T>(Func<T, bool> filter = null) where T : XAttribute {
-            foreach (var att in _attributeList) {
+            foreach (var att in _list) {
                 var attribute = att as T;
                 if (attribute != null) {
                     if (filter == null || filter(attribute)) {
@@ -141,7 +140,7 @@ namespace XData {
             }
         }
         public IEnumerable<T> SelfAttributeTypes<T>(Func<XAttribute, bool> attributeFilter = null, Func<T, bool> typeFilter = null) where T : XSimpleType {
-            foreach (var att in _attributeList) {
+            foreach (var att in _list) {
                 if (attributeFilter == null || attributeFilter(att)) {
                     var type = att.Type as T;
                     if ((object)type != null) {
@@ -157,7 +156,7 @@ namespace XData {
         internal void Save(SavingContext context) {
             context.AppendLine('[');
             context.PushIndent();
-            foreach (var attribute in _attributeList) {
+            foreach (var attribute in _list) {
                 attribute.Save(context);
             }
             context.PopIndent();
@@ -166,7 +165,7 @@ namespace XData {
         internal override bool TryValidateCore(DiagContext context) {
             var attributeSetInfo = AttributeSetInfo;
             var dMarker = context.MarkDiags();
-            var attributeList = new List<XAttribute>(_attributeList);
+            var attributeList = new List<XAttribute>(_list);
             if (attributeSetInfo.Attributes != null) {
                 foreach (var attributeInfo in attributeSetInfo.Attributes) {
                     var found = false;

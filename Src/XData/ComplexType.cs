@@ -34,13 +34,27 @@ namespace XData {
                 }
                 throw new InvalidOperationException("Attribute set not allowed.");
             }
-            obj = complexTypeInfo.Attributes.CreateInstance<T>();
-            Attributes = obj;
+            if ((obj = complexTypeInfo.Attributes.CreateInstance<T>()) != null) {
+                Attributes = obj;
+            }
             return obj;
         }
         public XAttributeSet EnsureAttributes(bool @try = false) {
             return EnsureAttributes<XAttributeSet>(@try);
         }
+        public XAttribute TryGetAttribute(string name) {
+            return EnsureAttributes().TryGetAttribute(name);
+        }
+        public void AddOrSetAttribute(XAttribute attribute) {
+            EnsureAttributes().AddOrSetAttribute(attribute);
+        }
+        public bool RemoveAttribute(string name) {
+            return EnsureAttributes().RemoveAttribute(name);
+        }
+        public T CreateAttribute<T>(string name, bool @try = false) where T : XAttribute {
+            return EnsureAttributes().CreateAttribute<T>(name, @try);
+        }
+
         //
         private XObject _children;
         public XObject Children {
@@ -79,6 +93,19 @@ namespace XData {
         public XObject EnsureChildren(bool @try = false) {
             return EnsureChildren<XObject>(@try);
         }
+        public XChild TryGetChild(int order) {
+            return EnsureChildren<XChildSequence>().TryGetChild(order);
+        }
+        public void AddOrSetChild(XChild child) {
+            EnsureChildren<XChildSequence>().AddOrSetChild(child);
+        }
+        public bool RemoveChild(int order) {
+            return EnsureChildren<XChildSequence>().RemoveChild(order);
+        }
+        public T CreateChild<T>(int order, bool @try = false) where T : XChild {
+            return EnsureChildren<XChildSequence>().CreateChild<T>(order, @try);
+        }
+
         //
         #region LINQ
         public IEnumerable<T> SelfAttributes<T>(Func<T, bool> filter = null) where T : XAttribute {
@@ -87,7 +114,7 @@ namespace XData {
             }
             return Enumerable.Empty<T>();
         }
-        public IEnumerable<T> SelfAttributeTypes<T>(Func<XAttribute, bool> attributeFilter = null, 
+        public IEnumerable<T> SelfAttributeTypes<T>(Func<XAttribute, bool> attributeFilter = null,
             Func<T, bool> typeFilter = null) where T : XSimpleType {
             if (_attributes != null) {
                 return _attributes.SelfAttributeTypes(attributeFilter, typeFilter);
@@ -109,7 +136,7 @@ namespace XData {
             }
             return Enumerable.Empty<T>();
         }
-        public IEnumerable<T> SubElementAttributes<T>(Func<XElement, bool> elementFilter = null, 
+        public IEnumerable<T> SubElementAttributes<T>(Func<XElement, bool> elementFilter = null,
             Func<T, bool> attributeFilter = null) where T : XAttribute {
             var complexChildren = _children as XChildSequence;
             if (complexChildren != null) {
@@ -179,6 +206,7 @@ namespace XData {
                 return (ComplexTypeInfo)ObjectInfo;
             }
         }
+        public static readonly ComplexTypeInfo ThisInfo = new ComplexTypeInfo(typeof(XComplexType), true, TypeKind.ComplexType.ToFullName(), null, null, null);
         internal override sealed void SaveValue(SavingContext context) {
             if (_attributes != null) {
                 context.AppendLine();

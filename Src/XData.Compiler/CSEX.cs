@@ -153,6 +153,15 @@ namespace XData.Compiler {
         internal static QualifiedNameSyntax ComplexTypeInfoName {
             get { return CS.QualifiedName(XDataName, "ComplexTypeInfo"); }
         }
+        internal static QualifiedNameSyntax AttributeSetInfoName {
+            get { return CS.QualifiedName(XDataName, "AttributeSetInfo"); }
+        }
+        internal static QualifiedNameSyntax AttributeInfoName {
+            get { return CS.QualifiedName(XDataName, "AttributeInfo"); }
+        }
+        internal static ArrayTypeSyntax AttributeInfoArrayType {
+            get { return CS.OneDimArrayType(AttributeInfoName); }
+        }
 
 
         internal static QualifiedNameSyntax ContextName {
@@ -189,7 +198,14 @@ namespace XData.Compiler {
 
 
 
-
+        //>var obj = objExp; if(obj == null) return null; return obj.memberName;
+        internal static StatementSyntax[] NullOrMemberStms(ExpressionSyntax objExp, string memberName) {
+            return new StatementSyntax[] {
+                CS.LocalDeclStm(CS.VarIdName, "obj", objExp),
+                CS.IfStm(CS.EqualsExpr(CS.IdName("obj"), CS.NullLiteral), CS.ReturnStm(CS.NullLiteral)),
+                CS.ReturnStm(CS.MemberAccessExpr(CS.IdName("obj"), memberName))
+            };
+        }
         internal static NameSyntax[] IListAndIReadOnlyListOf(TypeSyntax itemType) {
             return new NameSyntax[] { CS.IListOf(itemType), CS.IReadOnlyListOf(itemType) };
         }

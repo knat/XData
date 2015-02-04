@@ -1,8 +1,6 @@
-﻿using System;
-using XData.IO.Text;
+﻿using XData.IO.Text;
 
 namespace XData {
-
     public abstract class XAttribute : XObject {
         protected XAttribute() {
             _name = AttributeInfo.Name;
@@ -13,7 +11,6 @@ namespace XData {
                 return _name;
             }
         }
-
         private XSimpleType _type;
         public XSimpleType Type {
             get {

@@ -28,8 +28,6 @@ namespace XData {
     }
 
     public abstract class XChildContainer : XChild {
-        internal abstract IEnumerable<XChild> InternalChildren { get; }
-        internal abstract void InternalAdd(XChild child);
         #region LINQ
         public IEnumerable<T> SubElements<T>(Func<T, bool> filter = null) where T : XElement {
             foreach (var child in InternalChildren) {
@@ -233,8 +231,27 @@ namespace XData {
             }
         }
         #endregion LINQ
+        internal abstract IEnumerable<XChild> InternalChildren { get; }
+        internal abstract void InternalAdd(XChild child);
     }
-    public abstract class XChildSequence : XChildContainer, ICollection<XChild>, IReadOnlyCollection<XChild> {
+    public abstract class XChildSet : XChildContainer {
+        public T CreateChild<T>(int order, bool @try = false) where T : XChild {
+            var childInfo = ChildSetInfo.TryGetChild(order);
+            if (childInfo == null) {
+                if (@try) {
+                    return null;
+                }
+                throw new InvalidOperationException("Cannot find child '{0}'.".InvFormat(order.ToInvString()));
+            }
+            return childInfo.CreateInstance<T>(@try);
+        }
+        public ChildSetInfo ChildSetInfo {
+            get {
+                return (ChildSetInfo)ObjectInfo;
+            }
+        }
+    }
+    public abstract class XChildSequence : XChildSet, ICollection<XChild>, IReadOnlyCollection<XChild> {
         protected XChildSequence() {
             _list = new List<XChild>();
         }
@@ -250,15 +267,15 @@ namespace XData {
         private bool TryGetIndexOf(int order, out int index) {
             int i;
             var found = false;
-            var childList = _list;
-            var count = childList.Count;
+            var list = _list;
+            var count = list.Count;
             for (i = 0; i < count; i++) {
-                var childOrder = childList[i].Order;
-                if (childOrder == order) {
+                var itemOrder = list[i].Order;
+                if (itemOrder == order) {
                     found = true;
                     break;
                 }
-                if (childOrder > order) {
+                if (itemOrder > order) {
                     break;
                 }
             }
@@ -272,6 +289,13 @@ namespace XData {
             }
             return -1;
         }
+        public void AddRange(IEnumerable<XChild> children) {
+            if (children != null) {
+                foreach (var child in children) {
+                    Add(child);
+                }
+            }
+        }
         public void Add(XChild child) {
             if (child == null) {
                 throw new ArgumentNullException("child");
@@ -283,53 +307,43 @@ namespace XData {
             }
             _list.Insert(index, SetParentTo(child));
         }
-        public void AddRange(IEnumerable<XChild> children) {
-            if (children != null) {
-                foreach (var child in children) {
-                    Add(child);
-                }
-            }
-        }
-        public void AddOrSet(XChild child) {
+        public void AddOrSetChild(XChild child) {
             if (child == null) {
                 throw new ArgumentNullException("child");
             }
-            var order = child.Order;
             int index;
-            if (TryGetIndexOf(order, out index)) {
+            if (TryGetIndexOf(child.Order, out index)) {
                 _list[index] = SetParentTo(child);
             }
             else {
                 _list.Insert(index, SetParentTo(child));
             }
         }
-        public bool Contains(int order) {
+        public bool ContainsChild(int order) {
             return IndexOf(order) != -1;
         }
         public bool Contains(XChild child) {
             if (child == null) {
                 throw new ArgumentNullException("child");
             }
-            return Contains(child.Order);
+            return ContainsChild(child.Order);
         }
-        public XChild TryGet(int order) {
-            foreach (var child in _list) {
-                if (child.Order == order) {
-                    return child;
+        public XChild TryGetChild(int order) {
+            var list = _list;
+            var count = list.Count;
+            for (var i = 0; i < count; ++i) {
+                if (list[i].Order == order) {
+                    return list[i];
                 }
             }
             return null;
-        }
-        public bool TryGet(int order, out XChild child) {
-            child = TryGet(order);
-            return child != null;
         }
         public int Count {
             get {
                 return _list.Count;
             }
         }
-        public bool Remove(int order) {
+        public bool RemoveChild(int order) {
             var idx = IndexOf(order);
             if (idx != -1) {
                 _list.RemoveAt(idx);
@@ -341,7 +355,7 @@ namespace XData {
             if (child == null) {
                 throw new ArgumentNullException("child");
             }
-            return Remove(child.Order);
+            return RemoveChild(child.Order);
         }
         public void Clear() {
             _list.Clear();
@@ -361,11 +375,6 @@ namespace XData {
         bool ICollection<XChild>.IsReadOnly {
             get {
                 return false;
-            }
-        }
-        public ChildSetInfo ChildSetInfo {
-            get {
-                return (ChildSetInfo)ObjectInfo;
             }
         }
         internal override sealed IEnumerable<XChild> InternalChildren {
@@ -610,7 +619,7 @@ namespace XData {
         }
 
     }
-    public abstract class XChildChoice : XChildContainer {
+    public abstract class XChildChoice : XChildSet {
         private XChild _choice;
         public XChild Choice {
             get {
@@ -620,11 +629,17 @@ namespace XData {
                 _choice = SetParentTo(value);
             }
         }
-        public ChildSetInfo ChildSetInfo {
-            get {
-                return (ChildSetInfo)ObjectInfo;
-            }
+        public XChild TryGetChild(int order) {
+            return _choice;
         }
+        public void AddOrSetChild(XChild child) {
+            Choice = child;
+        }
+        public bool RemoveChild(int order) {
+            _choice = null;
+            return true;
+        }
+        //
         internal override sealed IEnumerable<XChild> InternalChildren {
             get {
                 if (_choice != null) {
@@ -698,15 +713,15 @@ namespace XData {
                 _list[index] = SetParentTo(value, false);
             }
         }
-        public void Add(T item) {
-            _list.Add(SetParentTo(item, false));
-        }
         public void AddRange(IEnumerable<T> items) {
             if (items != null) {
                 foreach (var item in items) {
                     Add(item);
                 }
             }
+        }
+        public void Add(T item) {
+            _list.Add(SetParentTo(item, false));
         }
         public void Insert(int index, T item) {
             _list.Insert(index, SetParentTo(item, false));
@@ -762,6 +777,14 @@ namespace XData {
             for (var i = 0; i < count; ++i) {
                 array[arrayIndex++] = _list[i] as U;
             }
+        }
+        public U CreateItem<U>() where U : T {
+            return ChildListInfo.Item.CreateInstance<U>();
+        }
+        public U CreateAndAddItem<U>() where U : T {
+            var item = CreateItem<U>();
+            Add(item);
+            return item;
         }
         public ChildListInfo ChildListInfo {
             get {

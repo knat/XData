@@ -25,6 +25,7 @@ namespace XData {
         public XType EnsureType(bool @try = false) {
             return EnsureType<XType>(@try);
         }
+        //
         public XAttributeSet Attributes {
             get {
                 var complexType = Type as XComplexType;
@@ -55,7 +56,20 @@ namespace XData {
         public XAttributeSet EnsureAttributes(bool @try = false) {
             return EnsureAttributes<XAttributeSet>(@try);
         }
+        public XAttribute TryGetAttribute(string name) {
+            return EnsureAttributes().TryGetAttribute(name);
+        }
+        public void AddOrSetAttribute(XAttribute attribute) {
+            EnsureAttributes().AddOrSetAttribute(attribute);
+        }
+        public bool RemoveAttribute(string name) {
+            return EnsureAttributes().RemoveAttribute(name);
+        }
+        public T CreateAttribute<T>(string name, bool @try = false) where T : XAttribute {
+            return EnsureAttributes().CreateAttribute<T>(name, @try);
+        }
 
+        //
         public XObject Children {
             get {
                 var complexType = Type as XComplexType;
@@ -86,6 +100,19 @@ namespace XData {
         public XObject EnsureChildren(bool @try = false) {
             return EnsureChildren<XObject>(@try);
         }
+        public XChild TryGetChild(int order) {
+            return EnsureChildren<XChildSequence>().TryGetChild(order);
+        }
+        public void AddOrSetChild(XChild child) {
+            EnsureChildren<XChildSequence>().AddOrSetChild(child);
+        }
+        public bool RemoveChild(int order) {
+            return EnsureChildren<XChildSequence>().RemoveChild(order);
+        }
+        public T CreateChild<T>(int order, bool @try = false) where T : XChild {
+            return EnsureChildren<XChildSequence>().CreateChild<T>(order, @try);
+        }
+
         //
         #region LINQ
         public IEnumerable<T> SelfAttributes<T>(Func<T, bool> filter = null) where T : XAttribute {
@@ -423,8 +450,10 @@ namespace XData {
         }
         public override sealed T EnsureType<T>(bool @try = false) {
             var globalElement = EnsureGlobalElement<XGlobalElement>(@try);
-            if (globalElement == null) return null;
-            return globalElement.EnsureType<T>(@try);
+            if (globalElement != null) {
+                return globalElement.EnsureType<T>(@try);
+            }
+            return null;
         }
         internal override sealed void Save(SavingContext context) {
             if (_globalElement != null) {

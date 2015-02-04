@@ -274,7 +274,6 @@ namespace XData {
         public readonly SimpleTypeInfo Type;
     }
 
-
     public enum ChildKind : byte {
         None = 0,
         GlobalElement,

@@ -963,6 +963,12 @@ namespace XData.Compiler {
                 default(SyntaxList<CatchClauseSyntax>),
                 SyntaxFactory.FinallyClause(SyntaxFactory.Block(finallyStms)));
         }
+        internal static IfStatementSyntax IfStm(ExpressionSyntax condition, StatementSyntax then) {
+            return SyntaxFactory.IfStatement(condition, then);
+        }
+        internal static IfStatementSyntax IfStm(ExpressionSyntax condition, StatementSyntax then, StatementSyntax @else) {
+            return SyntaxFactory.IfStatement(condition, then, SyntaxFactory.ElseClause(@else));
+        }
         internal static ReturnStatementSyntax ReturnStm(ExpressionSyntax expr) {
             return SyntaxFactory.ReturnStatement(expr);
         }

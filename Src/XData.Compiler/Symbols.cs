@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -164,7 +165,7 @@ namespace XData.Compiler {
                 }
             }
         }
-        protected abstract void GenerateMembers(List<MemberDeclarationSyntax> csMemberList);
+        protected abstract void GenerateMembers(List<MemberDeclarationSyntax> list);
         private SyntaxTokenList ModifiersTokenList {
             get {
                 if (IsCSOverride && IsAbstract) {
@@ -185,18 +186,18 @@ namespace XData.Compiler {
                 yield return itfName;
             }
         }
-        public virtual void GenerateConcreteChildren(List<MemberDeclarationSyntax> csMemberList) {
+        public void GenerateConcreteChildren(List<MemberDeclarationSyntax> list) {
             //>new public XXX Children {
             //    get { return base.GenericChildren as XXX; }
             //    set { base.GenericChildren = value; }
             //}
-            csMemberList.Add(CS.Property(CS.NewPublicTokenList, CSFullName, "Children", false,
+            list.Add(CS.Property(CS.NewPublicTokenList, CSFullName, "Children", false,
                 default(SyntaxTokenList), new[] { CS.ReturnStm(CS.AsExpr(CS.BaseMemberAccessExpr("GenericChildren"), CSFullName)) },
                 default(SyntaxTokenList), new[] { CS.AssignStm(CS.BaseMemberAccessExpr("GenericChildren"), CS.IdName("value")) }));
             //>new public XXX EnsureChildren(bool @try = false){
             //  return base.EnsureChildren<XXX>(@try);
             //}
-            csMemberList.Add(CS.Method(CS.NewPublicTokenList, CSFullName, "EnsureChildren",
+            list.Add(CS.Method(CS.NewPublicTokenList, CSFullName, "EnsureChildren",
                 new[] { CS.Parameter(CS.BoolType, "@try", CS.FalseLiteral) },
                 CS.ReturnStm(CS.InvoExpr(CS.BaseMemberAccessExpr(CS.GenericName("EnsureChildren", CSFullName)), CS.IdName("@try")))));
         }
@@ -225,21 +226,18 @@ namespace XData.Compiler {
             }
             return false;
         }
-        protected override void GenerateMembers(List<MemberDeclarationSyntax> csMemberList) {
-            BaseType.Generate();
-        }
-        public void GenerateConcreteType(List<MemberDeclarationSyntax> csMemberList) {
+        public void GenerateConcreteType(List<MemberDeclarationSyntax> list) {
             //>new public XXX Type {
             //    get { return base.GenericType as XXX; }
             //    set { base.GenericType = value; }
             //}
-            csMemberList.Add(CS.Property(CS.NewPublicTokenList, CSFullName, "Type", false,
+            list.Add(CS.Property(CS.NewPublicTokenList, CSFullName, "Type", false,
                  default(SyntaxTokenList), new[] { CS.ReturnStm(CS.AsExpr(CS.BaseMemberAccessExpr("GenericType"), CSFullName)) },
                  default(SyntaxTokenList), new[] { CS.AssignStm(CS.BaseMemberAccessExpr("GenericType"), CS.IdName("value")) }));
             //>new public XXX EnsureType(bool @try = false){
             //  return base.EnsureType<XXX>(@try);
             //}
-            csMemberList.Add(CS.Method(CS.NewPublicTokenList, CSFullName, "EnsureType",
+            list.Add(CS.Method(CS.NewPublicTokenList, CSFullName, "EnsureType",
                 new[] { CS.Parameter(CS.BoolType, "@try", CS.FalseLiteral) },
                 CS.ReturnStm(CS.InvoExpr(CS.BaseMemberAccessExpr(CS.GenericName("EnsureType", CSFullName)), CS.IdName("@try")))));
         }
@@ -315,8 +313,8 @@ namespace XData.Compiler {
             : base(parent, csName, isAbstract, isSealed, csBaseFullName, csItfNames, fullName, kind, baseType) {
         }
         public FacetSetSymbol Facets;
-        protected override void GenerateMembers(List<MemberDeclarationSyntax> csMemberList) {
-            base.GenerateMembers(csMemberList);
+        protected override void GenerateMembers(List<MemberDeclarationSyntax> list) {
+            throw new NotImplementedException();
         }
     }
     internal sealed class AtomTypeSymbol : SimpleTypeSymbol {
@@ -326,13 +324,13 @@ namespace XData.Compiler {
             ValueCSFullName = valueCSFullName;
         }
         public readonly TypeSyntax ValueCSFullName;
-        protected override void GenerateMembers(List<MemberDeclarationSyntax> csMemberList) {
-            base.GenerateMembers(csMemberList);
+        protected override void GenerateMembers(List<MemberDeclarationSyntax> list) {
+            BaseType.Generate();
             if (!IsAbstract) {
                 //>public static implicit operator CLASS(VALUE value){
                 //  return new CLASS{Value=value};
                 //}
-                csMemberList.Add(CS.ConversionOperator(true, CSFullName, new[] { CS.Parameter(ValueCSFullName, "value") },
+                list.Add(CS.ConversionOperator(true, CSFullName, new[] { CS.Parameter(ValueCSFullName, "value") },
                     CS.ReturnStm(CS.NewObjExpr(CSFullName, null, new[] { CS.AssignExpr(CS.IdName("Value"), CS.IdName("value")) }))));
             }
             if (Facets != null) {
@@ -341,16 +339,16 @@ namespace XData.Compiler {
                     foreach (var item in Facets.Enum.Value.ItemList) {
                         if (item.Name != null) {
                             //>public static readonly ValueCSFullName E_Name = ...;
-                            csMemberList.Add(CS.Field(CS.PublicStaticReadOnlyTokenList, ValueCSFullName, "E_" + item.Name, CSEX.AtomValue(item.Value)));
+                            list.Add(CS.Field(CS.PublicStaticReadOnlyTokenList, ValueCSFullName, "E_" + item.Name, CSEX.AtomValue(item.Value)));
                         }
                     }
                 }
             }
             //>>new public static readonly AtomTypeInfo ThisInfo = ...;
-            csMemberList.Add(CS.Field(CS.NewPublicStaticReadOnlyTokenList, CSEX.AtomTypeInfoName, "ThisInfo",
+            list.Add(CS.Field(CS.NewPublicStaticReadOnlyTokenList, CSEX.AtomTypeInfoName, "ThisInfo",
                 CS.NewObjExpr(CSEX.AtomTypeInfoName, CS.TypeOfExpr(CSFullName), CS.Literal(IsAbstract), CSEX.FullName(FullName),
                 BaseType.ThisInfoExp, Facets == null ? CS.NullLiteral : Facets.ThisFacetSetInfoExp, CSEX.TypeKind(Kind))));
-            csMemberList.Add(CSEX.ObjectInfoProperty(IsAbstract, CSFullName));
+            list.Add(CSEX.ObjectInfoProperty(IsAbstract, CSFullName));
         }
     }
     internal sealed class ListTypeSymbol : SimpleTypeSymbol {
@@ -360,20 +358,20 @@ namespace XData.Compiler {
             ItemType = itemType;
         }
         public readonly SimpleTypeSymbol ItemType;
-        protected override void GenerateMembers(List<MemberDeclarationSyntax> csMemberList) {
-            base.GenerateMembers(csMemberList);
+        protected override void GenerateMembers(List<MemberDeclarationSyntax> list) {
+            BaseType.Generate();
             ItemType.Generate();
             if (Facets != null) {
                 Facets.Generate();
             }
             if (CSItfNames != null) {
-                CSEX.IListOverrideMembers(csMemberList, ItemType.CSFullName);
+                CSEX.IListOverrideMembers(list, ItemType.CSFullName);
             }
             //>>new public static readonly ListTypeInfo ThisInfo = ...;
-            csMemberList.Add(CS.Field(CS.NewPublicStaticReadOnlyTokenList, CSEX.ListTypeInfoName, "ThisInfo",
+            list.Add(CS.Field(CS.NewPublicStaticReadOnlyTokenList, CSEX.ListTypeInfoName, "ThisInfo",
                 CS.NewObjExpr(CSEX.ListTypeInfoName, CS.TypeOfExpr(CSFullName), CS.Literal(IsAbstract), CSEX.FullName(FullName),
                 BaseType.ThisInfoExp, Facets == null ? CS.NullLiteral : Facets.ThisFacetSetInfoExp, ItemType.ThisInfoExp)));
-            csMemberList.Add(CSEX.ObjectInfoProperty(IsAbstract, CSFullName));
+            list.Add(CSEX.ObjectInfoProperty(IsAbstract, CSFullName));
         }
     }
     internal sealed class ComplexTypeSymbol : TypeSymbol {
@@ -394,23 +392,23 @@ namespace XData.Compiler {
                 return Children as ChildSetSymbol;
             }
         }
-        protected override void GenerateMembers(List<MemberDeclarationSyntax> csMemberList) {
-            base.GenerateMembers(csMemberList);
+        protected override void GenerateMembers(List<MemberDeclarationSyntax> list) {
+            BaseType.Generate();
             if (Attributes != null) {
                 Attributes.Generate();
-                Attributes.GenerateConcreteAttributes(csMemberList);
+                Attributes.GenerateConcreteAttributes(list, null);
             }
             if (Children != null) {
                 Children.Generate();
-                Children.GenerateConcreteChildren(csMemberList);
+                Children.GenerateConcreteChildren(list);
             }
             //>>new public static readonly ComplexTypeInfo ThisInfo = ...;
-            csMemberList.Add(CS.Field(CS.NewPublicStaticReadOnlyTokenList, CSEX.ComplexTypeInfoName, "ThisInfo",
+            list.Add(CS.Field(CS.NewPublicStaticReadOnlyTokenList, CSEX.ComplexTypeInfoName, "ThisInfo",
                 CS.NewObjExpr(CSEX.ComplexTypeInfoName, CS.TypeOfExpr(CSFullName), CS.Literal(IsAbstract), CSEX.FullName(FullName),
                 BaseType.ThisInfoExp,
                 Attributes == null ? CS.NullLiteral : Attributes.ThisInfoExp,
                 Children == null ? CS.NullLiteral : Children.ThisInfoExp)));
-            csMemberList.Add(CSEX.ObjectInfoProperty(IsAbstract, CSFullName));
+            list.Add(CSEX.ObjectInfoProperty(IsAbstract, CSFullName));
         }
     }
     internal sealed class AttributeSetSymbol : ObjectSymbol {
@@ -422,33 +420,36 @@ namespace XData.Compiler {
         }
         public readonly AttributeSetSymbol BaseAttributeSet;//opt
         public readonly List<AttributeSymbol> AttributeList;
-        protected override void GenerateMembers(List<MemberDeclarationSyntax> csMemberList) {
+        protected override void GenerateMembers(List<MemberDeclarationSyntax> list) {
             if (AttributeList != null) {
                 foreach (var attribute in AttributeList) {
                     attribute.Generate();
-                    attribute.GenerateConcreteAttribute(csMemberList);
+                    attribute.GenerateConcreteAttribute(list, null);
                 }
             }
-
-
+            //>>new public static readonly AttributeSetInfo ThisInfo = ...;
+            list.Add(CS.Field(BaseAttributeSet == null ? CS.PublicStaticReadOnlyTokenList : CS.NewPublicStaticReadOnlyTokenList,
+                CSEX.AttributeSetInfoName, "ThisInfo", CS.NewObjExpr(CSEX.AttributeSetInfoName, CS.TypeOfExpr(CSFullName), CS.Literal(DisplayName),
+                AttributeList == null ? CS.NullLiteral : CS.NewArrOrNullExpr(CSEX.AttributeInfoArrayType, AttributeList.Select(i => i.ThisInfoExp)))));
+            list.Add(CSEX.ObjectInfoProperty(IsAbstract, CSFullName));
         }
-        public void GenerateConcreteAttributes(List<MemberDeclarationSyntax> csMemberList) {
+        public void GenerateConcreteAttributes(List<MemberDeclarationSyntax> list, ObjectSymbol ancestor) {
             //>new public XXX Attributes {
             //    get { return base.GenericAttributes as XXX; }
             //    set { base.GenericAttributes = value; }
             //}
-            csMemberList.Add(CS.Property(CS.NewPublicTokenList, CSFullName, "Attributes", false,
+            list.Add(CS.Property(CS.NewPublicTokenList, CSFullName, "Attributes", false,
                 default(SyntaxTokenList), new[] { CS.ReturnStm(CS.AsExpr(CS.BaseMemberAccessExpr("GenericAttributes"), CSFullName)) },
                 default(SyntaxTokenList), new[] { CS.AssignStm(CS.BaseMemberAccessExpr("GenericAttributes"), CS.IdName("value")) }));
             //>new public XXX EnsureAttributes(bool @try = false){
             //  return base.EnsureAttributes<XXX>(@try);
             //}
-            csMemberList.Add(CS.Method(CS.NewPublicTokenList, CSFullName, "EnsureAttributes",
+            list.Add(CS.Method(CS.NewPublicTokenList, CSFullName, "EnsureAttributes",
                 new[] { CS.Parameter(CS.BoolType, "@try", CS.FalseLiteral) },
                 CS.ReturnStm(CS.InvoExpr(CS.BaseMemberAccessExpr(CS.GenericName("EnsureAttributes", CSFullName)), CS.IdName("@try")))));
             if (AttributeList != null) {
                 foreach (var attribute in AttributeList) {
-                    attribute.GenerateConcreteAttribute(csMemberList);
+                    attribute.GenerateConcreteAttribute(list, ancestor);
                 }
             }
         }
@@ -469,11 +470,46 @@ namespace XData.Compiler {
         public readonly bool IsNullable;
         public readonly SimpleTypeSymbol Type;
         public readonly AttributeSymbol RestrictedAttribute;
-        protected override void GenerateMembers(List<MemberDeclarationSyntax> csMemberList) {
+        protected override void GenerateMembers(List<MemberDeclarationSyntax> list) {
             Type.Generate();
+            Type.GenerateConcreteType(list);
+            //>>new public static readonly AttributeInfo ThisInfo = ...;
+            list.Add(CS.Field(RestrictedAttribute == null ? CS.PublicStaticReadOnlyTokenList : CS.NewPublicStaticReadOnlyTokenList,
+                CSEX.AttributeInfoName, "ThisInfo", CS.NewObjExpr(CSEX.AttributeInfoName, CS.TypeOfExpr(CSFullName), CS.Literal(DisplayName),
+                CS.Literal(Name), CS.Literal(IsOptional), CS.Literal(IsNullable), Type.ThisInfoExp)));
+            list.Add(CSEX.ObjectInfoProperty(IsAbstract, CSFullName));
 
         }
-        public void GenerateConcreteAttribute(List<MemberDeclarationSyntax> csMemberList) {
+        public void GenerateConcreteAttribute(List<MemberDeclarationSyntax> list, ObjectSymbol ancestor) {
+            var modifiers = RestrictedAttribute == null ? CS.PublicTokenList : CS.NewPublicTokenList;
+            var a_name = "A_" + Name;
+            var ensurea_name = "EnsureA_" + Name;
+            //public CLS A_NAME{
+            //  get{ return base.TryGetAttribute(NAME) as CLS; }
+            //  set{ if (value == null) base.RemoveAttribute(NAME); else base.AddOrSetAttribute(value);}
+            //}
+            list.Add(CS.Property(modifiers, CSFullName, a_name, false,
+                default(SyntaxTokenList), new[] { CS.ReturnStm(CS.AsExpr(CS.InvoExpr(CS.BaseMemberAccessExpr("TryGetAttribute"), CS.Literal(Name)), CSFullName)) },
+                default(SyntaxTokenList), new[] { CS.IfStm(CS.EqualsExpr(CS.IdName("value"), CS.NullLiteral),
+                    CS.ExprStm(CS.InvoExpr(CS.BaseMemberAccessExpr("RemoveAttribute"),  CS.Literal(Name))),
+                    CS.ExprStm(CS.InvoExpr(CS.BaseMemberAccessExpr("AddOrSetAttribute"), CS.IdName("value")))) }
+                ));
+            //public CLS EnsureA_NAME(bool @try = false){
+            //  return A_NAME ?? (A_NAME = base.CreateAttribute<CLS>(NAME, @try));
+            //}
+            list.Add(CS.Method(modifiers, CSFullName, ensurea_name, new[] { CS.Parameter(CS.BoolType, "@try", CS.FalseLiteral) },
+                CS.ReturnStm(CS.CoalesceExpr(CS.IdName(a_name),
+                    CS.ParedExpr(CS.AssignExpr(CS.IdName(a_name),
+                        CS.InvoExpr(CS.BaseMemberAccessExpr(CS.GenericName("CreateAttribute", CSFullName)), CS.Literal(Name), CS.IdName("@try"))))))));
+            //public TYPE AT_NAME {
+            //  get { var obj = A_NAME; if(obj == null) return null; return obj.Type; }
+            //  set { EnsureA_NAME().Type = value; }
+            //}
+            list.Add(CS.Property(modifiers, Type.CSFullName, "AT_" + Name, false,
+                default(SyntaxTokenList), CSEX.NullOrMemberStms(CS.IdName(a_name), "Type"),
+                default(SyntaxTokenList), new[] { CS.AssignStm(CS.MemberAccessExpr(CS.InvoExpr(CS.IdName(ensurea_name)), "Type"), CS.IdName("value")) }
+                ));
+
 
         }
 
@@ -506,6 +542,30 @@ namespace XData.Compiler {
             return HasIntersection(fullName, false);
         }
         public abstract bool HasIntersection(FullName fullName, bool forChoice);
+        public void GenerateConcreteChild(List<MemberDeclarationSyntax> list) {
+            var modifiers = RestrictedChild == null ? CS.PublicTokenList : CS.NewPublicTokenList;
+            var c_name = "C_" + MemberName;
+            var ensurec_name = "EnsureC_" + MemberName;
+            //public CLS C_NAME{
+            //  get{ return base.TryGetChild(NAME) as CLS; }
+            //  set{ if (value == null) base.RemoveChild(NAME); else base.AddOrSetChild(value);}
+            //}
+            list.Add(CS.Property(modifiers, CSFullName, c_name, false,
+                default(SyntaxTokenList), new[] { CS.ReturnStm(CS.AsExpr(CS.InvoExpr(CS.BaseMemberAccessExpr("TryGetChild"), CS.Literal(Order)), CSFullName)) },
+                default(SyntaxTokenList), new[] { CS.IfStm(CS.EqualsExpr(CS.IdName("value"), CS.NullLiteral),
+                    CS.ExprStm(CS.InvoExpr(CS.BaseMemberAccessExpr("RemoveChild"),  CS.Literal(Order))),
+                    CS.ExprStm(CS.InvoExpr(CS.BaseMemberAccessExpr("AddOrSetChild"), CS.IdName("value")))) }
+                ));
+            //public CLS EnsureC_NAME(bool @try = false){
+            //  return C_NAME ?? (C_NAME = base.CreateChild<CLS>(NAME, @try));
+            //}
+            list.Add(CS.Method(modifiers, CSFullName, ensurec_name, new[] { CS.Parameter(CS.BoolType, "@try", CS.FalseLiteral) },
+                CS.ReturnStm(CS.CoalesceExpr(CS.IdName(c_name),
+                    CS.ParedExpr(CS.AssignExpr(CS.IdName(c_name),
+                        CS.InvoExpr(CS.BaseMemberAccessExpr(CS.GenericName("CreateChild", CSFullName)), CS.Literal(Order), CS.IdName("@try"))))))));
+            GenerateConcreteChildEx(list, modifiers, c_name, ensurec_name);
+        }
+        public virtual void GenerateConcreteChildEx(List<MemberDeclarationSyntax> list, SyntaxTokenList modifiers, string c_name, string ensurec_name) { }
     }
 
     internal sealed class ElementSymbol : ChildSymbol, IGlobalObjectSymbol {
@@ -567,8 +627,18 @@ namespace XData.Compiler {
             }
             return false;
         }
-        protected override void GenerateMembers(List<MemberDeclarationSyntax> csMemberList) {
+        protected override void GenerateMembers(List<MemberDeclarationSyntax> list) {
 
+        }
+        public override void GenerateConcreteChildEx(List<MemberDeclarationSyntax> list, SyntaxTokenList modifiers, string c_name, string ensurec_name) {
+            //public TYPE CT_NAME {
+            //  get { var obj = C_NAME; if(obj == null) return null; return obj.Type; }
+            //  set { EnsureC_NAME().Type = value; }
+            //}
+            list.Add(CS.Property(modifiers, Type.CSFullName, "CT_" + MemberName, false,
+                default(SyntaxTokenList), CSEX.NullOrMemberStms(CS.IdName(c_name), "Type"),
+                default(SyntaxTokenList), new[] { CS.AssignStm(CS.MemberAccessExpr(CS.InvoExpr(CS.IdName(ensurec_name)), "Type"), CS.IdName("value")) }
+                ));
         }
     }
     internal abstract class ChildContainerSymbol : ChildSymbol {
@@ -679,11 +749,11 @@ namespace XData.Compiler {
             }
             return false;
         }
-        protected override void GenerateMembers(List<MemberDeclarationSyntax> csMemberList) {
+        protected override void GenerateMembers(List<MemberDeclarationSyntax> list) {
 
         }
-        public override void GenerateConcreteChildren(List<MemberDeclarationSyntax> csMemberList) {
-            base.GenerateConcreteChildren(csMemberList);
+        public void GenerateConcreteChildren(List<MemberDeclarationSyntax> list, ObjectSymbol ancestor) {
+            GenerateConcreteChildren(list);
 
         }
     }
@@ -701,7 +771,7 @@ namespace XData.Compiler {
         public override bool HasIntersection(FullName fullName, bool forChoice) {
             return Item.HasIntersection(fullName, forChoice);
         }
-        protected override void GenerateMembers(List<MemberDeclarationSyntax> csMemberList) {
+        protected override void GenerateMembers(List<MemberDeclarationSyntax> list) {
 
         }
     }
