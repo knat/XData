@@ -171,6 +171,12 @@ namespace XData {
         //    return newArray;
         //}
 
+        public static bool UriEquals(string uri1, string uri2) {
+            if (string.IsNullOrEmpty(uri1)) {
+                return string.IsNullOrEmpty(uri2);
+            }
+            return uri1 == uri2;
+        }
         //
         //
         //

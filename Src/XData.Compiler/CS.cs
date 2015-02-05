@@ -5,110 +5,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Immutable;
-using XData.IO.Text;
 
 namespace XData.Compiler {
-    internal sealed class CSNamespaceNameNode : List<string>, IEquatable<CSNamespaceNameNode> {
-        public TextSpan TextSpan;
-        public bool Equals(CSNamespaceNameNode other) {
-            if ((object)this == other) return true;
-            if ((object)other == null) return false;
-            var count = Count;
-            if (count != other.Count) {
-                return false;
-            }
-            for (var i = 0; i < count; i++) {
-                if (this[i] != other[i]) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        public override bool Equals(object obj) {
-            return Equals(obj as CSNamespaceNameNode);
-        }
-        public override int GetHashCode() {
-            var hash = 17;
-            var count = Math.Min(Count, 5);
-            for (var i = 0; i < count; i++) {
-                hash = EX.AggregateHash(hash, this[i].GetHashCode());
-            }
-            return hash;
-        }
-        public static bool operator ==(CSNamespaceNameNode left, CSNamespaceNameNode right) {
-            if ((object)left == null) {
-                return (object)right == null;
-            }
-            return left.Equals(right);
-        }
-        public static bool operator !=(CSNamespaceNameNode left, CSNamespaceNameNode right) {
-            return !(left == right);
-        }
-        private string _string;
-        public override string ToString() {
-            if (_string == null) {
-                var sb = EX.AcquireStringBuilder();
-                for (var i = 0; i < Count; ++i) {
-                    if (i > 0) {
-                        sb.Append('.');
-                    }
-                    sb.Append(this[i]);
-                }
-                _string = sb.ToStringAndRelease();
-            }
-            return _string;
-        }
-        //
-        private NameSyntax _csNonGlobalFullName;//@NS1.NS2
-        internal NameSyntax CSNonGlobalFullName {
-            get {
-                if (_csNonGlobalFullName == null) {
-                    foreach (var item in this) {
-                        if (_csNonGlobalFullName == null) {
-                            _csNonGlobalFullName = CS.IdName(item.EscapeId());
-                        }
-                        else {
-                            _csNonGlobalFullName = CS.QualifiedName(_csNonGlobalFullName, item.EscapeId());
-                        }
-                    }
-                }
-                return _csNonGlobalFullName;
-            }
-        }
-        private NameSyntax _csFullName;//global::@NS1.NS2
-        internal NameSyntax CSFullName {
-            get {
-                if (_csFullName == null) {
-                    foreach (var item in this) {
-                        if (_csFullName == null) {
-                            _csFullName = CS.GlobalAliasQualifiedName(item.EscapeId());
-                        }
-                        else {
-                            _csFullName = CS.QualifiedName(_csFullName, item.EscapeId());
-                        }
-                    }
-                }
-                return _csFullName;
-            }
-        }
-        private ExpressionSyntax _csFullExp;//global::@NS1.NS2
-        internal ExpressionSyntax CSFullExp {
-            get {
-                if (_csFullExp == null) {
-                    foreach (var item in this) {
-                        if (_csFullExp == null) {
-                            _csFullExp = CS.GlobalAliasQualifiedName(item.EscapeId());
-                        }
-                        else {
-                            _csFullExp = CS.MemberAccessExpr(_csFullExp, item.EscapeId());
-                        }
-                    }
-                }
-                return _csFullExp;
-            }
-        }
-    }
-
     internal static class CS {
         internal static string EscapeId(this string text) {
             return SyntaxFacts.GetKeywordKind(text) == SyntaxKind.None ? text : "@" + text;
@@ -732,6 +630,10 @@ namespace XData.Compiler {
         internal static QualifiedNameSyntax IListOf(TypeSyntax type) {
             return SyntaxFactory.QualifiedName(GlobalSystemCollectionGenericName, GenericName("IList", type));
         }
+        //global::System.Collection.Generic.List<T>
+        internal static QualifiedNameSyntax ListOf(TypeSyntax type) {
+            return SyntaxFactory.QualifiedName(GlobalSystemCollectionGenericName, GenericName("List", type));
+        }
         //global::System.Collection.Generic.IReadOnlyList<T>
         internal static QualifiedNameSyntax IReadOnlyListOf(TypeSyntax type) {
             return SyntaxFactory.QualifiedName(GlobalSystemCollectionGenericName, GenericName("IReadOnlyList", type));
@@ -760,6 +662,14 @@ namespace XData.Compiler {
         //global::System.Collection.ObjectModel.Collection<T>
         internal static QualifiedNameSyntax CollectionOf(TypeSyntax type) {
             return SyntaxFactory.QualifiedName(GlobalSystemCollectionObjectModelName, GenericName("Collection", type));
+        }
+        //
+        //global::System.IO
+        internal static QualifiedNameSyntax GlobalSystemIOName {
+            get { return QualifiedName(GlobalSystemName, "IO"); }
+        }
+        internal static QualifiedNameSyntax TextReaderName {
+            get { return QualifiedName(GlobalSystemIOName, "TextReader"); }
         }
 
         //

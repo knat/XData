@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Linq;
+using System.Collections.Generic;
 using XData.IO.Text;
 
 namespace XData.Compiler {
@@ -11,6 +12,14 @@ namespace XData.Compiler {
         public List<GlobalElementNode> DirectSubstitutorList {
             get {
                 return _directSubstitutorList ?? (_directSubstitutorList = new List<GlobalElementNode>());
+            }
+        }
+        public IEnumerable<FullName> DirectSubstitutorFullNames {
+            get {
+                if (_directSubstitutorList != null) {
+                    return _directSubstitutorList.Select(i => i.FullName);
+                }
+                return Enumerable.Empty<FullName>();
             }
         }
         public QualifiableNameNode TypeQName;
@@ -75,7 +84,7 @@ namespace XData.Compiler {
                         TypeQName.TextSpan);
                 }
             }
-            return new ElementSymbol(parent, csName, isAbstract, isSealed, ChildKind.GlobalElement, fullName.ToString(), null, 1, 1, -1, null, fullName,
+            return new ElementSymbol(parent, csName, isAbstract, isSealed, ChildKind.GlobalElement, fullName.ToString(), null, 1, 1, false, -1, null, fullName,
                 IsNullable, typeSymbol, null, substitutedElementSymbol) { GlobalElementNode = this };
         }
     }
@@ -94,7 +103,7 @@ namespace XData.Compiler {
             var baseChildSymbolList = baseChildSetSymbol != null ? baseChildSetSymbol.ChildList : null;
             var nextChildOrder = baseChildSetSymbol != null ? baseChildSetSymbol.NextChildOrder : 0;
             var displayName = parent.DisplayName + ".{}";
-            var childSetSymbol = new ChildSetSymbol(parent, "CLS_Children", ChildKind.Sequence, displayName, null, 1, 1, -1, null,
+            var childSetSymbol = new ChildSetSymbol(parent, "CLS_Children", ChildKind.Sequence, displayName, null, 1, 1, false, -1, null,
                 true, baseChildSetSymbol);
             if (baseChildSymbolList != null) {
                 childSetSymbol.ChildList.AddRange(baseChildSymbolList);
@@ -211,12 +220,12 @@ namespace XData.Compiler {
             }
             var memberName = MemberName;
             var displayName = parentDisplayName + "." + memberName;
-            var childSymbol = CreateSymbolCore(parent, restrictedItemSymbol, order, displayName, (isList ? "CLSITEM_" : "CLS_") + memberName);
+            var childSymbol = CreateSymbolCore(parent, restrictedItemSymbol, isList, order, displayName, (isList ? "CLSITEM_" : "CLS_") + memberName);
             if (!isList) return childSymbol;
             return new ChildListSymbol(parent, "CLS_" + memberName, displayName, memberName, minOccurrence, maxOccurrence,
                 order, (ChildListSymbol)restrictedChildSymbol, childSymbol);
         }
-        protected abstract ChildSymbol CreateSymbolCore(ChildSetSymbol parent, ChildSymbol restrictedChildSymbol,
+        protected abstract ChildSymbol CreateSymbolCore(ChildSetSymbol parent, ChildSymbol restrictedChildSymbol, bool isListItem,
             int order, string displayName, string csName);
 
     }
@@ -244,7 +253,7 @@ namespace XData.Compiler {
         public override void Resolve() {
             Type = NamespaceAncestor.ResolveAsType(TypeQName);
         }
-        protected override ChildSymbol CreateSymbolCore(ChildSetSymbol parent, ChildSymbol restrictedChildSymbol,
+        protected override ChildSymbol CreateSymbolCore(ChildSetSymbol parent, ChildSymbol restrictedChildSymbol, bool isListItem,
             int order, string displayName, string csName) {
             var restrictedElementSymbol = (ElementSymbol)restrictedChildSymbol;
             var fullName = new FullName(null, Name);
@@ -271,7 +280,7 @@ namespace XData.Compiler {
                 }
             }
             return new ElementSymbol(parent, csName, false, false, ChildKind.LocalElement, displayName, MemberName,
-                MinOccurrence, MaxOccurrence, order, restrictedElementSymbol, fullName, IsNullable, typeSymbol, null, null);
+                MinOccurrence, MaxOccurrence, isListItem, order, restrictedElementSymbol, fullName, IsNullable, typeSymbol, null, null);
         }
     }
     internal sealed class GlobalElementRefNode : MemberElementNode {
@@ -283,7 +292,7 @@ namespace XData.Compiler {
         public override void Resolve() {
             GlobalElement = NamespaceAncestor.ResolveAsElement(GlobalElementQName);
         }
-        protected override ChildSymbol CreateSymbolCore(ChildSetSymbol parent, ChildSymbol restrictedChildSymbol,
+        protected override ChildSymbol CreateSymbolCore(ChildSetSymbol parent, ChildSymbol restrictedChildSymbol, bool isListItem,
             int order, string displayName, string csName) {
             var restrictedElementSymbol = (ElementSymbol)restrictedChildSymbol;
             var globalElementSymbol = (ElementSymbol)GlobalElement.CreateSymbol();
@@ -306,7 +315,7 @@ namespace XData.Compiler {
                 }
             }
             return new ElementSymbol(parent, csName, false, false, ChildKind.GlobalElementRef, displayName, MemberName,
-                MinOccurrence, MaxOccurrence, order, restrictedElementSymbol, GlobalElement.FullName, GlobalElement.IsNullable,
+                MinOccurrence, MaxOccurrence, isListItem, order, restrictedElementSymbol, GlobalElement.FullName, GlobalElement.IsNullable,
                 globalElementSymbol.Type, globalElementSymbol, null);
         }
     }
@@ -331,10 +340,10 @@ namespace XData.Compiler {
                 }
             }
         }
-        protected override ChildSymbol CreateSymbolCore(ChildSetSymbol parent, ChildSymbol restrictedChildSymbol,
+        protected override ChildSymbol CreateSymbolCore(ChildSetSymbol parent, ChildSymbol restrictedChildSymbol, bool isListItem,
             int order, string displayName, string csName) {
             var restrictedChildSetSymbol = (ChildSetSymbol)restrictedChildSymbol;
-            var childSetSymbol = new ChildSetSymbol(parent, csName, Kind, displayName, MemberName, MinOccurrence, MaxOccurrence, order, restrictedChildSetSymbol,
+            var childSetSymbol = new ChildSetSymbol(parent, csName, Kind, displayName, MemberName, MinOccurrence, MaxOccurrence, isListItem, order, restrictedChildSetSymbol,
                 false, null);
             if (restrictedChildSetSymbol == null) {
                 if (ChildList != null) {

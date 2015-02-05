@@ -33,10 +33,7 @@ namespace XData {
             return null;
         }
         public bool Equals(FullName other) {
-            if (IsUnqualified) {
-                return other.IsUnqualified && Name == other.Name;
-            }
-            return Uri == other.Uri && Name == other.Name;
+            return EX.UriEquals(Uri, other.Uri) && Name == other.Name;
         }
         public override bool Equals(object obj) {
             return obj is FullName && Equals((FullName)obj);

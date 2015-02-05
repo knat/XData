@@ -21,12 +21,10 @@ namespace XData {
                 return Type != null;
             }
         }
-        public abstract T EnsureType<T>(bool @try = false) where T : XType;
-        public XType EnsureType(bool @try = false) {
-            return EnsureType<XType>(@try);
-        }
         //
-        public XAttributeSet Attributes {
+        //
+        #region LINQ
+        private XAttributeSet Attributes {
             get {
                 var complexType = Type as XComplexType;
                 if (complexType != null) {
@@ -34,43 +32,8 @@ namespace XData {
                 }
                 return null;
             }
-            set {
-                EnsureType<XComplexType>().Attributes = value;
-            }
         }
-        public XAttributeSet GenericAttributes {
-            get {
-                return Attributes;
-            }
-            set {
-                Attributes = value;
-            }
-        }
-        public T EnsureAttributes<T>(bool @try = false) where T : XAttributeSet {
-            var complexType = EnsureType<XComplexType>(@try);
-            if (complexType != null) {
-                return complexType.EnsureAttributes<T>(@try);
-            }
-            return null;
-        }
-        public XAttributeSet EnsureAttributes(bool @try = false) {
-            return EnsureAttributes<XAttributeSet>(@try);
-        }
-        public XAttribute TryGetAttribute(string name) {
-            return EnsureAttributes().TryGetAttribute(name);
-        }
-        public void AddOrSetAttribute(XAttribute attribute) {
-            EnsureAttributes().AddOrSetAttribute(attribute);
-        }
-        public bool RemoveAttribute(string name) {
-            return EnsureAttributes().RemoveAttribute(name);
-        }
-        public T CreateAttribute<T>(string name, bool @try = false) where T : XAttribute {
-            return EnsureAttributes().CreateAttribute<T>(name, @try);
-        }
-
-        //
-        public XObject Children {
+        internal XObject Children {
             get {
                 var complexType = Type as XComplexType;
                 if (complexType != null) {
@@ -78,43 +41,7 @@ namespace XData {
                 }
                 return null;
             }
-            set {
-                EnsureType<XComplexType>().Children = value;
-            }
         }
-        public XObject GenericChildren {
-            get {
-                return Children;
-            }
-            set {
-                Children = value;
-            }
-        }
-        public T EnsureChildren<T>(bool @try = false) where T : XObject {
-            var complexType = EnsureType<XComplexType>(@try);
-            if (complexType != null) {
-                return complexType.EnsureChildren<T>(@try);
-            }
-            return null;
-        }
-        public XObject EnsureChildren(bool @try = false) {
-            return EnsureChildren<XObject>(@try);
-        }
-        public XChild TryGetChild(int order) {
-            return EnsureChildren<XChildSequence>().TryGetChild(order);
-        }
-        public void AddOrSetChild(XChild child) {
-            EnsureChildren<XChildSequence>().AddOrSetChild(child);
-        }
-        public bool RemoveChild(int order) {
-            return EnsureChildren<XChildSequence>().RemoveChild(order);
-        }
-        public T CreateChild<T>(int order, bool @try = false) where T : XChild {
-            return EnsureChildren<XChildSequence>().CreateChild<T>(order, @try);
-        }
-
-        //
-        #region LINQ
         public IEnumerable<T> SelfAttributes<T>(Func<T, bool> filter = null) where T : XAttribute {
             var attributes = Attributes;
             if (attributes != null) {
@@ -309,15 +236,6 @@ namespace XData {
             obj.Type = _type;
             return obj;
         }
-        public override sealed T EnsureType<T>(bool @try = false) {
-            var obj = _type as T;
-            if (obj != null) return obj;
-            if ((obj = ElementInfo.Type.CreateInstance<T>(@try)) != null) {
-                Type = obj;
-            }
-            return obj;
-        }
-
         //
         internal override sealed void Save(SavingContext context) {
             context.Append(_fullName);
@@ -388,7 +306,7 @@ namespace XData {
             context.SetValidationResult(this, success);
             return success;
         }
-        internal static bool TryCreate<T>(DiagContext context, ElementInfo elementInfo, ElementNode elementNode, out T result) where T : XEntityElement {
+        internal static bool TryCreate<T>(DiagContext context, ElementInfo elementInfo, ElementNode elementNode, out T result) where T : XGlobalElement {
             if (!elementInfo.IsGlobal) throw new ArgumentException("!elementInfo.IsGlobal");
             result = null;
             XChild child;
@@ -403,6 +321,14 @@ namespace XData {
             }
             result = (T)child;
             return true;
+        }
+        protected static bool TryLoadAndValidate<T>(string filePath, System.IO.TextReader reader, DiagContext context, ElementInfo elementInfo, out T result) where T : XGlobalElement {
+            result = null;
+            ElementNode elementNode;
+            if (!Parser.Parse(filePath, reader, context, out elementNode)) {
+                return false;
+            }
+            return TryCreate<T>(context, elementInfo, elementNode, out result);
         }
 
     }
@@ -447,13 +373,6 @@ namespace XData {
             set {
                 EnsureGlobalElement<XGlobalElement>().Type = value;
             }
-        }
-        public override sealed T EnsureType<T>(bool @try = false) {
-            var globalElement = EnsureGlobalElement<XGlobalElement>(@try);
-            if (globalElement != null) {
-                return globalElement.EnsureType<T>(@try);
-            }
-            return null;
         }
         internal override sealed void Save(SavingContext context) {
             if (_globalElement != null) {

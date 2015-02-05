@@ -11,12 +11,8 @@ namespace XData.IO.Text {
         protected delegate bool NodeGetterWithList<T>(List<T> list, out T node);
         protected readonly NodeGetter<SimpleValueNode> _simpleValueGetter;
         protected void Set(string filePath, TextReader reader, DiagContext context) {
-            if (filePath == null) {
-                throw new ArgumentNullException("filePath");
-            }
-            if (context == null) {
-                throw new ArgumentNullException("context");
-            }
+            if (filePath == null) throw new ArgumentNullException("filePath");
+            if (context == null) throw new ArgumentNullException("context");
             _lexer = Lexer.Get(reader);
             _token = null;
             _filePath = filePath;

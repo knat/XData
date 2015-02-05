@@ -33,17 +33,17 @@ namespace XData {
                 Type = value;
             }
         }
-        public T EnsureType<T>(bool @try = false) where T : XSimpleType {
-            var obj = _type as T;
-            if (obj != null) return obj;
-            if ((obj = AttributeInfo.Type.CreateInstance<T>(@try)) != null) {
-                Type = obj;
-            }
-            return obj;
-        }
-        public XSimpleType EnsureType(bool @try = false) {
-            return EnsureType<XSimpleType>(@try);
-        }
+        //public T EnsureType<T>(bool @try = false) where T : XSimpleType {
+        //    var obj = _type as T;
+        //    if (obj != null) return obj;
+        //    if ((obj = AttributeInfo.Type.CreateInstance<T>(@try)) != null) {
+        //        Type = obj;
+        //    }
+        //    return obj;
+        //}
+        //public XSimpleType EnsureType(bool @try = false) {
+        //    return EnsureType<XSimpleType>(@try);
+        //}
         public override XObject DeepClone() {
             var obj = (XAttribute)base.DeepClone();
             obj.Type = _type;

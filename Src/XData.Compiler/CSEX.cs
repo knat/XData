@@ -4,8 +4,109 @@ using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using XData.IO.Text;
 
 namespace XData.Compiler {
+    internal sealed class CSNamespaceNameNode : List<string>, IEquatable<CSNamespaceNameNode> {
+        public TextSpan TextSpan;
+        public bool Equals(CSNamespaceNameNode other) {
+            if ((object)this == other) return true;
+            if ((object)other == null) return false;
+            var count = Count;
+            if (count != other.Count) {
+                return false;
+            }
+            for (var i = 0; i < count; i++) {
+                if (this[i] != other[i]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        public override bool Equals(object obj) {
+            return Equals(obj as CSNamespaceNameNode);
+        }
+        public override int GetHashCode() {
+            var hash = 17;
+            var count = Math.Min(Count, 5);
+            for (var i = 0; i < count; i++) {
+                hash = EX.AggregateHash(hash, this[i].GetHashCode());
+            }
+            return hash;
+        }
+        public static bool operator ==(CSNamespaceNameNode left, CSNamespaceNameNode right) {
+            if ((object)left == null) {
+                return (object)right == null;
+            }
+            return left.Equals(right);
+        }
+        public static bool operator !=(CSNamespaceNameNode left, CSNamespaceNameNode right) {
+            return !(left == right);
+        }
+        private string _string;
+        public override string ToString() {
+            if (_string == null) {
+                var sb = EX.AcquireStringBuilder();
+                for (var i = 0; i < Count; ++i) {
+                    if (i > 0) {
+                        sb.Append('.');
+                    }
+                    sb.Append(this[i]);
+                }
+                _string = sb.ToStringAndRelease();
+            }
+            return _string;
+        }
+        //
+        private NameSyntax _csNonGlobalFullName;//@NS1.NS2
+        internal NameSyntax CSNonGlobalFullName {
+            get {
+                if (_csNonGlobalFullName == null) {
+                    foreach (var item in this) {
+                        if (_csNonGlobalFullName == null) {
+                            _csNonGlobalFullName = CS.IdName(item.EscapeId());
+                        }
+                        else {
+                            _csNonGlobalFullName = CS.QualifiedName(_csNonGlobalFullName, item.EscapeId());
+                        }
+                    }
+                }
+                return _csNonGlobalFullName;
+            }
+        }
+        private NameSyntax _csFullName;//global::@NS1.NS2
+        internal NameSyntax CSFullName {
+            get {
+                if (_csFullName == null) {
+                    foreach (var item in this) {
+                        if (_csFullName == null) {
+                            _csFullName = CS.GlobalAliasQualifiedName(item.EscapeId());
+                        }
+                        else {
+                            _csFullName = CS.QualifiedName(_csFullName, item.EscapeId());
+                        }
+                    }
+                }
+                return _csFullName;
+            }
+        }
+        private ExpressionSyntax _csFullExpr;//global::@NS1.NS2
+        internal ExpressionSyntax CSFullExpr {
+            get {
+                if (_csFullExpr == null) {
+                    foreach (var item in this) {
+                        if (_csFullExpr == null) {
+                            _csFullExpr = CS.GlobalAliasQualifiedName(item.EscapeId());
+                        }
+                        else {
+                            _csFullExpr = CS.MemberAccessExpr(_csFullExpr, item.EscapeId());
+                        }
+                    }
+                }
+                return _csFullExpr;
+            }
+        }
+    }
     internal static class CSEX {
         internal static string ToClassName(this TypeKind kind) {
             return "X" + kind.ToString();
@@ -19,7 +120,7 @@ namespace XData.Compiler {
             get { return CS.GlobalAliasQualifiedName("XDataProgramInfo"); }
         }
         //global::XDataProgramInfo.Instance
-        internal static MemberAccessExpressionSyntax XDataProgramInfoInstanceExp {
+        internal static MemberAccessExpressionSyntax XDataProgramInfoInstanceExpr {
             get { return CS.MemberAccessExpr(XDataProgramInfoName, "Instance"); }
         }
         internal static QualifiedNameSyntax ProgramInfoName {
@@ -28,31 +129,39 @@ namespace XData.Compiler {
         internal static QualifiedNameSyntax NamespaceInfoName {
             get { return CS.QualifiedName(XDataName, "NamespaceInfo"); }
         }
-        internal static ArrayTypeSyntax NamespaceInfoArrayType {
-            get { return CS.OneDimArrayType(NamespaceInfoName); }
+        //internal static ArrayTypeSyntax NamespaceInfoArrayType {
+        //    get { return CS.OneDimArrayType(NamespaceInfoName); }
+        //}
+        internal static QualifiedNameSyntax IGlobalObjectInfoName {
+            get { return CS.QualifiedName(XDataName, "IGlobalObjectInfo"); }
         }
+        internal static ArrayTypeSyntax IGlobalObjectInfoNameArrayType {
+            get { return CS.OneDimArrayType(IGlobalObjectInfoName); }
+        }
+
+
         internal static QualifiedNameSyntax ObjectInfoName {
             get { return CS.QualifiedName(XDataName, "ObjectInfo"); }
         }
         //global::XData.Extensions
-        internal static MemberAccessExpressionSyntax ExtensionsExp {
+        internal static MemberAccessExpressionSyntax ExtensionsExpr {
             get { return CS.MemberAccessExpr(XDataName, "Extensions"); }
         }
 
-        //>public override ObjectInfo ObjectInfo { 
-        //  get { 
-        //    global::XData.Extensions.PublicParameterlessConstructorRequired<CSFullName>();
-        //    return ThisInfo;
-        //  }
-        //}
         internal static PropertyDeclarationSyntax ObjectInfoProperty(bool isAbstract, NameSyntax csFullName) {
+            //>public override ObjectInfo ObjectInfo { 
+            //  get { 
+            //    global::XData.Extensions.PublicParameterlessConstructorRequired<CSFullName>();
+            //    return ThisInfo;
+            //  }
+            //}
             StatementSyntax[] stms;
             if (isAbstract) {
                 stms = new[] { CS.ReturnStm(CS.IdName("ThisInfo")) };
             }
             else {
                 stms = new StatementSyntax[] {
-                    CS.ExprStm(CS.InvoExpr(CS.MemberAccessExpr(ExtensionsExp, CS.GenericName("PublicParameterlessConstructorRequired", csFullName)))),
+                    CS.ExprStm(CS.InvoExpr(CS.MemberAccessExpr(ExtensionsExpr, CS.GenericName("PublicParameterlessConstructorRequired", csFullName)))),
                     CS.ReturnStm(CS.IdName("ThisInfo"))
                 };
             }
@@ -135,14 +244,18 @@ namespace XData.Compiler {
         internal static QualifiedNameSyntax FullNameName {
             get { return CS.QualifiedName(XDataName, "FullName"); }
         }
+        internal static ArrayTypeSyntax FullNameArrayType {
+            get { return CS.OneDimArrayType(FullNameName); }
+        }
         internal static ExpressionSyntax FullName(FullName value) {
-            return CS.NewObjExpr(FullNameName, CS.Literal(value.Uri), CS.Literal(value.Name));
+            var uri = value.Uri;
+            return CS.NewObjExpr(FullNameName, string.IsNullOrEmpty(uri) ? CS.NullLiteral : CS.Literal(uri), CS.Literal(value.Name));
         }
         internal static QualifiedNameSyntax TypeKindName {
             get { return CS.QualifiedName(XDataName, "TypeKind"); }
         }
         internal static ExpressionSyntax TypeKind(TypeKind value) {
-            return SyntaxFactory.CastExpression(TypeKindName, CS.Literal((int)value));
+            return CS.CastExpr(TypeKindName, CS.Literal((int)value));
         }
         internal static QualifiedNameSyntax AtomTypeInfoName {
             get { return CS.QualifiedName(XDataName, "AtomTypeInfo"); }
@@ -162,10 +275,32 @@ namespace XData.Compiler {
         internal static ArrayTypeSyntax AttributeInfoArrayType {
             get { return CS.OneDimArrayType(AttributeInfoName); }
         }
+        internal static QualifiedNameSyntax ChildKindName {
+            get { return CS.QualifiedName(XDataName, "ChildKind"); }
+        }
+        internal static ExpressionSyntax ChildKind(ChildKind value) {
+            return CS.CastExpr(ChildKindName, CS.Literal((int)value));
+        }
+        internal static QualifiedNameSyntax ElementInfoName {
+            get { return CS.QualifiedName(XDataName, "ElementInfo"); }
+        }
+        internal static QualifiedNameSyntax ChildSetInfoName {
+            get { return CS.QualifiedName(XDataName, "ChildSetInfo"); }
+        }
+        internal static QualifiedNameSyntax ChildInfoName {
+            get { return CS.QualifiedName(XDataName, "ChildInfo"); }
+        }
+        internal static ArrayTypeSyntax ChildInfoType {
+            get { return CS.OneDimArrayType(ChildInfoName); }
+        }
+        internal static QualifiedNameSyntax ChildListInfoName {
+            get { return CS.QualifiedName(XDataName, "ChildListInfo"); }
+        }
 
-
-        internal static QualifiedNameSyntax ContextName {
-            get { return CS.QualifiedName(XDataName, "Context"); }
+        //
+        //
+        internal static QualifiedNameSyntax DiagContextName {
+            get { return CS.QualifiedName(XDataName, "DiagContext"); }
         }
         internal static QualifiedNameSyntax XComplexTypeName {
             get { return CS.QualifiedName(XDataName, "XComplexType"); }
@@ -194,9 +329,6 @@ namespace XData.Compiler {
         internal static QualifiedNameSyntax XChildListOf(TypeSyntax item) {
             return SyntaxFactory.QualifiedName(XDataName, CS.GenericName("XChildList", item));
         }
-
-
-
 
         //>var obj = objExp; if(obj == null) return null; return obj.memberName;
         internal static StatementSyntax[] NullOrMemberStms(ExpressionSyntax objExp, string memberName) {

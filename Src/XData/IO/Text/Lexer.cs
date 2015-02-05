@@ -76,9 +76,7 @@ namespace XData.IO.Text {
         private const int _stringBuilderCapacity = 256;
         private StringBuilder _stringBuilder;
         private Lexer Set(TextReader reader) {
-            if (reader == null) {
-                throw new ArgumentNullException("reader");
-            }
+            if (reader == null) throw new ArgumentNullException("reader");
             _reader = reader;
             _index = _count = 0;
             _isEOF = false;

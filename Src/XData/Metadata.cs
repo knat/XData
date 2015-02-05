@@ -17,7 +17,7 @@ namespace XData {
         protected abstract List<NamespaceInfo> GetNamespaces();
         public NamespaceInfo TryGetNamespace(string uri) {
             foreach (var ns in Namespaces) {
-                if (ns.Uri == uri) {
+                if (EX.UriEquals(ns.Uri, uri)) {
                     return ns;
                 }
             }
@@ -46,9 +46,11 @@ namespace XData {
             }
         }
         public IGlobalObjectInfo TryGetGlobalObject(FullName fullName) {
-            foreach (var obj in GlobalObjects) {
-                if (obj.FullName == fullName) {
-                    return obj;
+            if (GlobalObjects != null) {
+                foreach (var obj in GlobalObjects) {
+                    if (obj.FullName == fullName) {
+                        return obj;
+                    }
                 }
             }
             return null;
