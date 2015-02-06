@@ -5,7 +5,7 @@
     <MinimumVisualStudioVersion>11.0</MinimumVisualStudioVersion>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{02BBE07E-57CB-4303-B763-2F884D820378}</ProjectGuid>
+    <ProjectGuid>{E3181FE2-5944-40A1-BDF8-21B9607D212F}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>XData</RootNamespace>
@@ -41,35 +41,34 @@
     <Compile Include="AtomType.cs" />
     <Compile Include="Attribute.cs" />
     <Compile Include="AttributeSet.cs" />
-    <Compile Include="ChildContainer.cs" />
-    <Compile Include="EX.cs" />
-    <Compile Include="ComplexType.cs" />
-    <Compile Include="Diagnostics.cs" />
-    <Compile Include="Element.cs" />
-    <Compile Include="Extensions.cs" />
-    <Compile Include="FullName.cs" />
-    <Compile Include="IO\Text\SavingContext.cs" />
-    <Compile Include="Metadata.cs" />
-    <Compile Include="Type.cs" />
-    <None Include="Metah.X.cs" />
-    <Compile Include="Object.cs" />
     <Compile Include="Binary.cs" />
     <Compile Include="Boolean.cs" />
+    <Compile Include="ChildContainer.cs" />
+    <Compile Include="ComplexType.cs" />
     <Compile Include="DateTimeOffset.cs" />
-    <Compile Include="TimeSpan.cs" />
-    <Compile Include="Guid.cs" />
-    <Compile Include="ListType.cs" />
     <Compile Include="DecimalAndIntegers.cs" />
+    <Compile Include="Diagnostics.cs" />
     <Compile Include="DoubleAndSingle.cs" />
-    <Compile Include="SimpleType.cs" />
-    <Compile Include="Strings.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Element.cs" />
+    <Compile Include="EX.cs" />
+    <Compile Include="Extensions.cs" />
+    <Compile Include="FullName.cs" />
+    <Compile Include="Guid.cs" />
     <Compile Include="IO\Text\Lexer.cs" />
     <Compile Include="IO\Text\Nodes.cs" />
     <Compile Include="IO\Text\Parser.cs" />
+    <Compile Include="IO\Text\SavingContext.cs" />
     <Compile Include="IO\Text\TextSpan.cs" />
+    <Compile Include="ListType.cs" />
+    <Compile Include="Metadata.cs" />
+    <None Include="Metah.X.cs" />
+    <Compile Include="Object.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SimpleType.cs" />
+    <Compile Include="Strings.cs" />
+    <Compile Include="TimeSpan.cs" />
+    <Compile Include="Type.cs" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
