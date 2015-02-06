@@ -1,5 +1,12 @@
-﻿
-
+﻿indicator-compilation-unit:
+uri-aliasing* indicator*
+;
+indicator:
+'namespace' uri ('=' | '&') csharp-namespace-name
+;
+csharp-namespace-name:
+name-token ('.' name-token)*
+;
 compilation-unit:
 uri-aliasing* namespace*
 ;
@@ -8,10 +15,10 @@ uri-aliasing:
 'alias' uri-value 'as' uri-alias ';'
 ;
 uri-value:
-string-value
+string-value-token
 ;
 uri-alias:
-name
+name-token
 ;
 uri:
 uri-value | uri-alias
@@ -21,10 +28,10 @@ namespace:
 'namespace' uri '{' namespace-import* namespace-member* '}'
 ;
 namespace-import:
-'import' uri ('as' namespace-alias)? //';'
+'import' uri ('as' namespace-alias)?
 ;
 namespace-alias:
-name
+name-token
 ;
 namespace-member:
 type | global-element 

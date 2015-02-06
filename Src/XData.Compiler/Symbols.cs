@@ -8,39 +8,6 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 namespace XData.Compiler {
     internal abstract class Symbol {
     }
-    internal sealed class ProgramSymbol : Symbol {
-        public ProgramSymbol(bool needGenCode) {
-            NeedGenCode = needGenCode;
-            NamespaceList = new List<NamespaceSymbol>();
-        }
-        public readonly bool NeedGenCode;
-        public readonly List<NamespaceSymbol> NamespaceList;
-        public CompilationUnitSyntax Generate() {
-            if (NeedGenCode) {
-                var list = new List<MemberDeclarationSyntax>();
-                foreach (var ns in NamespaceList) {
-                    ns.Generate(list);
-                }
-                //>internal sealed class XDataProgramInfo : ProgramInfo {
-                //>    private XDataProgramInfo() { }
-                //>    public static readonly XDataProgramInfo Instance = new XDataProgramInfo();
-                //>    protected override List<NamespaceInfo> GetNamespaces() {
-                //>        return new List<NamespaceInfo>() {
-                //>            ...
-                //>        };
-                //>    }
-                //>}
-                list.Add(CS.Class(null, CS.InternalSealedTokenList, "XDataProgramInfo", new[] { CSEX.ProgramInfoName },
-                    CS.Constructor(CS.PrivateTokenList, "XDataProgramInfo", null, null),
-                    CS.Field(CS.PublicStaticReadOnlyTokenList, CS.IdName("XDataProgramInfo"), "Instance", CS.NewObjExpr(CS.IdName("XDataProgramInfo"))),
-                    CS.Method(CS.ProtectedOverrideTokenList, CS.ListOf(CSEX.NamespaceInfoName), "GetNamespaces", null,
-                        CS.ReturnStm(CS.NewObjExpr(CS.ListOf(CSEX.NamespaceInfoName), null, NamespaceList.Select(i => i.InfoExpr))))));
-                return SyntaxFactory.CompilationUnit(default(SyntaxList<ExternAliasDirectiveSyntax>), default(SyntaxList<UsingDirectiveSyntax>), default(SyntaxList<AttributeListSyntax>),
-                    SyntaxFactory.List(list));
-            }
-            return null;
-        }
-    }
     internal abstract class ObjectBaseSymbol : Symbol {
         protected ObjectBaseSymbol(ObjectBaseSymbol parent, NameSyntax csFullName, ExpressionSyntax csFullExpr) {
             Parent = parent;
@@ -71,7 +38,7 @@ namespace XData.Compiler {
 
     }
     internal sealed class NamespaceSymbol : ObjectBaseSymbol {
-        public NamespaceSymbol(string uri, CSNamespaceNameNode csNamespaceName, bool isCSNamespaceRef)
+        public NamespaceSymbol(string uri, CSharpNamespaceNameNode csNamespaceName, bool isCSNamespaceRef)
             : base(null, csNamespaceName.CSFullName, csNamespaceName.CSFullExpr) {
             Uri = uri;
             CSNamespaceName = csNamespaceName;
@@ -79,7 +46,7 @@ namespace XData.Compiler {
             GlobalObjectList = new List<IGlobalObjectSymbol>();
         }
         public readonly string Uri;
-        public readonly CSNamespaceNameNode CSNamespaceName;
+        public readonly CSharpNamespaceNameNode CSNamespaceName;
         public readonly bool IsCSNamespaceRef;
         public readonly List<IGlobalObjectSymbol> GlobalObjectList;
         public IGlobalObjectSymbol TryGetGlobalObject(string name) {
@@ -114,7 +81,7 @@ namespace XData.Compiler {
         public static readonly ListTypeSymbol SystemListType;
         public static readonly ComplexTypeSymbol SystemComplexType;
         static NamespaceSymbol() {
-            System = new NamespaceSymbol(Extensions.SystemUri, new CSNamespaceNameNode { "XData" }, true);
+            System = new NamespaceSymbol(Extensions.SystemUri, new CSharpNamespaceNameNode { "XData" }, true);
             SystemSimpleType = new SimpleTypeSymbol(System, TypeKind.SimpleType.ToClassName(), true, false, null, null,
                 TypeKind.SimpleType.ToFullName(), TypeKind.SimpleType, null);
             SystemAtomType = new AtomTypeSymbol(System, TypeKind.AtomType.ToClassName(), true, false, TypeKind.AtomType.ToFullName(),

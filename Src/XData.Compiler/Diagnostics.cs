@@ -4,7 +4,8 @@ using XData.IO.Text;
 namespace XData.Compiler {
     internal enum DiagCodeEx {
         None = 0,
-        AliasSysIsReserved = -2000,
+        InternalCompilerError = -2000,
+        AliasSysIsReserved,
         UriSystemIsReserved,
         DuplicateUriAlias,
         InvalidUriAlias,
@@ -40,7 +41,7 @@ namespace XData.Compiler {
         //
         DuplicateMemberName,
         DuplicateAttributeName,
-        InvalidIndicatorNamespaceName,
+        InvalidIndicatorUri,
         InconsistentCSharpNamespaceName,
         CSNamespaceNameNotSpecifiedForNamespace,
         CircularReferenceDetected,
@@ -157,8 +158,8 @@ namespace XData.Compiler {
                     return "Duplicate member name '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.DuplicateAttributeName:
                     return "Duplicate attribute name '{0}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.InvalidIndicatorNamespaceName:
-                    return "Invalid indicator namespace name '{0}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.InvalidIndicatorUri:
+                    return "Invalid indicator uri '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.InconsistentCSharpNamespaceName:
                     return "Inconsistent C# namespace name '{0}' '{1}' and '{2}' '{3}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.CSNamespaceNameNotSpecifiedForNamespace:

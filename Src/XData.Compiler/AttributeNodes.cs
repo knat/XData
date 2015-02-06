@@ -71,7 +71,7 @@ namespace XData.Compiler {
 
     }
 
-    internal sealed class AttributeNode : Node {
+    internal sealed class AttributeNode : ObjectNode {
         public AttributeNode(Node parent) : base(parent) { }
         public NameNode NameNode;
         public TextSpan Nullable;

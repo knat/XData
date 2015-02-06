@@ -162,7 +162,7 @@ namespace XData.Compiler {
             }
         }
     }
-    internal abstract class MemberChildNode : Node {
+    internal abstract class MemberChildNode : ObjectNode {
         protected MemberChildNode(Node parent) : base(parent) { }
         public ChildKind Kind;
         public NameNode MemberNameNode;

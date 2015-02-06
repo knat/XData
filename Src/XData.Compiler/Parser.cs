@@ -30,17 +30,17 @@ namespace XData.Compiler {
         [ThreadStatic]
         private static Parser _instance;
         public static bool Parse(string filePath, TextReader reader, DiagContext context,
-            Node parent, out CompilationUnitNode result) {
-            return (_instance ?? (_instance = new Parser())).CompilationUnit(filePath, reader, context, parent, out result);
+            out CompilationUnitNode result) {
+            return (_instance ?? (_instance = new Parser())).CompilationUnit(filePath, reader, context, out result);
         }
         public static bool Parse(string filePath, TextReader reader, DiagContext context,
-            Node parent, out CSNSIndicatorCompilationUnitNode result) {
-            return (_instance ?? (_instance = new Parser())).CSNSIndicatorCompilationUnit(filePath, reader, context, parent, out result);
+            out IndicatorCompilationUnitNode result) {
+            return (_instance ?? (_instance = new Parser())).IndicatorCompilationUnit(filePath, reader, context, out result);
         }
         private Parser() {
             _uriAliasingGetter = UriAliasing;
             _namespaceGetter = Namespace;
-            _csNSIndicatorGetter = CSNSIndicator;
+            _indicatorGetter = Indicator;
             _importGetter = Import;
             _namespaceMemberGetter = NamespaceMember;
             _attributeGetter = Attribute;
@@ -56,7 +56,7 @@ namespace XData.Compiler {
         private delegate bool NodeGetterWithParentList<T>(Node parent, List<T> list, out T node);
         private readonly NodeGetterWithList<UriAliasingNode> _uriAliasingGetter;
         private readonly NodeGetterWithParent<NamespaceNode> _namespaceGetter;
-        private readonly NodeGetterWithParent<CSNSIndicatorNode> _csNSIndicatorGetter;
+        private readonly NodeGetterWithParent<IndicatorNode> _indicatorGetter;
         private readonly NodeGetterWithParentList<ImportNode> _importGetter;
         private readonly NodeGetterWithParentList<NamespaceMemberNode> _namespaceMemberGetter;
         private readonly NodeGetterWithParentList<AttributeNode> _attributeGetter;
@@ -68,35 +68,33 @@ namespace XData.Compiler {
         private readonly NodeGetter<QualifiableNameNode> _substituteGetter;
         private readonly NodeGetter<OccurrenceNode> _occurrenceGetter;
         private bool CompilationUnit(string filePath, TextReader reader, DiagContext context,
-            Node parent, out CompilationUnitNode result) {
+            out CompilationUnitNode result) {
             Set(filePath, reader, context);
             try {
-                result = new CompilationUnitNode(parent);
+                result = new CompilationUnitNode();
                 List(_uriAliasingGetter, out result.UriAliasingList);
                 List(result, _namespaceGetter, out result.NamespaceList);
                 EndOfFileExpected();
                 return true;
             }
-            catch (ParsingException) {
-            }
+            catch (ParsingException) { }
             finally {
                 Clear();
             }
             result = null;
             return false;
         }
-        private bool CSNSIndicatorCompilationUnit(string filePath, TextReader reader, DiagContext context,
-            Node parent, out CSNSIndicatorCompilationUnitNode result) {
+        private bool IndicatorCompilationUnit(string filePath, TextReader reader, DiagContext context,
+            out IndicatorCompilationUnitNode result) {
             Set(filePath, reader, context);
             try {
-                result = new CSNSIndicatorCompilationUnitNode(parent);
+                result = new IndicatorCompilationUnitNode();
                 List(_uriAliasingGetter, out result.UriAliasingList);
-                List(result, _csNSIndicatorGetter, out result.NamespaceList);
+                List(result, _indicatorGetter, out result.IndicatorList);
                 EndOfFileExpected();
                 return true;
             }
-            catch (ParsingException) {
-            }
+            catch (ParsingException) { }
             finally {
                 Clear();
             }
@@ -116,10 +114,10 @@ namespace XData.Compiler {
             result = default(NamespaceNode);
             return false;
         }
-        private bool CSNSIndicator(Node parent, out CSNSIndicatorNode result) {
+        private bool Indicator(Node parent, out IndicatorNode result) {
             TextSpan textSpan;
             if (Keyword(NamespaceKeyword, out textSpan)) {
-                result = new CSNSIndicatorNode(parent) { TextSpan = textSpan };
+                result = new IndicatorNode(parent) { TextSpan = textSpan };
                 result.UriNode = UriExpected(result);
                 if (Token('=')) {
                     result.IsRef = false;
@@ -128,19 +126,19 @@ namespace XData.Compiler {
                     TokenExpected('&', "= or & expected.");
                     result.IsRef = true;
                 }
-                if (!CSNamespaceName(out result.CSNamespaceName)) {
+                if (!CSharpNamespaceName(out result.CSharpNamespaceName)) {
                     ErrorDiagAndThrow("C# namespace name expected.");
                 }
                 return true;
             }
-            result = default(CSNSIndicatorNode);
+            result = default(IndicatorNode);
             return false;
         }
-        private bool CSNamespaceName(out CSNamespaceNameNode result) {
+        private bool CSharpNamespaceName(out CSharpNamespaceNameNode result) {
             result = null;
             NameNode name;
             if (Name(out name)) {
-                result = new CSNamespaceNameNode { TextSpan = name.TextSpan };
+                result = new CSharpNamespaceNameNode { TextSpan = name.TextSpan };
                 result.Add(name.Value);
                 while (true) {
                     if (Token('.')) {
@@ -188,7 +186,7 @@ namespace XData.Compiler {
             NameNode alias;
             var stringValue = default(AtomValueNode);
             if (Name(out alias)) {
-                var uaList = parent.CompilationUnitAncestor.UriAliasingList;
+                var uaList = parent.GetAncestor<CompilationUnitBaseNode>().UriAliasingList;
                 if (uaList != null) {
                     foreach (var ua in uaList) {
                         if (ua.Alias == alias) {

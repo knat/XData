@@ -3,104 +3,6 @@ using System.Collections.Generic;
 using XData.IO.Text;
 
 namespace XData.Compiler {
-    internal sealed class ProgramNode : Node {
-        public ProgramNode() : base(null) {
-        }
-        public List<CompilationUnitNode> CompilationUnitList;
-        public List<CSNSIndicatorCompilationUnitNode> CSNSIndicatorCompilationUnitList;
-        //
-        //public List<NamespaceNode> NamespaceList;
-        //public NamespaceNodeDict NamespaceDict;
-        public void Analyze() {
-            var nsList = new List<NamespaceNode>();
-            if (CompilationUnitList != null) {
-                foreach (var cu in CompilationUnitList) {
-                    if (cu.NamespaceList != null) {
-                        nsList.AddRange(cu.NamespaceList);
-                    }
-                }
-            }
-            //NamespaceList = nsList;
-            var nsIndicatorList = new List<CSNSIndicatorNode>();
-            if (CSNSIndicatorCompilationUnitList != null) {
-                foreach (var cu in CSNSIndicatorCompilationUnitList) {
-                    if (cu.NamespaceList != null) {
-                        nsIndicatorList.AddRange(cu.NamespaceList);
-                    }
-                }
-            }
-            //
-            var nsDict = new NamespaceNodeDict();
-            foreach (var ns in nsList) {
-                var uri = ns.Uri;
-                LogicalNamespaceNode logicalNS;
-                if (!nsDict.TryGetValue(uri, out logicalNS)) {
-                    logicalNS = new LogicalNamespaceNode();
-                    nsDict.Add(uri, logicalNS);
-                }
-                logicalNS.Add(ns);
-                ns.LogicalNamespace = logicalNS;
-            }
-            //NamespaceDict = nsDict;
-            if (nsIndicatorList.Count > 0) {
-                foreach (var nsIndicator in nsIndicatorList) {
-                    LogicalNamespaceNode logicalNS;
-                    if (!nsDict.TryGetValue(nsIndicator.Uri, out logicalNS)) {
-                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidIndicatorNamespaceName, nsIndicator.Uri),
-                            nsIndicator.UriNode.TextSpan);
-                    }
-                    if (logicalNS.CSNamespaceName == null) {
-                        logicalNS.CSNamespaceName = nsIndicator.CSNamespaceName;
-                        logicalNS.IsCSNamespaceRef = nsIndicator.IsRef;
-                    }
-                    else if (logicalNS.IsCSNamespaceRef != nsIndicator.IsRef || logicalNS.CSNamespaceName != nsIndicator.CSNamespaceName) {
-                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InconsistentCSharpNamespaceName,
-                            logicalNS.IsCSNamespaceRef ? "&" : "=", logicalNS.CSNamespaceName.ToString(), nsIndicator.IsRef ? "&" : "=", nsIndicator.CSNamespaceName.ToString()),
-                            nsIndicator.CSNamespaceName.TextSpan);
-                    }
-
-                }
-                foreach (var logicalNS in nsDict.Values) {
-                    if (logicalNS.CSNamespaceName == null) {
-                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CSNamespaceNameNotSpecifiedForNamespace, logicalNS.Uri),
-                            nsIndicatorList[0].TextSpan);
-                    }
-                }
-            }
-            else {
-                var idx = 0;
-                foreach (var logicalNS in nsDict.Values) {
-                    logicalNS.CSNamespaceName = new CSNamespaceNameNode() { "__fake_ns__" + (idx++).ToInvString() };
-                    logicalNS.IsCSNamespaceRef = true;
-                }
-            }
-            if (nsList.Count == 0) {
-                return;
-            }
-            //
-            foreach (var ns in nsList) {
-                ns.ResolveImports(nsDict);
-            }
-            foreach (var logicalNS in nsDict.Values) {
-                logicalNS.CheckDuplicateMembers();
-            }
-            foreach (var ns in nsList) {
-                ns.Resolve();
-            }
-            //
-            var programSymbol = new ProgramSymbol(nsIndicatorList.Count > 0);
-            foreach (var logicalNS in nsDict.Values) {
-                logicalNS.NamespaceSymbol = new NamespaceSymbol(logicalNS.Uri, logicalNS.CSNamespaceName, logicalNS.IsCSNamespaceRef);
-                programSymbol.NamespaceList.Add(logicalNS.NamespaceSymbol);
-            }
-            foreach (var ns in nsList) {
-                ns.CreateSymbols();
-            }
-
-            //return programSymbol;
-
-        }
-    }
     internal abstract class Node {
         protected Node(Node parent) {
             Parent = parent;
@@ -118,44 +20,42 @@ namespace XData.Compiler {
             }
             return null;
         }
-        //private ProgramNode _programAncestor;
-        //public ProgramNode ProgramAncestor {
-        //    get {
-        //        return _programAncestor ?? (_programAncestor = GetAncestor<ProgramNode>());
-        //    }
-        //}
-        private CompilationUnitNode _compilationUnitAncestor;
-        public CompilationUnitNode CompilationUnitAncestor {
-            get {
-                return _compilationUnitAncestor ?? (_compilationUnitAncestor = GetAncestor<CompilationUnitNode>());
-            }
-        }
-        private NamespaceNode _namespaceAncestor;
-        public NamespaceNode NamespaceAncestor {
-            get {
-                return _namespaceAncestor ?? (_namespaceAncestor = GetAncestor<NamespaceNode>());
-            }
-        }
     }
-    internal class CompilationUnitNode : Node {
-        public CompilationUnitNode(Node parent) : base(parent) { }
+    internal abstract class CompilationUnitBaseNode : Node {
+        protected CompilationUnitBaseNode() : base(null) { }
         public List<UriAliasingNode> UriAliasingList;
+    }
+    internal sealed class CompilationUnitNode : CompilationUnitBaseNode {
         public List<NamespaceNode> NamespaceList;
     }
-    internal sealed class CSNSIndicatorCompilationUnitNode : CompilationUnitNode {
-        public CSNSIndicatorCompilationUnitNode(Node parent) : base(parent) { }
-        new public List<CSNSIndicatorNode> NamespaceList;
+    internal sealed class IndicatorCompilationUnitNode : CompilationUnitBaseNode {
+        public List<IndicatorNode> IndicatorList;
     }
-    internal sealed class NamespaceNodeDict : Dictionary<string, LogicalNamespaceNode> {
+
+    internal abstract class NamespaceBaseNode : Node {
+        protected NamespaceBaseNode(Node parent) : base(parent) { }
+        public UriNode UriNode;
+        public string Uri {
+            get {
+                return UriNode.Value;
+            }
+        }
     }
-    internal sealed class LogicalNamespaceNode : List<NamespaceNode> {
+    internal sealed class IndicatorNode : NamespaceBaseNode {
+        public IndicatorNode(Node parent) : base(parent) { }
+        public TextSpan TextSpan;
+        public bool IsRef;
+        public CSharpNamespaceNameNode CSharpNamespaceName;
+    }
+    internal sealed class LogicalNamespaceSet : Dictionary<string, LogicalNamespace> { }
+    internal sealed class LogicalNamespace : List<NamespaceNode> {
         public string Uri {
             get {
                 return this[0].Uri;
             }
         }
-        public CSNamespaceNameNode CSNamespaceName;
-        public bool IsCSNamespaceRef;
+        public CSharpNamespaceNameNode CSharpNamespaceName;
+        public bool IsCSharpNamespaceRef;
         public NamespaceSymbol NamespaceSymbol;
         public void CheckDuplicateMembers() {
             var count = Count;
@@ -180,20 +80,14 @@ namespace XData.Compiler {
             return null;
         }
     }
-    internal class NamespaceNode : Node {
+    internal sealed class NamespaceNode : NamespaceBaseNode {
         public NamespaceNode(Node parent) : base(parent) { }
-        public UriNode UriNode;
         public List<ImportNode> ImportList;
         public List<NamespaceMemberNode> MemberList;
         //
-        public LogicalNamespaceNode LogicalNamespace;
+        public LogicalNamespace LogicalNamespace;
         //
-        public string Uri {
-            get {
-                return UriNode.Value;
-            }
-        }
-        public void ResolveImports(NamespaceNodeDict nsDict) {
+        public void ResolveImports(LogicalNamespaceSet nsDict) {
             if (ImportList != null) {
                 for (var i = 0; i < ImportList.Count; ++i) {
                     var import = ImportList[i];
@@ -291,12 +185,6 @@ namespace XData.Compiler {
             return result;
         }
     }
-    internal sealed class CSNSIndicatorNode : NamespaceNode {
-        public CSNSIndicatorNode(Node parent) : base(parent) { }
-        public TextSpan TextSpan;
-        public bool IsRef;
-        public CSNamespaceNameNode CSNamespaceName;
-    }
 
     internal struct UriNode {
         public UriNode(NameNode alias, AtomValueNode stringValue, string value) {
@@ -332,9 +220,19 @@ namespace XData.Compiler {
         }
         public readonly UriNode Uri;
         public readonly NameNode Alias;//opt
-        public LogicalNamespaceNode LogicalNamespace;
+        public LogicalNamespace LogicalNamespace;
     }
-    internal abstract class NamespaceMemberNode : Node {
+
+    internal abstract class ObjectNode :Node {
+        protected ObjectNode(Node parent) : base(parent) { }
+        private NamespaceNode _namespaceAncestor;
+        public NamespaceNode NamespaceAncestor {
+            get {
+                return _namespaceAncestor ?? (_namespaceAncestor = GetAncestor<NamespaceNode>());
+            }
+        }
+    }
+    internal abstract class NamespaceMemberNode : ObjectNode {
         protected NamespaceMemberNode(Node parent) : base(parent) { }
         public NameNode Name;
         public NameNode AbstractOrSealed;
@@ -375,7 +273,7 @@ namespace XData.Compiler {
                 }
                 _isProcessing = true;
                 var parent = NamespaceAncestor.LogicalNamespace.NamespaceSymbol;
-                var objectSymbol = CreateSymbolCore(parent, CSName, FullName,IsAbstract, IsSealed);
+                var objectSymbol = CreateSymbolCore(parent, CSName, FullName, IsAbstract, IsSealed);
                 parent.GlobalObjectList.Add(objectSymbol);
                 _objectSymbol = objectSymbol;
                 _isProcessing = false;

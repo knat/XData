@@ -29,7 +29,7 @@ namespace XData.Compiler {
             return Body.CreateSymbolCore(parent, csName, fullName, isAbstract, isSealed);
         }
     }
-    internal abstract class TypeBodyNode : Node {
+    internal abstract class TypeBodyNode : ObjectNode {
         protected TypeBodyNode(Node parent) : base(parent) { }
         public abstract void Resolve();
         public abstract TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed);
@@ -58,7 +58,7 @@ namespace XData.Compiler {
             return listTypeSymbol;
         }
     }
-    internal sealed class AttributesChildrenNode : Node {
+    internal sealed class AttributesChildrenNode : ObjectNode {
         public AttributesChildrenNode(Node parent) : base(parent) { }
         public AttributesNode Attributes;
         public ComplexChildrenNode ComplexChildren;

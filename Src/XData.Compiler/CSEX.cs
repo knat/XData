@@ -7,9 +7,9 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using XData.IO.Text;
 
 namespace XData.Compiler {
-    internal sealed class CSNamespaceNameNode : List<string>, IEquatable<CSNamespaceNameNode> {
+    internal sealed class CSharpNamespaceNameNode : List<string>, IEquatable<CSharpNamespaceNameNode> {
         public TextSpan TextSpan;
-        public bool Equals(CSNamespaceNameNode other) {
+        public bool Equals(CSharpNamespaceNameNode other) {
             if ((object)this == other) return true;
             if ((object)other == null) return false;
             var count = Count;
@@ -24,7 +24,7 @@ namespace XData.Compiler {
             return true;
         }
         public override bool Equals(object obj) {
-            return Equals(obj as CSNamespaceNameNode);
+            return Equals(obj as CSharpNamespaceNameNode);
         }
         public override int GetHashCode() {
             var hash = 17;
@@ -34,13 +34,13 @@ namespace XData.Compiler {
             }
             return hash;
         }
-        public static bool operator ==(CSNamespaceNameNode left, CSNamespaceNameNode right) {
+        public static bool operator ==(CSharpNamespaceNameNode left, CSharpNamespaceNameNode right) {
             if ((object)left == null) {
                 return (object)right == null;
             }
             return left.Equals(right);
         }
-        public static bool operator !=(CSNamespaceNameNode left, CSNamespaceNameNode right) {
+        public static bool operator !=(CSharpNamespaceNameNode left, CSharpNamespaceNameNode right) {
             return !(left == right);
         }
         private string _string;

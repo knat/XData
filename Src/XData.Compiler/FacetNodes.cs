@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using XData.IO.Text;
 
 namespace XData.Compiler {
-    internal sealed class FacetsNode : Node {
+    internal sealed class FacetsNode : ObjectNode {
         public FacetsNode(Node parent) : base(parent) { }
         public IntegerRangeNode<ulong> LengthRange;
         public IntegerNode<byte> Precision;

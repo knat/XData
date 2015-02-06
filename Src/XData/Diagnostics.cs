@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using XData.IO.Text;
 
 namespace XData {
@@ -187,6 +188,7 @@ namespace XData {
         Warning = 2,
         Info = 3
     }
+    [DataContract]
     public struct Diag {
         public Diag(DiagSeverity severity, int rawCode, string message, TextSpan textSpan, XObject obj) {
             Severity = severity;
@@ -201,9 +203,13 @@ namespace XData {
         public Diag(DiagSeverity severity, DiagMsg diagMsg, TextSpan textSpan, XObject obj)
             : this(severity, (int)diagMsg.Code, diagMsg.GetMessage(), textSpan, obj) {
         }
+        [DataMember]
         public readonly DiagSeverity Severity;
+        [DataMember]
         public readonly int RawCode;
+        [DataMember]
         public readonly string Message;
+        [DataMember]
         public readonly TextSpan TextSpan;//opt
         public readonly XObject Object;//opt
         public bool IsError {
@@ -258,7 +264,6 @@ namespace XData {
             return null;
         }
     }
-
 
     public class DiagContext : List<Diag> {
         public void AddDiag(DiagSeverity severity, int rawCode, string message, TextSpan textSpan, XObject obj) {

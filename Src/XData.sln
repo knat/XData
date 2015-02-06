@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XData", "XData\XData.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XData.Compiler", "XData.Compiler\XData.Compiler.csproj", "{BDE88786-303C-45DA-BD8A-D1C5F335FF2D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XData.MSBuild", "XData.MSBuild\XData.MSBuild.csproj", "{F3796161-3402-4286-8877-6FD12E06B6D8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XData.VisualStudio", "XData.VisualStudio\XData.VisualStudio.csproj", "{C2672FBA-C08E-4E9F-9182-84110028F9EB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{BDE88786-303C-45DA-BD8A-D1C5F335FF2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BDE88786-303C-45DA-BD8A-D1C5F335FF2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BDE88786-303C-45DA-BD8A-D1C5F335FF2D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3796161-3402-4286-8877-6FD12E06B6D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3796161-3402-4286-8877-6FD12E06B6D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3796161-3402-4286-8877-6FD12E06B6D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3796161-3402-4286-8877-6FD12E06B6D8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C2672FBA-C08E-4E9F-9182-84110028F9EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2672FBA-C08E-4E9F-9182-84110028F9EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2672FBA-C08E-4E9F-9182-84110028F9EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2672FBA-C08E-4E9F-9182-84110028F9EB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
