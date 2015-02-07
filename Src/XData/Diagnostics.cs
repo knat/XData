@@ -188,7 +188,7 @@ namespace XData {
         Warning = 2,
         Info = 3
     }
-    [DataContract]
+    [DataContract(Namespace = Extensions.SystemUri)]
     public struct Diag {
         public Diag(DiagSeverity severity, int rawCode, string message, TextSpan textSpan, XObject obj) {
             Severity = severity;
@@ -264,7 +264,7 @@ namespace XData {
             return null;
         }
     }
-
+    [CollectionDataContract(Namespace = Extensions.SystemUri)]
     public class DiagContext : List<Diag> {
         public void AddDiag(DiagSeverity severity, int rawCode, string message, TextSpan textSpan, XObject obj) {
             Add(new Diag(severity, rawCode, message, textSpan, obj));

@@ -4,7 +4,7 @@ using System.IO;
 using XData.IO.Text;
 
 namespace XData.Compiler {
-    internal sealed class Parser : ParserBase {
+    public static class ParserConstants {
         public const string AbstractKeyword = "abstract";
         public const string AliasKeyword = "alias";
         public const string AsKeyword = "as";
@@ -25,8 +25,31 @@ namespace XData.Compiler {
         public const string SubstitutesKeyword = "substitutes";
         public const string TypeKeyword = "type";
         public const string ValueRangeKeyword = "valuerange";
-        //
-        //
+        public static readonly HashSet<string> KeywordSet = new HashSet<string>
+        {
+            AbstractKeyword,
+            AliasKeyword,
+            AsKeyword,
+            ElementKeyword,
+            ExtendsKeyword,
+            ImportKeyword,
+            LengthRangeKeyword,
+            ListsKeyword,
+            MemberNameKeyword,
+            NamespaceKeyword,
+            NullableKeyword,
+            PatternKeyword,
+            PrecisionKeyword,
+            RestrictsKeyword,
+            ScaleKeyword,
+            SealedKeyword,
+            SubstitutesKeyword,
+            ValueRangeKeyword,
+            "true",
+            "false"
+        };
+    }
+    internal sealed class Parser : ParserBase {
         [ThreadStatic]
         private static Parser _instance;
         public static bool Parse(string filePath, TextReader reader, DiagContext context,
@@ -102,7 +125,7 @@ namespace XData.Compiler {
             return false;
         }
         private bool Namespace(Node parent, out NamespaceNode result) {
-            if (Keyword(NamespaceKeyword)) {
+            if (Keyword(ParserConstants.NamespaceKeyword)) {
                 result = new NamespaceNode(parent);
                 result.UriNode = UriExpected(result);
                 TokenExpected('{');
@@ -116,7 +139,7 @@ namespace XData.Compiler {
         }
         private bool Indicator(Node parent, out IndicatorNode result) {
             TextSpan textSpan;
-            if (Keyword(NamespaceKeyword, out textSpan)) {
+            if (Keyword(ParserConstants.NamespaceKeyword, out textSpan)) {
                 result = new IndicatorNode(parent) { TextSpan = textSpan };
                 result.UriNode = UriExpected(result);
                 if (Token('=')) {
@@ -162,10 +185,10 @@ namespace XData.Compiler {
             }
         }
         private bool UriAliasing(List<UriAliasingNode> list, out UriAliasingNode result) {
-            if (Keyword(AliasKeyword)) {
+            if (Keyword(ParserConstants.AliasKeyword)) {
                 var uri = StringValueExpected();
                 CheckUri(uri);
-                KeywordExpected(AsKeyword);
+                KeywordExpected(ParserConstants.AsKeyword);
                 var alias = NameExpected();
                 CheckAlias(alias);
                 if (list.CountOrZero() > 0) {
@@ -219,10 +242,10 @@ namespace XData.Compiler {
             return uri;
         }
         private bool Import(Node parent, List<ImportNode> list, out ImportNode result) {
-            if (Keyword(ImportKeyword)) {
+            if (Keyword(ParserConstants.ImportKeyword)) {
                 var uri = UriExpected(parent);
                 var alias = default(NameNode);
-                if (Keyword(AsKeyword)) {
+                if (Keyword(ParserConstants.AsKeyword)) {
                     alias = NameExpected();
                     CheckAlias(alias);
                     if (list.CountOrZero() > 0) {
@@ -256,7 +279,7 @@ namespace XData.Compiler {
             return true;
         }
         private bool Type(Node parent, out NamespaceMemberNode result) {
-            if (Keyword(TypeKeyword)) {
+            if (Keyword(ParserConstants.TypeKeyword)) {
                 var type = new TypeNode(parent);
                 type.Name = NameExpected();
                 Unordered(_abstractOrSealedGetter, out type.AbstractOrSealed, "abstract, sealed or > expected.");
@@ -276,7 +299,7 @@ namespace XData.Compiler {
             return false;
         }
         private bool TypeList(Node parent, out TypeBodyNode result) {
-            if (Keyword(ListsKeyword)) {
+            if (Keyword(ParserConstants.ListsKeyword)) {
                 var list = new TypeListNode(parent);
                 list.ItemTypeQName = QualifiableNameExpected();
                 Facets(list, out list.Facets);
@@ -300,7 +323,7 @@ namespace XData.Compiler {
             return false;
         }
         private bool TypeExtension(Node parent, out TypeBodyNode result) {
-            if (Keyword(ExtendsKeyword)) {
+            if (Keyword(ParserConstants.ExtendsKeyword)) {
                 var extension = new TypeExtension(parent);
                 extension.BaseTypeQName = QualifiableNameExpected();
                 AttributesChildren(extension, out extension.AttributesChildren);
@@ -311,7 +334,7 @@ namespace XData.Compiler {
             return false;
         }
         private bool TypeRestriction(Node parent, out TypeBodyNode result) {
-            if (Keyword(RestrictsKeyword)) {
+            if (Keyword(ParserConstants.RestrictsKeyword)) {
                 var restriction = new TypeRestriction(parent);
                 restriction.BaseTypeQName = QualifiableNameExpected();
                 if (!AttributesChildren(restriction, out restriction.AttributesChildren)) {
@@ -402,7 +425,7 @@ namespace XData.Compiler {
             return false;
         }
         private bool LengthRange(out IntegerRangeNode<ulong> result) {
-            if (Keyword(LengthRangeKeyword)) {
+            if (Keyword(ParserConstants.LengthRangeKeyword)) {
                 result = UInt64RangeExpected(false, DiagCodeEx.MaxLengthNotGreaterThanOrEqualToMinLength);
                 return true;
             }
@@ -410,7 +433,7 @@ namespace XData.Compiler {
             return false;
         }
         private bool Precision(out IntegerNode<byte> result) {
-            if (Keyword(PrecisionKeyword)) {
+            if (Keyword(ParserConstants.PrecisionKeyword)) {
                 result = ByteValueExpected();
                 return true;
             }
@@ -418,7 +441,7 @@ namespace XData.Compiler {
             return false;
         }
         private bool Scale(out IntegerNode<byte> result) {
-            if (Keyword(ScaleKeyword)) {
+            if (Keyword(ParserConstants.ScaleKeyword)) {
                 result = ByteValueExpected();
                 return true;
             }
@@ -426,7 +449,7 @@ namespace XData.Compiler {
             return false;
         }
         private bool ValueRange(out ValueRangeNode result) {
-            if (Keyword(ValueRangeKeyword)) {
+            if (Keyword(ParserConstants.ValueRangeKeyword)) {
                 bool? minIsInclusive = null, maxIsInclusive = null;
                 AtomValueNode minValue = default(AtomValueNode), maxValue;
                 TextSpan dotDotTextSpan;
@@ -460,7 +483,7 @@ namespace XData.Compiler {
             return false;
         }
         private bool Enum(out List<EnumItemNode> result) {
-            if (Keyword(EnumKeyword)) {
+            if (Keyword(ParserConstants.EnumKeyword)) {
                 var list = new List<EnumItemNode>();
                 while (true) {
                     EnumItemNode item;
@@ -487,7 +510,7 @@ namespace XData.Compiler {
             AtomValueNode value;
             if (AtomValue(out value)) {
                 NameNode name = default(NameNode);
-                if (Keyword(AsKeyword)) {
+                if (Keyword(ParserConstants.AsKeyword)) {
                     name = NameExpected();
                     if (list.CountOrZero() > 0) {
                         foreach (var item in list) {
@@ -504,7 +527,7 @@ namespace XData.Compiler {
             return false;
         }
         private bool Pattern(out AtomValueNode result) {
-            if (Keyword(PatternKeyword)) {
+            if (Keyword(ParserConstants.PatternKeyword)) {
                 result = StringValueExpected();
                 return true;
             }
@@ -512,7 +535,7 @@ namespace XData.Compiler {
             return false;
         }
         private bool ListItemType(out QualifiableNameNode result) {
-            if (Keyword(ListsKeyword)) {
+            if (Keyword(ParserConstants.ListsKeyword)) {
                 result = QualifiableNameExpected();
                 return true;
             }
@@ -620,7 +643,7 @@ namespace XData.Compiler {
                         }
                     }
                 }
-                KeywordExpected(AsKeyword);
+                KeywordExpected(ParserConstants.AsKeyword);
                 attribute.TypeQName = QualifiableNameExpected();
                 result = attribute;
                 return true;
@@ -631,13 +654,13 @@ namespace XData.Compiler {
 
 
         private bool GlobalElement(Node parent, out NamespaceMemberNode result) {
-            if (Keyword(ElementKeyword)) {
+            if (Keyword(ParserConstants.ElementKeyword)) {
                 var element = new GlobalElementNode(parent);
                 element.Name = NameExpected();
                 Unordered(_abstractOrSealedGetter, _nullableGetter, _substituteGetter,
                     out element.AbstractOrSealed, out element.Nullable, out element.SubstitutedGlobalElementQName,
                     "Abstract, sealed, nullable, substitutes or > expected.");
-                KeywordExpected(AsKeyword);
+                KeywordExpected(ParserConstants.AsKeyword);
                 element.TypeQName = QualifiableNameExpected();
                 result = element;
                 return true;
@@ -684,7 +707,7 @@ namespace XData.Compiler {
                 if (!element.MemberNameNode.IsValid) {
                     element.MemberNameNode = name;
                 }
-                KeywordExpected(AsKeyword);
+                KeywordExpected(ParserConstants.AsKeyword);
                 element.TypeQName = QualifiableNameExpected();
                 result = element;
                 return true;
@@ -733,13 +756,13 @@ namespace XData.Compiler {
         }
 
         private bool AbstractOrSealed(out NameNode result) {
-            if (Keyword(AbstractKeyword, out result)) {
+            if (Keyword(ParserConstants.AbstractKeyword, out result)) {
                 return true;
             }
-            return Keyword(SealedKeyword, out result);
+            return Keyword(ParserConstants.SealedKeyword, out result);
         }
         private bool Nullable(out TextSpan result) {
-            return Keyword(NullableKeyword, out result);
+            return Keyword(ParserConstants.NullableKeyword, out result);
         }
         private bool OptionalOrDelete(out OptionalOrDeleteNode result) {
             TextSpan optional;
@@ -754,7 +777,7 @@ namespace XData.Compiler {
             return true;
         }
         private bool MemberName(out NameNode result) {
-            if (Keyword(MemberNameKeyword)) {
+            if (Keyword(ParserConstants.MemberNameKeyword)) {
                 result = NameExpected();
                 return true;
             }
@@ -762,7 +785,7 @@ namespace XData.Compiler {
             return false;
         }
         private bool Substitute(out QualifiableNameNode result) {
-            if (Keyword(SubstitutesKeyword)) {
+            if (Keyword(ParserConstants.SubstitutesKeyword)) {
                 result = QualifiableNameExpected();
                 return true;
             }

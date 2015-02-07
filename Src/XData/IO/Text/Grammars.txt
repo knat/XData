@@ -12,7 +12,7 @@ new-line-token:
 single-line-comment-token:
 '//' (!new-line)*
 ;
-multi-line-comment-token:
+delimited-comment-token:
 '/*' (!'*/')* '*/'
 ; 
 name-token:

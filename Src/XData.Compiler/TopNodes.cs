@@ -238,12 +238,12 @@ namespace XData.Compiler {
         public NameNode AbstractOrSealed;
         public bool IsAbstract {
             get {
-                return AbstractOrSealed.Value == Parser.AbstractKeyword;
+                return AbstractOrSealed.Value == ParserConstants.AbstractKeyword;
             }
         }
         public bool IsSealed {
             get {
-                return AbstractOrSealed.Value == Parser.SealedKeyword;
+                return AbstractOrSealed.Value == ParserConstants.SealedKeyword;
             }
         }
 

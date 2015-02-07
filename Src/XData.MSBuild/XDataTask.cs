@@ -3,17 +3,19 @@ using System.Collections.Generic;
 using System.IO;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
-using XData.Compiler;
+using System.Runtime.Serialization;
 
 namespace XData.MSBuild {
     public sealed class XDataTask : Task {
+        [Required]
+        public string ProjectDirectory { get; set; }
         public ITaskItem[] XDataSchemaFiles { get; set; }
         public ITaskItem[] XDataIndicatorFiles { get; set; }
         //[Output]
         //public ITaskItem[] OutputCSharpFiles { get; set; }
         //
         public override bool Execute() {
-            //var errorStore = new XBuildErrorStore();
+            var diagStore = new DiagStore();
             try {
                 List<string> schemaFilePathList = null;
                 List<string> indicatorFilePathList = null;
@@ -29,63 +31,111 @@ namespace XData.MSBuild {
                         indicatorFilePathList.Add(item.GetMetadata("FullPath"));
                     }
                 }
-                DiagContext context;
+                DiagContext diagContext;
                 string code;
-                if (!XDataCompiler.Compile(schemaFilePathList, indicatorFilePathList, out context, out code)) {
-
+                var res = XData.Compiler.XDataCompiler.Compile(schemaFilePathList, indicatorFilePathList, out diagContext, out code);
+                if (diagContext != null) {
+                    foreach (var diag in diagContext) {
+                        LogDiag(diag, diagStore);
+                    }
                 }
 
-                //var mxFilePath = CopyFile("Metah.X.cs", false);//EmbedSDOM);
-                //CopyFile("Metah.X.dll", false);
-                //if ((XDataCSNSIndicatorFiles == null || XDataCSNSIndicatorFiles.Length == 0) && (XDataSchemaFiles == null || XDataSchemaFiles.Length == 0)) {
-                //    base.Log.LogMessage(MessageImportance.High, "Skip compilation");
-                //    return true;
-                //}
-                //var xCSharpFileList = CreateCompilationInputFileList(XDataCSNSIndicatorFiles);
-                //var xFileList = CreateCompilationInputFileList(XDataSchemaFiles);
-                //var cSharpFileList = CreateCompilationInputFileList(CSharpFiles);
-                //if (EmbedSDOM) cSharpFileList.Add(new CompilationInputFile(mxFilePath));
-                //var preprocessorSymbolList = CreatePreprocessorSymbolList();
-                //var metadataReferenceList = CreateMetadataReferenceList();
-                //var compilationInput = new XCompilationInput(preprocessorSymbolList, cSharpFileList, metadataReferenceList, xCSharpFileList, xFileList);
-                //var compilationOutput = XCompiler.Compile(compilationInput);
-                //foreach (var error in compilationOutput.ErrorList) LogError(error, errorStore);
-                //if (compilationOutput.HasErrors) return false;
-                //var outputCSharpFileList = new List<TaskItem>();
-                //if (EmbedSDOM) outputCSharpFileList.Add(new TaskItem(mxFilePath));
-                //if (compilationOutput.Analyzer != null) {
-                //    foreach (var compilationUnit in compilationOutput.Analyzer.CompilationUnits) {
-                //        var filePath = compilationUnit.FilePath + ".cs";
-                //        File.WriteAllText(filePath, compilationUnit.CSText);
-                //        outputCSharpFileList.Add(new TaskItem(filePath));
-                //    }
-                //}
-                //OutputCSharpFiles = outputCSharpFileList.ToArray();
                 return true;
             }
             catch (Exception ex) {
-                base.Log.LogErrorFromException(ex, true, true, null);
+                Log.LogErrorFromException(ex, true, true, null);
                 return false;
             }
             finally {
-                //errorStore.Save(ProjectDirectory);
+                diagStore.Save(ProjectDirectory);
             }
             //C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe D:\Test\TestPLX\TestPLX\TestPLX.csproj
-            //v:detailed
+            //  v:detailed
+        }
+        private void LogDiag(Diag diag, DiagStore diagStore) {
+            string subCategory = "XData";
+            var codeString = diag.RawCode.ToInvString();
+            string helpKeyword = null, filePath = null;
+            int startLine = 0, startCol = 0, endLine = 0, endCol = 0;
+            var textSpan = diag.TextSpan;
+            if (textSpan.IsValid) {
+                filePath = textSpan.FilePath;
+                startLine = textSpan.StartPosition.Line;
+                startCol = textSpan.StartPosition.Column;
+                endLine = textSpan.EndPosition.Line;
+                endCol = textSpan.EndPosition.Column;
+            }
+            var message = diag.Message;
+            switch (diag.Severity) {
+                case DiagSeverity.Error:
+                    Log.LogError(subCategory, codeString, helpKeyword, filePath, startLine, startCol, endLine, endCol, message);
+                    break;
+                case DiagSeverity.Warning:
+                    Log.LogWarning(subCategory, codeString, helpKeyword, filePath, startLine, startCol, endLine, endCol, message);
+                    break;
+                case DiagSeverity.Info:
+                    Log.LogMessage(subCategory, codeString, helpKeyword, filePath, startLine, startCol, endLine, endCol, MessageImportance.Normal, message);
+                    break;
+            }
+            if (filePath != null) {
+                DiagUnit diagUnit;
+                if (!diagStore.TryGetUnit(filePath, out diagUnit)) {
+                    diagUnit = new DiagUnit(filePath, File.GetLastWriteTimeUtc(filePath));
+                    diagStore.Add(diagUnit);
+                }
+                diagUnit.DiagList.Add(diag);
+            }
         }
     }
-    public sealed class BuildErrorUnit {
-        internal BuildErrorUnit(string filePath, DateTime lastWriteTime) {
+    [DataContract(Namespace = Extensions.SystemUri)]
+    public sealed class DiagUnit {
+        internal DiagUnit(string filePath, DateTime lastWriteTimeUtc) {
             FilePath = filePath;
-            LastWriteTime = lastWriteTime;
-            ErrorList = new List<Diag>();
+            LastWriteTimeUtc = lastWriteTimeUtc;
+            DiagList = new List<Diag>();
         }
+        [DataMember]
         public readonly string FilePath;
-        public readonly DateTime LastWriteTime;
-        public readonly List<Diag> ErrorList;
+        [DataMember]
+        public readonly DateTime LastWriteTimeUtc;
+        [DataMember]
+        public readonly List<Diag> DiagList;
     }
-    public sealed class BuildErrorStore : Dictionary<string, BuildErrorUnit> {//key:FilePath
+    [CollectionDataContract(Namespace = Extensions.SystemUri)]
+    public sealed class DiagStore : List<DiagUnit> {
+        public bool TryGetUnit(string filePath, out DiagUnit result) {
+            foreach (var item in this) {
+                if (item.FilePath == filePath) {
+                    result = item;
+                    return true;
+                }
+            }
+            result = null;
+            return false;
+        }
+        public const string FileName = "XDataBuildDiags.xml";
+        public static string GetFilePath(string projectDirectory) {
+            return Path.Combine(projectDirectory, "obj", FileName);
+        }
+        private static readonly DataContractSerializer _ds = new DataContractSerializer(typeof(DiagStore));
+        internal void Save(string projectDirectory) {
+            var filePath = GetFilePath(projectDirectory);
+            File.Delete(filePath);
+            using (var fs = File.Create(filePath)) {
+                _ds.WriteObject(fs, this);
+            }
+        }
+        public static DiagStore TryLoad(string filePath) {
+            try {
+                using (var fs = File.OpenRead(filePath)) {
+                    return (DiagStore)_ds.ReadObject(fs);
+                }
+            }
+            catch (Exception) {
+                return null;
+            }
+        }
 
     }
 
-    }
+}

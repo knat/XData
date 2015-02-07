@@ -63,6 +63,7 @@ namespace XData.Compiler {
 //Auto-generated, DO NOT EDIT.
 //Visit https://github.com/knat/XData for more information.
 //
+
 ";
         private static bool Core(DiagContextEx context,
             List<CompilationUnitNode> compilationUnitList, List<IndicatorCompilationUnitNode> indicatorCompilationUnitList, out string code) {

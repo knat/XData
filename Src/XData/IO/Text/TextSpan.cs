@@ -1,7 +1,7 @@
 ﻿using System.Runtime.Serialization;
 
 namespace XData.IO.Text {
-    [DataContract]
+    [DataContract(Namespace = Extensions.SystemUri)]
     public struct TextSpan {
         public TextSpan(string filePath, int startIndex, int length, TextPosition startPosition, TextPosition endPosition) {
             //if (filePath == null) throw new ArgumentNullException("filePath");
@@ -26,11 +26,6 @@ namespace XData.IO.Text {
         public readonly TextPosition StartPosition;
         [DataMember]
         public readonly TextPosition EndPosition;
-        public int EndIndex {
-            get {
-                return StartIndex + Length;
-            }
-        }
         public bool IsValid {
             get {
                 return FilePath != null;
@@ -43,7 +38,7 @@ namespace XData.IO.Text {
             return null;
         }
     }
-    [DataContract]
+    [DataContract(Namespace = Extensions.SystemUri)]
     public struct TextPosition {
         public TextPosition(int line, int column) {
             //if (line < 1) throw new ArgumentOutOfRangeException("line");
