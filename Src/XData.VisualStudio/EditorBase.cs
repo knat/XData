@@ -365,91 +365,110 @@ namespace XData.VisualStudio.Editors {
         private readonly Func<string, DiagStore> _diagStoreLoader;
         [Import]
         internal SVsServiceProvider ServiceProvider = null;
+        internal DTE GetDTE() {
+            return (DTE)ServiceProvider.GetService(typeof(DTE));
+        }
         private const string _prjKindCSharpProject = "{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}";
-        private static object _locker = new object();
-        private sealed class ProjectData {
-            internal ProjectData(FileSystemWatcher fileWatcher, DiagStore diagStore) {
+        private static readonly Dictionary<string, ProjectInfo> _projectSet = new Dictionary<string, ProjectInfo>();//key: project path
+        private static readonly List<LanguageErrorTagger> _taggerList = new List<LanguageErrorTagger>();
+        private sealed class ProjectInfo {
+            internal ProjectInfo(LanguageErrorTaggerProviderBase taggerProvider, string projectPath) {
+                _taggerProvider = taggerProvider;
+                ProjectPath = projectPath;
+                var objPath = Path.Combine(projectPath, "obj");
+                DiagStoreFilePath = Path.Combine(objPath, taggerProvider._diagStoreFileName);
+                var fileWatcher = new FileSystemWatcher(objPath, taggerProvider._diagStoreFileName);
+                fileWatcher.NotifyFilter = NotifyFilters.LastWrite;
+                fileWatcher.Changed += OnFileWatcherChanged;
+                fileWatcher.EnableRaisingEvents = true;
                 FileWatcher = fileWatcher;
-                DiagStore = diagStore;
             }
+            private readonly LanguageErrorTaggerProviderBase _taggerProvider;
+            internal readonly string ProjectPath;
+            internal readonly string DiagStoreFilePath;
             internal readonly FileSystemWatcher FileWatcher;
-            internal DiagStore DiagStore;
-            private Dictionary<string, LanguageErrorTagger> _taggerSet;//key:file path
-            internal Dictionary<string, LanguageErrorTagger> TaggerSet {
+            private DiagStore _diagStore;
+            internal DiagStore DiagStore {
                 get {
-                    return _taggerSet ?? (_taggerSet = new Dictionary<string, LanguageErrorTagger>());
+                    return _diagStore ?? LoadDiagStore();
                 }
             }
-        }
-        private static readonly Dictionary<string, ProjectData> _projectDataSet = new Dictionary<string, ProjectData>();//key: project path
-        public ITagger<T> CreateTagger<T>(ITextBuffer textBuffer) where T : ITag {
-            var dte = (DTE)ServiceProvider.GetService(typeof(DTE));
-            foreach (Project proj in dte.Solution.Projects) {
-                if (proj.Kind == _prjKindCSharpProject) {
-                    var projPath = (string)proj.Properties.Item("FullPath").Value;
-                    lock (_locker) {
-                        if (!_projectDataSet.ContainsKey(projPath)) {
-                            var fileWatcher = new FileSystemWatcher(Path.Combine(projPath, "obj"), _diagStoreFileName);
-                            fileWatcher.NotifyFilter = NotifyFilters.LastWrite;
-                            fileWatcher.Changed += OnFileWatcherChanged;
-                            _projectDataSet.Add(projPath, new ProjectData(fileWatcher, _diagStoreLoader(Path.Combine(projPath, "obj", _diagStoreFileName))));
-                            fileWatcher.EnableRaisingEvents = true;
-                        }
-                    }
-                }
+            private DiagStore LoadDiagStore() {
+                return _diagStore = _taggerProvider._diagStoreLoader(DiagStoreFilePath);
             }
-            return (ITagger<T>)(ITagger<IErrorTag>)textBuffer.Properties.GetOrCreateSingletonProperty<LanguageErrorTagger>(
-                () => new LanguageErrorTagger(textBuffer));
-        }
-        internal static void AddTagger(string filePath, LanguageErrorTagger tagger) {
-            lock (_locker) {
-                foreach (var pair in _projectDataSet) {
-                    if (filePath.StartsWith(pair.Key, StringComparison.OrdinalIgnoreCase)) {
-                        var projectData = pair.Value;
-                        projectData.TaggerSet[filePath] = tagger;
-                        if (projectData.DiagStore != null) {
+            private void OnFileWatcherChanged(object sender, FileSystemEventArgs e) {
+                var diagStore = LoadDiagStore();
+                if (diagStore != null) {
+                    lock (_taggerList) {
+                        foreach(var tagger in _taggerList) {
                             DiagUnit diagUnit;
-                            if (projectData.DiagStore.TryGetUnit(filePath, out diagUnit) &&
-                                diagUnit.LastWriteTimeUtc == File.GetLastWriteTimeUtc(filePath)) {
+                            if(diagStore.TryGetUnit(tagger.DocFilePath, out diagUnit)) {
                                 tagger.Set(diagUnit);
                             }
+                            else {
+                                tagger.Clear();
+                            }
                         }
-                        return;
                     }
                 }
             }
         }
-        private void OnFileWatcherChanged(object sender, FileSystemEventArgs e) {
-            var diagStore = _diagStoreLoader(e.FullPath);
-            if (diagStore != null) {
-                lock (_locker) {
-                    foreach (var projData in _projectDataSet.Values) {
-                        if (sender == projData.FileWatcher) {
-                            projData.DiagStore = diagStore;
-                            foreach (var pair in projData.TaggerSet) {
-                                DiagUnit diagUnit;
-                                if (diagStore.TryGetUnit(pair.Key, out diagUnit)) {
-                                    pair.Value.Set(diagUnit);
-                                }
-                                else {
-                                    pair.Value.Clear();
+        private const string _taggerKey = "XDataTagger";
+        public ITagger<T> CreateTagger<T>(ITextBuffer textBuffer) where T : ITag {
+            LanguageErrorTagger tagger;
+            var props = textBuffer.Properties;
+            if (!props.TryGetProperty(_taggerKey, out tagger)) {
+                tagger = new LanguageErrorTagger(textBuffer);
+                props.AddProperty(_taggerKey, tagger);
+                var docFilePath = tagger.DocFilePath;
+                ProjectInfo projectInfo = null;
+                foreach (Project proj in GetDTE().Solution.Projects) {
+                    if (proj.Kind == _prjKindCSharpProject) {
+                        var projectPath = (string)proj.Properties.Item("FullPath").Value;
+                        if (docFilePath.StartsWith(projectPath)) {
+                            lock (_projectSet) {
+                                if (!_projectSet.TryGetValue(projectPath, out projectInfo)) {
+                                    projectInfo = new ProjectInfo(this, projectPath);
+                                    _projectSet.Add(projectPath, projectInfo);
                                 }
                             }
-                            return;
                         }
                     }
                 }
+                if (projectInfo != null) {
+                    var diagStore = projectInfo.DiagStore;
+                    if (diagStore != null) {
+                        var diagUnit = diagStore.TryGetUnit(docFilePath, tagger.LastWriteTime);
+                        if (diagUnit != null) {
+                            tagger.Set(diagUnit);
+                        }
+                    }
+                }
+                lock (_taggerList) {
+                    _taggerList.Add(tagger);
+                }
             }
+            return (ITagger<T>)(ITagger<IErrorTag>)tagger;
         }
     }
     internal sealed class LanguageErrorTagger : SimpleTagger<IErrorTag> {
         internal LanguageErrorTagger(ITextBuffer textBuffer)
             : base(textBuffer) {
             _textBuffer = textBuffer;
-            var textDocument = textBuffer.Properties.GetProperty<ITextDocument>(typeof(ITextDocument));
-            LanguageErrorTaggerProviderBase.AddTagger(textDocument.FilePath, this);
+            _textDocument = textBuffer.Properties.GetProperty<ITextDocument>(typeof(ITextDocument));
         }
         private readonly ITextBuffer _textBuffer;
+        private readonly ITextDocument _textDocument;
+        internal string DocFilePath {
+            get {
+                return _textDocument.FilePath;
+            }
+        }
+        internal DateTime LastWriteTime {
+            get {
+                return _textDocument.LastContentModifiedTime;
+            }
+        }
         internal void Clear() {
             using (Update()) {
                 RemoveTagSpans(_ => true);

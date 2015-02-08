@@ -80,7 +80,7 @@ namespace XData.MSBuild {
             if (filePath != null) {
                 DiagUnit diagUnit;
                 if (!diagStore.TryGetUnit(filePath, out diagUnit)) {
-                    diagUnit = new DiagUnit(filePath, File.GetLastWriteTimeUtc(filePath));
+                    diagUnit = new DiagUnit(filePath, File.GetLastWriteTime(filePath));
                     diagStore.Add(diagUnit);
                 }
                 diagUnit.DiagList.Add(diag);
@@ -89,15 +89,15 @@ namespace XData.MSBuild {
     }
     [DataContract(Namespace = Extensions.SystemUri)]
     public sealed class DiagUnit {
-        internal DiagUnit(string filePath, DateTime lastWriteTimeUtc) {
+        internal DiagUnit(string filePath, DateTime lastWriteTime) {
             FilePath = filePath;
-            LastWriteTimeUtc = lastWriteTimeUtc;
+            LastWriteTime = lastWriteTime;
             DiagList = new List<Diag>();
         }
         [DataMember]
         public readonly string FilePath;
         [DataMember]
-        public readonly DateTime LastWriteTimeUtc;
+        public readonly DateTime LastWriteTime;
         [DataMember]
         public readonly List<Diag> DiagList;
     }
@@ -112,6 +112,17 @@ namespace XData.MSBuild {
             }
             result = null;
             return false;
+        }
+        public DiagUnit TryGetUnit(string filePath, DateTime lastWriteTime) {
+            foreach (var item in this) {
+                if (item.FilePath == filePath) {
+                    if (item.LastWriteTime == lastWriteTime) {
+                        return item;
+                    }
+                    return null;
+                }
+            }
+            return null;
         }
         public const string FileName = "XDataBuildDiags.xml";
         public static string GetFilePath(string projectDirectory) {

@@ -1,0 +1,14 @@
+﻿//Visit https://github.com/knat/XData for more information.
+
+alias "http://example.com/project1" as p1
+alias "http://example.com/project2" as p2
+
+namespace p1
+{
+
+}
+
+namespace p2
+{
+
+}

@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<VSTemplate Version="3.0.0" Type="Item" xmlns="http://schemas.microsoft.com/developer/vstemplate/2005">
+    <TemplateData>
+        <Name>XData Schema</Name>
+        <Description>XData Schema</Description>
+        <TemplateID>XDataSchema</TemplateID>
+        <ProjectType>CSharp</ProjectType>
+        <NumberOfParentCategoriesToRollUp>1</NumberOfParentCategoriesToRollUp>
+        <DefaultName>File.xds</DefaultName>
+    </TemplateData>
+    <TemplateContent>
+        <ProjectItem ReplaceParameters="false" ItemType="XDataSchema" TargetFileName="$fileinputname$.xds">XDataSchema.xds</ProjectItem>
+    </TemplateContent>
+</VSTemplate>
