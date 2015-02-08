@@ -1,22 +1,24 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    <ItemGroup Condition="'$(BuildingInsideVisualStudio)' == 'true'">
+    <ItemGroup>
         <AvailableItemName Include="XDataSchema" />
-        <AvailableItemName Include="XDataCSharpNamespaceIndicator" />
+        <AvailableItemName Include="XDataIndicator" />
     </ItemGroup>
     <PropertyGroup>
-        <PrepareResourcesDependsOn>
+        <BuildDependsOn>
             XDataCompilation;
-            $(PrepareResourcesDependsOn)
-        </PrepareResourcesDependsOn>
+            $(BuildDependsOn)
+        </BuildDependsOn>
     </PropertyGroup>
     <UsingTask TaskName="XData.MSBuilder.XDataTask" AssemblyFile="$(MSBuildThisFileDirectory)XData.MSBuild.dll" />
     <Target Name="XDataCompilation">
         <Message Text="======== Begin XData Compilation ========" Importance="high" />
-        <XDataTask          XCSharpFiles="@(MetahXCSharp)"          XFiles="@(MetahX)"      >
-            <Output TaskParameter="OutputCSharpFiles" ItemName="Compile" />
+        <XDataTask
+            ProjectDirectory="$(MSBuildProjectDirectory)"
+            XDataSchemaFiles="@(XDataSchema)"
+            XDataIndicatorFiles="@(XDataIndicator)"
+            >
         </XDataTask>
         <Message Text="======== End XData Compilation ========" Importance="high" />
-
     </Target>
 </Project>

@@ -54,7 +54,7 @@ namespace XData.MSBuild {
         }
         private void LogDiag(Diag diag, DiagStore diagStore) {
             string subCategory = "XData";
-            var codeString = diag.RawCode.ToInvString();
+            var codeString = diag.RawCode.ToString(System.Globalization.CultureInfo.InvariantCulture);
             string helpKeyword = null, filePath = null;
             int startLine = 0, startCol = 0, endLine = 0, endCol = 0;
             var textSpan = diag.TextSpan;
@@ -117,18 +117,18 @@ namespace XData.MSBuild {
         public static string GetFilePath(string projectDirectory) {
             return Path.Combine(projectDirectory, "obj", FileName);
         }
-        private static readonly DataContractSerializer _ds = new DataContractSerializer(typeof(DiagStore));
+        private static readonly DataContractSerializer _dcs = new DataContractSerializer(typeof(DiagStore));
         internal void Save(string projectDirectory) {
             var filePath = GetFilePath(projectDirectory);
             File.Delete(filePath);
             using (var fs = File.Create(filePath)) {
-                _ds.WriteObject(fs, this);
+                _dcs.WriteObject(fs, this);
             }
         }
         public static DiagStore TryLoad(string filePath) {
             try {
                 using (var fs = File.OpenRead(filePath)) {
-                    return (DiagStore)_ds.ReadObject(fs);
+                    return (DiagStore)_dcs.ReadObject(fs);
                 }
             }
             catch (Exception) {

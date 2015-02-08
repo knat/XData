@@ -68,6 +68,7 @@ namespace XData.VisualStudio.Editors {
         private sealed class LineInfo {
             internal LineInfo(bool isDirty) {
                 IsDirty = isDirty;
+                TokenList = new List<Token>();
             }
             internal bool IsDirty;
             internal string Text;
@@ -83,60 +84,13 @@ namespace XData.VisualStudio.Editors {
                     return States != 0;
                 }
             }
-            private Token? _token;
-            private List<Token> _tokenList;
-            internal void AddToken(Token token) {
-                if (_tokenList != null) {
-                    _tokenList.Add(token);
-                }
-                else if (_token == null) {
-                    _token = token;
-                }
-                else {
-                    if (_tokenList == null) {
-                        _tokenList = new List<Token>();
-                        _tokenList.Add(_token.Value);
-                        _token = null;
-                    }
-                    _tokenList.Add(token);
-                }
-            }
-            internal void ClearTokens() {
-                _token = null;
-                if (_tokenList != null) {
-                    _tokenList.Clear();
-                }
-            }
+            internal readonly List<Token> TokenList;
             internal void GetClassificationSpans(List<ClassificationSpan> classificationSpanList, ITextSnapshot snapshot, int startPosition) {
-                if (_token != null) {
-                    GetClassificationSpans(_token.Value, classificationSpanList, snapshot, startPosition);
-                }
-                else {
-                    var tkList = _tokenList;
-                    var tkCount = tkList.CountOrZero();
-                    if (tkCount > 0) {
-                        for (var i = 0; i < tkCount; ++i) {
-                            GetClassificationSpans(tkList[i], classificationSpanList, snapshot, startPosition);
-                        }
-                    }
+                foreach (var token in TokenList) {
+                    classificationSpanList.Add(new ClassificationSpan(new SnapshotSpan(snapshot, startPosition + token.StartIndex, token.Length),
+                        token.ClassificationType));
                 }
             }
-            private static void GetClassificationSpans(Token token, List<ClassificationSpan> classificationSpanList, ITextSnapshot snapshot, int startPosition) {
-                classificationSpanList.Add(new ClassificationSpan(new SnapshotSpan(snapshot, startPosition + token.StartIndex, token.Length),
-                    token.ClassificationType));
-            }
-#if DumpClassifier
-            internal IEnumerable<Token> GetTokens() {
-                if (_token != null) {
-                    yield return _token.Value;
-                }
-                else if (_tokenList != null) {
-                    foreach (var i in _tokenList) {
-                        yield return i;
-                    }
-                }
-            }
-#endif
         }
         private enum TokenKind : byte {
             DelimitedComment,
@@ -196,14 +150,19 @@ namespace XData.VisualStudio.Editors {
                     classificationType = _stringLiteralType;
                     break;
                 case TokenKind.Identifier:
-                    var tokenText = text.Substring(startIndex, endIndex - startIndex + 1);
-                    if (_keywordSet.Contains(tokenText)) {
-                        classificationType = _keywordType;
+                    {
+                        var ch = text[startIndex];
+                        if (ch >= 'a' && ch <= 'z') {
+                            var tokenText = text.Substring(startIndex, endIndex - startIndex + 1);
+                            if (_keywordSet.Contains(tokenText)) {
+                                classificationType = _keywordType;
+                            }
+                        }
                     }
                     break;
             }
             if (classificationType != null) {
-                lineInfo.AddToken(new Token(kind, startIndex, endIndex, classificationType));
+                lineInfo.TokenList.Add(new Token(kind, startIndex, endIndex, classificationType));
             }
         }
         private static bool IsIdentifierStartChar(char ch) {
@@ -266,7 +225,7 @@ namespace XData.VisualStudio.Editors {
             var oldNeedScanNextLine = false;
             if (onTextChanged) {
                 oldNeedScanNextLine = lineInfo.NeedScanNextLine;
-                lineInfo.ClearTokens();
+                lineInfo.TokenList.Clear();
                 lineInfo.IsDirty = false;
                 lineInfo.States = LineStates.None;
             }
@@ -355,7 +314,7 @@ namespace XData.VisualStudio.Editors {
 #if DumpClassifier
             var sb = new System.Text.StringBuilder();
             sb.AppendFormat("===ProcessLine()=== Line:{0}, Text:'{1}', States:{2}\r\n\t", lineNumber, text, lineInfo.States);
-            foreach (var token in lineInfo.GetTokens()) {
+            foreach (var token in lineInfo.TokenList) {
                 sb.AppendFormat("[Token:'{0}',Kind:{1},Classification:{2}], ", text.Substring(token.StartIndex, token.Length), token.Kind, token.ClassificationType.Classification);
             }
             sb.AppendLine();
@@ -372,7 +331,7 @@ namespace XData.VisualStudio.Editors {
             while (true) {
                 var lineNumber = line.LineNumber;
 #if DumpClassifier
-                Dump("---GetClassificationSpans()--- line:{0}\r\n".InvFormat(lineNumber.ToInvString()));
+                Dump(string.Format("---GetClassificationSpans()--- line:{0}\r\n", lineNumber.ToString()));
 #endif
                 position = line.Start.Position;
                 var lineText = line.GetTextIncludingLineBreak();

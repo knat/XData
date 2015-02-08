@@ -41,7 +41,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="BuilderBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="XDataTask.cs" />
   </ItemGroup>

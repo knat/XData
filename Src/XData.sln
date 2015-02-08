@@ -9,7 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XData.Compiler", "XData.Com
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XData.MSBuild", "XData.MSBuild\XData.MSBuild.csproj", "{F3796161-3402-4286-8877-6FD12E06B6D8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XData.VisualStudio", "XData.VisualStudio\XData.VisualStudio.csproj", "{C2672FBA-C08E-4E9F-9182-84110028F9EB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XData.VisualStudio", "XData.VisualStudio\XData.VisualStudio.csproj", "{5737D360-DE59-4AC4-BC26-ECA07CB0AB94}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,10 +29,10 @@ Global
 		{F3796161-3402-4286-8877-6FD12E06B6D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F3796161-3402-4286-8877-6FD12E06B6D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F3796161-3402-4286-8877-6FD12E06B6D8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C2672FBA-C08E-4E9F-9182-84110028F9EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C2672FBA-C08E-4E9F-9182-84110028F9EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C2672FBA-C08E-4E9F-9182-84110028F9EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C2672FBA-C08E-4E9F-9182-84110028F9EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5737D360-DE59-4AC4-BC26-ECA07CB0AB94}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5737D360-DE59-4AC4-BC26-ECA07CB0AB94}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5737D360-DE59-4AC4-BC26-ECA07CB0AB94}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5737D360-DE59-4AC4-BC26-ECA07CB0AB94}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

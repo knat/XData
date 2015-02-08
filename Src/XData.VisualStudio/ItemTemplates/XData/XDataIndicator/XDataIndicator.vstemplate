@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<VSTemplate Version="3.0.0" Type="Item" xmlns="http://schemas.microsoft.com/developer/vstemplate/2005">
+    <TemplateData>
+        <Name>XData Indicator</Name>
+        <Description>XData Indicator</Description>
+        <TemplateID>XDataIndicator</TemplateID>
+        <ProjectType>CSharp</ProjectType>
+        <NumberOfParentCategoriesToRollUp>1</NumberOfParentCategoriesToRollUp>
+        <DefaultName>File.xdi</DefaultName>
+    </TemplateData>
+    <TemplateContent>
+        <ProjectItem ReplaceParameters="false" ItemType="XDataIndicator" TargetFileName="$fileinputname$.xdi">XDataIndicator.xdi</ProjectItem>
+        <ProjectItem ReplaceParameters="false" TargetFileName="__XDataGenerated.cs">__XDataGenerated.cs</ProjectItem>
+    </TemplateContent>
+</VSTemplate>
