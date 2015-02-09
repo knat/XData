@@ -7,7 +7,7 @@ using System.Runtime.Serialization;
 
 namespace XData.MSBuild {
 
-    public sealed class TestTask : Task {
+    public sealed class TestBuilder : Task {
         public override bool Execute() {
             Log.LogMessage(MessageImportance.High, "hello");
             return true;

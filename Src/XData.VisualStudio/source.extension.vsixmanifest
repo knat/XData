@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="XData.aa48d25f-8a6b-4bcd-b6d4-eec49fb1bfa5" Version="0.6" Language="en-US" Publisher="谭克(Tank)" />
+        <Identity Id="XData.aa48d25f-8a6b-4bcd-b6d4-eec49fb1bfa5" Version="0.6" Language="en-US" Publisher="Tank" />
         <DisplayName>XData</DisplayName>
         <Description xml:space="preserve">XData is a universal solution for data exchange.</Description>
         <MoreInfo>https://github.com/knat/XData</MoreInfo>
