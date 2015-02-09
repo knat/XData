@@ -6,13 +6,18 @@ using Microsoft.Build.Utilities;
 using System.Runtime.Serialization;
 
 namespace XData.MSBuild {
+
+    public sealed class TestTask : Task {
+        public override bool Execute() {
+            Log.LogMessage(MessageImportance.High, "hello");
+            return true;
+        }
+    }
     public sealed class XDataTask : Task {
         [Required]
         public string ProjectDirectory { get; set; }
         public ITaskItem[] XDataSchemaFiles { get; set; }
         public ITaskItem[] XDataIndicatorFiles { get; set; }
-        //[Output]
-        //public ITaskItem[] OutputCSharpFiles { get; set; }
         //
         public override bool Execute() {
             var diagStore = new DiagStore();
@@ -39,7 +44,12 @@ namespace XData.MSBuild {
                         LogDiag(diag, diagStore);
                     }
                 }
-
+                if (!res) {
+                    return false;
+                }
+                if (code != null) {
+                    File.WriteAllText(Path.Combine(ProjectDirectory, "__XDataGenerated.cs"), code);
+                }
                 return true;
             }
             catch (Exception ex) {
@@ -125,12 +135,9 @@ namespace XData.MSBuild {
             return null;
         }
         public const string FileName = "XDataBuildDiags.xml";
-        public static string GetFilePath(string projectDirectory) {
-            return Path.Combine(projectDirectory, "obj", FileName);
-        }
         private static readonly DataContractSerializer _dcs = new DataContractSerializer(typeof(DiagStore));
         internal void Save(string projectDirectory) {
-            var filePath = GetFilePath(projectDirectory);
+            var filePath = Path.Combine(projectDirectory, "obj", FileName);
             File.Delete(filePath);
             using (var fs = File.Create(filePath)) {
                 _dcs.WriteObject(fs, this);

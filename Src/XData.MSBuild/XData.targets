@@ -10,15 +10,17 @@
             $(BuildDependsOn)
         </BuildDependsOn>
     </PropertyGroup>
-    <UsingTask TaskName="XData.MSBuilder.XDataTask" AssemblyFile="$(MSBuildThisFileDirectory)XData.MSBuild.dll" />
+    <!--<UsingTask TaskName="XData.MSBuilder.XDataTask" AssemblyFile="$(MSBuildThisFileDirectory)XData.MSBuild.dll" />-->
+    <UsingTask TaskName="XData.MSBuilder.TestTask" AssemblyFile="$(MSBuildThisFileDirectory)XData.MSBuilder.dll" />
     <Target Name="XDataCompilation">
         <Message Text="======== Begin XData Compilation ========" Importance="high" />
-        <XDataTask
+        <TestTask  />
+        <!--<XDataTask
             ProjectDirectory="$(MSBuildProjectDirectory)"
             XDataSchemaFiles="@(XDataSchema)"
             XDataIndicatorFiles="@(XDataIndicator)"
             >
-        </XDataTask>
+        </XDataTask>-->
         <Message Text="======== End XData Compilation ========" Importance="high" />
     </Target>
 </Project>

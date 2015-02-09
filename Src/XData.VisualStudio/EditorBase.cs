@@ -370,7 +370,7 @@ namespace XData.VisualStudio.Editors {
         }
         private const string _prjKindCSharpProject = "{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}";
         private static readonly Dictionary<string, ProjectInfo> _projectSet = new Dictionary<string, ProjectInfo>();//key: project path
-        private static readonly List<LanguageErrorTagger> _taggerList = new List<LanguageErrorTagger>();
+        private static readonly Dictionary<string, LanguageErrorTagger> _taggerSet = new Dictionary<string, LanguageErrorTagger>();//key: docFilePath
         private sealed class ProjectInfo {
             internal ProjectInfo(LanguageErrorTaggerProviderBase taggerProvider, string projectPath) {
                 _taggerProvider = taggerProvider;
@@ -399,10 +399,10 @@ namespace XData.VisualStudio.Editors {
             private void OnFileWatcherChanged(object sender, FileSystemEventArgs e) {
                 var diagStore = LoadDiagStore();
                 if (diagStore != null) {
-                    lock (_taggerList) {
-                        foreach(var tagger in _taggerList) {
+                    lock (_taggerSet) {
+                        foreach (var tagger in _taggerSet.Values) {
                             DiagUnit diagUnit;
-                            if(diagStore.TryGetUnit(tagger.DocFilePath, out diagUnit)) {
+                            if (diagStore.TryGetUnit(tagger.DocFilePath, out diagUnit)) {
                                 tagger.Set(diagUnit);
                             }
                             else {
@@ -444,8 +444,8 @@ namespace XData.VisualStudio.Editors {
                         }
                     }
                 }
-                lock (_taggerList) {
-                    _taggerList.Add(tagger);
+                lock (_taggerSet) {
+                    _taggerSet[docFilePath] = tagger;
                 }
             }
             return (ITagger<T>)(ITagger<IErrorTag>)tagger;

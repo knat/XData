@@ -45,7 +45,9 @@
     <Compile Include="XDataTask.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="XData.targets" />
+    <Content Include="XData.targets">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\XData.Compiler\XData.Compiler.csproj">
