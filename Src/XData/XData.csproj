@@ -61,6 +61,7 @@
     <Compile Include="IO\Text\TextSpan.cs" />
     <Compile Include="ListType.cs" />
     <Compile Include="Metadata.cs" />
+    <None Include="Metah.X.cs" />
     <Compile Include="Object.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SimpleType.cs" />

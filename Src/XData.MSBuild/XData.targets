@@ -11,10 +11,10 @@
         </BuildDependsOn>
     </PropertyGroup>
     <!--<UsingTask TaskName="XData.MSBuilder.XDataTask" AssemblyFile="$(MSBuildThisFileDirectory)XData.MSBuild.dll" />-->
-    <UsingTask TaskName="XData.MSBuild.TestBuilder" AssemblyFile="$(MSBuildThisFileDirectory)XData.MSBuilder.dll" />
+    <UsingTask TaskName="XData.MSBuilder.TestTask" AssemblyFile="$(MSBuildThisFileDirectory)XData.MSBuilder.dll" />
     <Target Name="XDataCompilation">
         <Message Text="======== Begin XData Compilation ========" Importance="high" />
-        <TestBuilder  />
+        <TestTask  />
         <!--<XDataTask
             ProjectDirectory="$(MSBuildProjectDirectory)"
             XDataSchemaFiles="@(XDataSchema)"
