@@ -29,7 +29,7 @@ namespace XData {
         protected abstract int GetValueHashCode(string s);
         protected abstract int CompareValue(string a, string b);
         public override bool Equals(XSimpleType other) {
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XStringBase;
             if ((object)otherType == null) return false;
             return ValueEquals(_value, otherType._value);
@@ -42,7 +42,7 @@ namespace XData {
         }
         public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XStringBase;
             if ((object)otherType == null) return false;
             result = CompareValue(_value, otherType._value);

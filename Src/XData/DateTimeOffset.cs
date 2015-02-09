@@ -28,7 +28,7 @@ namespace XData {
             return _value;
         }
         public override bool Equals(XSimpleType other) {
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XDateTimeOffset;
             if ((object)otherType == null) return false;
             return _value == otherType._value;
@@ -44,7 +44,7 @@ namespace XData {
         }
         public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XDateTimeOffset;
             if ((object)otherType == null) return false;
             result = _value.CompareTo(otherType._value);

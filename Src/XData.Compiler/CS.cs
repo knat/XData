@@ -416,8 +416,8 @@ namespace XData.Compiler {
         internal static NullableTypeSyntax DoubleNullableType {
             get { return SyntaxFactory.NullableType(DoubleType); }
         }
-        internal static LiteralExpressionSyntax Literal(double value) {
-            return SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(value));
+        internal static CastExpressionSyntax Literal(double value) {
+            return SyntaxFactory.CastExpression(DoubleType, SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(value)));
         }
         internal static ExpressionSyntax Literal(double? value) {
             if (value == null) return NullLiteral;

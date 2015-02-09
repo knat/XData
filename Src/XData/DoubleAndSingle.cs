@@ -35,7 +35,7 @@ namespace XData {
             return Value;
         }
         public override bool Equals(XSimpleType other) {
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XDouble;
             if ((object)otherType == null) return false;
             return Value == otherType.Value;
@@ -51,7 +51,7 @@ namespace XData {
         }
         public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XDouble;
             if ((object)otherType == null) return false;
             result = Value.CompareTo(otherType.Value);
@@ -169,7 +169,7 @@ namespace XData {
             return SetSingleValue(f);
         }
         public override bool Equals(XSimpleType other) {
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XSingle;
             if ((object)otherType == null) return false;
             return Value == otherType.Value;
@@ -185,7 +185,7 @@ namespace XData {
         }
         public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XSingle;
             if ((object)otherType == null) return false;
             result = Value.CompareTo(otherType.Value);

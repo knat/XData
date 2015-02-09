@@ -71,7 +71,7 @@ namespace XData.Compiler {
                 var memberList = this[i].MemberList;
                 if (memberList != null) {
                     foreach (var member in memberList) {
-                        if (member.Name == name) {
+                        if (member.NameNode == name) {
                             return member;
                         }
                     }
@@ -92,7 +92,8 @@ namespace XData.Compiler {
                 for (var i = 0; i < ImportList.Count; ++i) {
                     var import = ImportList[i];
                     if (!nsDict.TryGetValue(import.Uri.Value, out import.LogicalNamespace)) {
-                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidImportUri, import.Uri.Value), import.Uri.TextSpan);
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidNamespaceReference, import.Uri.Value),
+                            import.Uri.TextSpan);
                     }
                 }
             }
@@ -101,9 +102,9 @@ namespace XData.Compiler {
             if (MemberList != null && otherList != null) {
                 foreach (var thisMember in MemberList) {
                     foreach (var otherMember in otherList) {
-                        if (thisMember.Name == otherMember.Name) {
-                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateNamespaceMember, otherMember.Name.ToString()),
-                                otherMember.Name.TextSpan);
+                        if (thisMember.NameNode == otherMember.NameNode) {
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateNamespaceMember, otherMember.NameNode.ToString()),
+                                otherMember.NameNode.TextSpan);
                         }
                     }
                 }
@@ -123,8 +124,7 @@ namespace XData.Compiler {
                 }
             }
         }
-
-        public NamespaceMemberNode Resolve(QualifiableNameNode qName) {
+        private NamespaceMemberNode Resolve(QualifiableNameNode qName) {
             NamespaceMemberNode result = null;
             var name = qName.Name;
             if (qName.IsQualified) {
@@ -133,7 +133,7 @@ namespace XData.Compiler {
                     result = SystemTypeNode.TryGet(name.Value);
                 }
                 else {
-                    ImportNode? import = null;
+                    ImportNode import = null;
                     if (ImportList != null) {
                         foreach (var item in ImportList) {
                             if (item.Alias == alias) {
@@ -143,9 +143,10 @@ namespace XData.Compiler {
                         }
                     }
                     if (import == null) {
-                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidQualifiableNameAlias, alias.ToString()), alias.TextSpan);
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidImportAliasReference, alias.ToString()),
+                            alias.TextSpan);
                     }
-                    result = import.Value.LogicalNamespace.TryGetMember(name);
+                    result = import.LogicalNamespace.TryGetMember(name);
                 }
             }
             else {
@@ -157,7 +158,8 @@ namespace XData.Compiler {
                             var member = item.LogicalNamespace.TryGetMember(name);
                             if (member != null) {
                                 if (result != null) {
-                                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AmbiguousNameReference, name.ToString()), name.TextSpan);
+                                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AmbiguousNameReference, name.ToString()),
+                                        name.TextSpan);
                                 }
                                 result = member;
                             }
@@ -173,34 +175,36 @@ namespace XData.Compiler {
         public TypeNode ResolveAsType(QualifiableNameNode qName) {
             var result = Resolve(qName) as TypeNode;
             if (result == null) {
-                DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidTypeNameReference, qName.ToString()), qName.TextSpan);
+                DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidTypeNameReference, qName.ToString()),
+                    qName.TextSpan);
             }
             return result;
         }
         public GlobalElementNode ResolveAsElement(QualifiableNameNode qName) {
             var result = Resolve(qName) as GlobalElementNode;
             if (result == null) {
-                DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidElementNameReference, qName.ToString()), qName.TextSpan);
+                DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidElementNameReference, qName.ToString()),
+                    qName.TextSpan);
             }
             return result;
         }
     }
 
     internal struct UriNode {
-        public UriNode(NameNode alias, AtomValueNode stringValue, string value) {
-            Alias = alias;
-            StringValue = stringValue;
+        public UriNode(NameNode aliasNode, AtomValueNode stringNode, string value) {
+            AliasNode = aliasNode;
+            StringNode = stringNode;
             Value = value;
         }
-        public readonly NameNode Alias;
-        public readonly AtomValueNode StringValue;
+        public readonly NameNode AliasNode;
+        public readonly AtomValueNode StringNode;
         public readonly string Value;
         public TextSpan TextSpan {
             get {
-                if (Alias.IsValid) {
-                    return Alias.TextSpan;
+                if (AliasNode.IsValid) {
+                    return AliasNode.TextSpan;
                 }
-                return StringValue.TextSpan;
+                return StringNode.TextSpan;
             }
         }
     }
@@ -212,7 +216,7 @@ namespace XData.Compiler {
         public readonly AtomValueNode Uri;
         public readonly NameNode Alias;
     }
-    internal struct ImportNode {
+    internal sealed class ImportNode {
         public ImportNode(UriNode uri, NameNode alias) {
             Uri = uri;
             Alias = alias;
@@ -223,7 +227,7 @@ namespace XData.Compiler {
         public LogicalNamespace LogicalNamespace;
     }
 
-    internal abstract class ObjectNode :Node {
+    internal abstract class ObjectNode : Node {
         protected ObjectNode(Node parent) : base(parent) { }
         private NamespaceNode _namespaceAncestor;
         public NamespaceNode NamespaceAncestor {
@@ -234,7 +238,7 @@ namespace XData.Compiler {
     }
     internal abstract class NamespaceMemberNode : ObjectNode {
         protected NamespaceMemberNode(Node parent) : base(parent) { }
-        public NameNode Name;
+        public NameNode NameNode;
         public NameNode AbstractOrSealed;
         public bool IsAbstract {
             get {
@@ -250,14 +254,14 @@ namespace XData.Compiler {
         private string _csName;
         public string CSName {
             get {
-                return _csName ?? (_csName = Name.Value.EscapeId());
+                return _csName ?? (_csName = NameNode.Value.EscapeId());
             }
         }
         private FullName? _fullName;
         public FullName FullName {
             get {
                 if (_fullName == null) {
-                    _fullName = new FullName(NamespaceAncestor.Uri, Name.Value);
+                    _fullName = new FullName(NamespaceAncestor.Uri, NameNode.Value);
                 }
                 return _fullName.Value;
             }
@@ -269,7 +273,7 @@ namespace XData.Compiler {
         public IGlobalObjectSymbol CreateSymbol() {
             if (_objectSymbol == null) {
                 if (_isProcessing) {
-                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CircularReferenceDetected), Name.TextSpan);
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CircularReferenceDetected), NameNode.TextSpan);
                 }
                 _isProcessing = true;
                 var parent = NamespaceAncestor.LogicalNamespace.NamespaceSymbol;

@@ -52,7 +52,6 @@ namespace XData.IO.Text {
         DecimalValue,
         RealValue,
         DotDot,
-        //EqualsEquals,
         HashOpenBracket,
         DollarOpenBrace,
         QuestionOpenBrace,
@@ -499,18 +498,6 @@ namespace XData.IO.Text {
                         return CreateTokenAndAdvanceChar(ch);
                     }
                 }
-                //else if (ch == '=') {
-                //    var nextch = GetNextChar();
-                //    if (nextch == '=') {
-                //        state = CreateState(StateKind.None);
-                //        AdvanceChar();
-                //        AdvanceChar();
-                //        return CreateToken(TokenKind.EqualsEquals, state);
-                //    }
-                //    else {
-                //        return CreateTokenAndAdvanceChar(ch);
-                //    }
-                //}
                 else if (ch == '#') {
                     var nextch = GetNextChar();
                     if (nextch == '[') {
@@ -566,8 +553,7 @@ namespace XData.IO.Text {
                 case 'r': sb.Append('\r'); break;
                 case 't': sb.Append('\t'); break;
                 case 'v': sb.Append('\v'); break;
-                case 'u':
-                    {
+                case 'u': {
                         AdvanceChar();
                         int value = 0;
                         for (var i = 0; i < 4; ++i) {

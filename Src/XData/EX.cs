@@ -161,16 +161,6 @@ namespace XData {
         public static int CountOrZero<T>(this List<T> list) {
             return list == null ? 0 : list.Count;
         }
-        //public static T[] Add<T>(this T[] array, T item) {
-        //    var length = array.Length;
-        //    var newArray = new T[length + 1];
-        //    for (var i = 0; i < length; ++i) {
-        //        newArray[i] = array[i];
-        //    }
-        //    newArray[length] = item;
-        //    return newArray;
-        //}
-
         public static bool UriEquals(string uri1, string uri2) {
             if (string.IsNullOrEmpty(uri1)) {
                 return string.IsNullOrEmpty(uri2);
@@ -194,65 +184,6 @@ namespace XData {
             return new AtomTypeInfo(clrType, false, ToFullName(kind), baseType, null, kind);
         }
 
-        //
-        //
-        //public static bool IsAssignableTo(Type to, Type from, bool @try) {
-        //    if (to == null) throw new ArgumentNullException("to");
-        //    if (to.IsAssignableFrom(from)) return true;
-        //    if (@try) return false;
-        //    throw new InvalidOperationException("Invalid object clr type '{0}'. '{1}' or its base type expected.".InvariantFormat(to.FullName, from.FullName));
-        //}
-        //
-
-        //public static bool IsEmpty(this XNamespace xnamespace) {
-        //    if (xnamespace == null) throw new ArgumentNullException("xnamespace");
-        //    return xnamespace == XNamespace.None;
-        //}
-        //public static bool IsUnqualified(this XName name) {
-        //    if (name == null) throw new ArgumentNullException("name");
-        //    return name.Namespace.IsEmpty();
-        //}
-        //public static bool IsQualified(this XName name) { return !name.IsUnqualified(); }
-
-        //public static TValue TryGetValue<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dict, TKey key) where TValue : class {
-        //    if (dict == null) {
-        //        throw new ArgumentNullException("dict");
-        //    }
-        //    TValue value;
-        //    if (dict.TryGetValue(key, out value)) {
-        //        return value;
-        //    }
-        //    return null;
-        //}
-        //public static void CopyTo<T>(IReadOnlyList<T> list, T[] array, int arrayIndex) {
-        //    if (list == null) {
-        //        throw new ArgumentNullException("list");
-        //    }
-        //    if (array == null) {
-        //        throw new ArgumentNullException("array");
-        //    }
-        //    if (arrayIndex < 0 || arrayIndex > array.Length) {
-        //        throw new ArgumentOutOfRangeException("arrayIndex");
-        //    }
-        //    var listCount = list.Count;
-        //    if (array.Length - arrayIndex < listCount) {
-        //        throw new ArgumentException("insufficient array space.");
-        //    }
-        //    for (var i = 0; i < listCount; i++) {
-        //        array[arrayIndex++] = list[i];
-        //    }
-        //}
-
-        //
-        //
-
-        //todo: move
-        //public static bool IsValid(this DiagnosticSeverity severity) {
-        //    return severity == DiagnosticSeverity.Error || severity == DiagnosticSeverity.Warning || severity == DiagnosticSeverity.Info;
-        //}
-        //public static bool IsValid(this DiagnosticCode code) {
-        //    return code >= DiagnosticCode.Parsing && code < DiagnosticCode.Max;
-        //}
 
     }
 }

@@ -6,13 +6,6 @@ using Microsoft.Build.Utilities;
 using System.Runtime.Serialization;
 
 namespace XData.MSBuild {
-
-    public sealed class TestTask : Task {
-        public override bool Execute() {
-            Log.LogMessage(MessageImportance.High, "hello");
-            return true;
-        }
-    }
     public sealed class XDataTask : Task {
         [Required]
         public string ProjectDirectory { get; set; }

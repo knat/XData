@@ -173,7 +173,7 @@ namespace XData {
         public SimpleTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo baseType,
             FacetSetInfo facets)
             : base(clrType, isAbstract, fullName, baseType) {
-            if (baseType == null) throw new ArgumentNullException("baseType");
+            //if (baseType == null) throw new ArgumentNullException("baseType");
             Facets = facets;
         }
         public readonly FacetSetInfo Facets;

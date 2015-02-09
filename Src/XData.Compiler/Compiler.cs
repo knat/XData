@@ -49,7 +49,7 @@ namespace XData.Compiler {
                         }
                     }
                 }
-                if (!Core((DiagContextEx)context, compilationUnitList, indicatorCompilationUnitList, out code)) {
+                if (!CompileCore((DiagContextEx)context, compilationUnitList, indicatorCompilationUnitList, out code)) {
                     return false;
                 }
                 return true;
@@ -59,14 +59,15 @@ namespace XData.Compiler {
             }
             return false;
         }
-        public const string GeneratedFileBanner = @"//
+        private const string GeneratedFileBanner = @"//
 //Auto-generated, DO NOT EDIT.
 //Visit https://github.com/knat/XData for more information.
 //
 
 ";
-        private static bool Core(DiagContextEx context,
-            List<CompilationUnitNode> compilationUnitList, List<IndicatorCompilationUnitNode> indicatorCompilationUnitList, out string code) {
+        private static bool CompileCore(DiagContextEx context,
+            List<CompilationUnitNode> compilationUnitList, List<IndicatorCompilationUnitNode> indicatorCompilationUnitList,
+            out string code) {
             code = null;
             DiagContextEx.Current = context;
             try {
@@ -102,23 +103,21 @@ namespace XData.Compiler {
                     foreach (var indicator in indicatorList) {
                         LogicalNamespace logicalNS;
                         if (!nsSet.TryGetValue(indicator.Uri, out logicalNS)) {
-                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidIndicatorUri, indicator.Uri),
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidNamespaceReference, indicator.Uri),
                                 indicator.UriNode.TextSpan);
                         }
                         if (logicalNS.CSharpNamespaceName == null) {
                             logicalNS.CSharpNamespaceName = indicator.CSharpNamespaceName;
                             logicalNS.IsCSharpNamespaceRef = indicator.IsRef;
                         }
-                        else if (logicalNS.IsCSharpNamespaceRef != indicator.IsRef || logicalNS.CSharpNamespaceName != indicator.CSharpNamespaceName) {
-                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InconsistentCSharpNamespaceName,
-                                logicalNS.IsCSharpNamespaceRef ? "&" : "=", logicalNS.CSharpNamespaceName.ToString(), indicator.IsRef ? "&" : "=", indicator.CSharpNamespaceName.ToString()),
-                                indicator.CSharpNamespaceName.TextSpan);
+                        else {
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateIndicator, indicator.Uri),
+                                indicator.UriNode.TextSpan);
                         }
-
                     }
                     foreach (var logicalNS in nsSet.Values) {
                         if (logicalNS.CSharpNamespaceName == null) {
-                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CSNamespaceNameNotSpecifiedForNamespace, logicalNS.Uri),
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.IndicatorRequiredForNamespace, logicalNS.Uri),
                                 indicatorList[0].TextSpan);
                         }
                     }

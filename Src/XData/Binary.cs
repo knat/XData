@@ -52,7 +52,7 @@ namespace XData {
             return true;
         }
         public override bool Equals(XSimpleType other) {
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XBinary;
             if ((object)otherType == null) return false;
             return ValueEquals(_value, otherType._value);

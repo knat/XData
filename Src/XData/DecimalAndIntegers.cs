@@ -33,7 +33,7 @@ namespace XData {
             return Value;
         }
         public override bool Equals(XSimpleType other) {
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XDecimal;
             if ((object)otherType == null) return false;
             return Value == otherType.Value;
@@ -49,7 +49,7 @@ namespace XData {
         }
         public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XDecimal;
             if ((object)otherType == null) return false;
             result = Value.CompareTo(otherType.Value);
@@ -155,7 +155,7 @@ namespace XData {
             throw new ArgumentOutOfRangeException("value");
         }
         public override bool Equals(XSimpleType other) {
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XInt64;
             if ((object)otherType == null) return false;
             return Value == otherType.Value;
@@ -171,7 +171,7 @@ namespace XData {
         }
         public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XInt64;
             if ((object)otherType == null) return false;
             result = Value.CompareTo(otherType.Value);
@@ -254,7 +254,7 @@ namespace XData {
             throw new ArgumentOutOfRangeException("value");
         }
         public override bool Equals(XSimpleType other) {
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XInt32;
             if ((object)otherType == null) return false;
             return Value == otherType.Value;
@@ -270,7 +270,7 @@ namespace XData {
         }
         public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XInt32;
             if ((object)otherType == null) return false;
             result = Value.CompareTo(otherType.Value);
@@ -365,7 +365,7 @@ namespace XData {
             throw new ArgumentOutOfRangeException("value");
         }
         public override bool Equals(XSimpleType other) {
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XInt16;
             if ((object)otherType == null) return false;
             return Value == otherType.Value;
@@ -381,7 +381,7 @@ namespace XData {
         }
         public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XInt16;
             if ((object)otherType == null) return false;
             result = Value.CompareTo(otherType.Value);
@@ -488,7 +488,7 @@ namespace XData {
             throw new ArgumentOutOfRangeException("value");
         }
         public override bool Equals(XSimpleType other) {
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XSByte;
             if ((object)otherType == null) return false;
             return Value == otherType.Value;
@@ -504,7 +504,7 @@ namespace XData {
         }
         public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XSByte;
             if ((object)otherType == null) return false;
             result = Value.CompareTo(otherType.Value);
@@ -576,7 +576,7 @@ namespace XData {
             throw new ArgumentOutOfRangeException("value");
         }
         public override bool Equals(XSimpleType other) {
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XUInt64;
             if ((object)otherType == null) return false;
             return Value == otherType.Value;
@@ -592,7 +592,7 @@ namespace XData {
         }
         public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XUInt64;
             if ((object)otherType == null) return false;
             result = Value.CompareTo(otherType.Value);
@@ -675,7 +675,7 @@ namespace XData {
             throw new ArgumentOutOfRangeException("value");
         }
         public override bool Equals(XSimpleType other) {
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XInt32;
             if ((object)otherType == null) return false;
             return Value == otherType.Value;
@@ -691,7 +691,7 @@ namespace XData {
         }
         public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XUInt32;
             if ((object)otherType == null) return false;
             result = Value.CompareTo(otherType.Value);
@@ -786,7 +786,7 @@ namespace XData {
             throw new ArgumentOutOfRangeException("value");
         }
         public override bool Equals(XSimpleType other) {
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XUInt16;
             if ((object)otherType == null) return false;
             return Value == otherType.Value;
@@ -802,7 +802,7 @@ namespace XData {
         }
         public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XUInt16;
             if ((object)otherType == null) return false;
             result = Value.CompareTo(otherType.Value);
@@ -909,7 +909,7 @@ namespace XData {
             throw new ArgumentOutOfRangeException("value");
         }
         public override bool Equals(XSimpleType other) {
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XByte;
             if ((object)otherType == null) return false;
             return Value == otherType.Value;
@@ -925,7 +925,7 @@ namespace XData {
         }
         public override bool TryCompareTo(XAtomType other, out int result) {
             result = 0;
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XByte;
             if ((object)otherType == null) return false;
             result = Value.CompareTo(otherType.Value);

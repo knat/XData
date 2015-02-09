@@ -10,7 +10,7 @@ namespace XData.Compiler {
     internal sealed class CSharpNamespaceNameNode : List<string>, IEquatable<CSharpNamespaceNameNode> {
         public TextSpan TextSpan;
         public bool Equals(CSharpNamespaceNameNode other) {
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             if ((object)other == null) return false;
             var count = Count;
             if (count != other.Count) {

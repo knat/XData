@@ -62,7 +62,8 @@ namespace XData.Compiler {
                 foreach (var obj in GlobalObjectList) {
                     obj.Generate();
                 }
-                list.Add(SyntaxFactory.NamespaceDeclaration(CSFullName, default(SyntaxList<ExternAliasDirectiveSyntax>), default(SyntaxList<UsingDirectiveSyntax>),
+                list.Add(SyntaxFactory.NamespaceDeclaration(CSNamespaceName.CSNonGlobalFullName,
+                    default(SyntaxList<ExternAliasDirectiveSyntax>), default(SyntaxList<UsingDirectiveSyntax>),
                     SyntaxFactory.List(CSMemberList)));
             }
         }

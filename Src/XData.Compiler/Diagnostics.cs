@@ -5,30 +5,34 @@ namespace XData.Compiler {
     internal enum DiagCodeEx {
         None = 0,
         InternalCompilerError = -2000,
-        AliasSysIsReserved,
-        UriSystemIsReserved,
+        //common
+        AliasSysReserved,
+        UriSystemReserved,
         DuplicateUriAlias,
-        InvalidUriAlias,
+        InvalidUriReference,
         DuplicateImportAlias,
-        InvalidImportUri,
+        InvalidNamespaceReference,
         DuplicateNamespaceMember,
-        DuplicateEnumItemName,
-        InvalidQualifiableNameAlias,
+        DuplicateIndicator,
+        IndicatorRequiredForNamespace,
+        InvalidImportAliasReference,
         AmbiguousNameReference,
         InvalidNameReference,
         InvalidTypeNameReference,
         InvalidElementNameReference,
+
         //facets
         UInt64ValueRequired,
         ByteValueRequired,
-        FacetNotAllowed,
+        FacetNotAllowedForType,
         MaxLengthNotGreaterThanOrEqualToMinLength,
         MinLengthNotGreaterThanOrEqualToBaseMinLength,
         MaxLengthNotLessThanOrEqualToBaseMaxLength,
         ScaleNotLessThanOrEqualToPrecision,
         PrecisionNotLessThanOrEqualToBasePrecision,
         ScaleNotLessThanOrEqualToBaseScale,
-        InvalidLiteral,
+        InvalidLiteralForType,
+        DuplicateEnumItemName,
         EnumItemNameNotAllowedInRestriction,
         EnumItemNotInBaseEnum,
         MinValueNotGreaterThanOrEqualToBaseMinValue,
@@ -41,9 +45,6 @@ namespace XData.Compiler {
         //
         DuplicateMemberName,
         DuplicateAttributeName,
-        InvalidIndicatorUri,
-        InconsistentCSharpNamespaceName,
-        CSNamespaceNameNotSpecifiedForNamespace,
         CircularReferenceDetected,
         SimpleTypeRequired,
         ComplexTypeRequired,
@@ -101,27 +102,43 @@ namespace XData.Compiler {
         private readonly string[] _msgArgs;
         public string GetMessage() {
             switch (Code) {
-                case DiagCodeEx.AliasSysIsReserved:
-                    return "Alias 'sys' is reserved.";
-                case DiagCodeEx.UriSystemIsReserved:
-                    return "Uri '" + Extensions.SystemUri + "' is reserved.";
+                //common
+                case DiagCodeEx.AliasSysReserved:
+                    return "Alias 'sys' reserved.";
+                case DiagCodeEx.UriSystemReserved:
+                    return "Uri '" + Extensions.SystemUri + "' reserved.";
                 case DiagCodeEx.DuplicateUriAlias:
                     return "Duplicate uri alias '{0}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.InvalidUriAlias:
-                    return "Invalid uri alias '{0}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.InvalidUriReference:
+                    return "Invalid uri reference '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.DuplicateImportAlias:
                     return "Duplicate import alias '{0}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.InvalidNamespaceReference:
+                    return "Invalid namespace reference '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.DuplicateNamespaceMember:
                     return "Duplicate namespace member '{0}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.DuplicateEnumItemName:
-                    return "Duplicate enum item name '{0}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.DuplicateIndicator:
+                    return "Duplicate indicator '{0}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.IndicatorRequiredForNamespace:
+                    return "Indicator required for namespace '{0}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.InvalidImportAliasReference:
+                    return "Invalid import alias reference '{0}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.AmbiguousNameReference:
+                    return "Ambiguous name reference '{0}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.InvalidNameReference:
+                    return "Invalid name reference '{0}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.InvalidTypeNameReference:
+                    return "Invalid type name reference '{0}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.InvalidElementNameReference:
+                    return "Invalid element name reference '{0}'.".InvFormat(_msgArgs);
+
                 //facets
                 case DiagCodeEx.UInt64ValueRequired:
                     return "UInt64 value required.";
                 case DiagCodeEx.ByteValueRequired:
                     return "Byte value required.";
-                case DiagCodeEx.FacetNotAllowed:
-                    return "Facet not allowed.";
+                case DiagCodeEx.FacetNotAllowedForType:
+                    return "Facet not allowed for type '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.MaxLengthNotGreaterThanOrEqualToMinLength:
                     return "Max length '{0}' not greater than or equal to min length '{1}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.MinLengthNotGreaterThanOrEqualToBaseMinLength:
@@ -134,8 +151,10 @@ namespace XData.Compiler {
                     return "Precision '{0}' not less than or equal to base precision '{1}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.ScaleNotLessThanOrEqualToBaseScale:
                     return "Scale '{0}' not less than or equal to base scale '{1}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.InvalidLiteral:
-                    return "Invalid literal '{0}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.InvalidLiteralForType:
+                    return "Invalid literal '{0}' for type '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.DuplicateEnumItemName:
+                    return "Duplicate enum item name '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.EnumItemNameNotAllowedInRestriction:
                     return "Enum item name not allowed in restriction.";
                 case DiagCodeEx.EnumItemNotInBaseEnum:
@@ -158,26 +177,7 @@ namespace XData.Compiler {
                     return "Duplicate member name '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.DuplicateAttributeName:
                     return "Duplicate attribute name '{0}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.InvalidIndicatorUri:
-                    return "Invalid indicator uri '{0}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.InconsistentCSharpNamespaceName:
-                    return "Inconsistent C# namespace name '{0}' '{1}' and '{2}' '{3}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.CSNamespaceNameNotSpecifiedForNamespace:
-                    return "C# namespace name is not specified for namespace '{0}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.InvalidImportUri:
-                    return "Invalid import uri '{0}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.InvalidQualifiableNameAlias:
-                    return "Invalid qualifiable name alias '{0}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.AmbiguousNameReference:
-                    return "Ambiguous name reference '{0}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.InvalidNameReference:
-                    return "Invalid name reference '{0}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.InvalidTypeNameReference:
-                    return "Invalid type name reference '{0}'.".InvFormat(_msgArgs);
-                //case DiagCodeEx.InvalidAttributeNameReference:
-                //    return "Invalid attribute name reference '{0}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.InvalidElementNameReference:
-                    return "Invalid element name reference '{0}'.".InvFormat(_msgArgs);
+
                 case DiagCodeEx.CircularReferenceDetected:
                     return "Circular reference detected.";
                 case DiagCodeEx.SimpleTypeRequired:
@@ -267,19 +267,19 @@ namespace XData.Compiler {
         public static DiagContextEx Current;
         public sealed class ContextException : Exception { }
         private static readonly ContextException _contextException = new ContextException();
-        public static void ErrorDiag(DiagMsgEx diagMsg, TextSpan textSpan) {
-            Current.AddDiag(DiagSeverity.Error, (int)diagMsg.Code, diagMsg.GetMessage(), textSpan, null);
-        }
         public static void ErrorDiagAndThrow(DiagMsgEx diagMsg, TextSpan textSpan) {
             ErrorDiag(diagMsg, textSpan);
             throw _contextException;
         }
-        public static void ThrowIfHasErrors() {
+        private static void ErrorDiag(DiagMsgEx diagMsg, TextSpan textSpan) {
+            Current.AddDiag(DiagSeverity.Error, (int)diagMsg.Code, diagMsg.GetMessage(), textSpan, null);
+        }
+        private static void ThrowIfHasErrors() {
             if (Current.HasErrorDiags) {
                 throw _contextException;
             }
         }
-        public static void WarningDiag(DiagMsgEx diagMsg, TextSpan textSpan) {
+        private static void WarningDiag(DiagMsgEx diagMsg, TextSpan textSpan) {
             Current.AddDiag(DiagSeverity.Warning, (int)diagMsg.Code, diagMsg.GetMessage(), textSpan, null);
         }
 

@@ -31,6 +31,7 @@ namespace XData.Compiler {
             AliasKeyword,
             AsKeyword,
             ElementKeyword,
+            EnumKeyword,
             ExtendsKeyword,
             ImportKeyword,
             LengthRangeKeyword,
@@ -176,12 +177,12 @@ namespace XData.Compiler {
         }
         private void CheckAlias(NameNode alias) {
             if (alias.Value == "sys") {
-                ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AliasSysIsReserved), alias.TextSpan);
+                ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AliasSysReserved), alias.TextSpan);
             }
         }
         private void CheckUri(AtomValueNode uri) {
             if (uri.Value == Extensions.SystemUri) {
-                ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.UriSystemIsReserved), uri.TextSpan);
+                ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.UriSystemReserved), uri.TextSpan);
             }
         }
         private bool UriAliasing(List<UriAliasingNode> list, out UriAliasingNode result) {
@@ -206,28 +207,28 @@ namespace XData.Compiler {
         }
         private bool Uri(Node parent, out UriNode result) {
             string value = null;
-            NameNode alias;
-            var stringValue = default(AtomValueNode);
-            if (Name(out alias)) {
+            NameNode aliasNode;
+            var stringNode = default(AtomValueNode);
+            if (Name(out aliasNode)) {
                 var uaList = parent.GetAncestor<CompilationUnitBaseNode>().UriAliasingList;
                 if (uaList != null) {
                     foreach (var ua in uaList) {
-                        if (ua.Alias == alias) {
+                        if (ua.Alias == aliasNode) {
                             value = ua.Uri.Value;
                             break;
                         }
                     }
                 }
                 if (value == null) {
-                    ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidUriAlias, alias.ToString()), alias.TextSpan);
+                    ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidUriReference, aliasNode.ToString()), aliasNode.TextSpan);
                 }
             }
-            else if (StringValue(out stringValue)) {
-                CheckUri(stringValue);
-                value = stringValue.Value;
+            else if (StringValue(out stringNode)) {
+                CheckUri(stringNode);
+                value = stringNode.Value;
             }
             if (value != null) {
-                result = new UriNode(alias, stringValue, value);
+                result = new UriNode(aliasNode, stringNode, value);
                 return true;
             }
             result = default(UriNode);
@@ -269,9 +270,9 @@ namespace XData.Compiler {
                 }
             }
             if (list.CountOrZero() > 0) {
-                var name = result.Name;
+                var name = result.NameNode;
                 foreach (var item in list) {
-                    if (item.Name == name) {
+                    if (item.NameNode == name) {
                         ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateNamespaceMember, name.ToString()), name.TextSpan);
                     }
                 }
@@ -281,7 +282,7 @@ namespace XData.Compiler {
         private bool Type(Node parent, out NamespaceMemberNode result) {
             if (Keyword(ParserConstants.TypeKeyword)) {
                 var type = new TypeNode(parent);
-                type.Name = NameExpected();
+                type.NameNode = NameExpected();
                 Unordered(_abstractOrSealedGetter, out type.AbstractOrSealed, "abstract, sealed or > expected.");
                 if (!TypeDirectness(type, out type.Body)) {
                     if (!TypeList(type, out type.Body)) {
@@ -426,7 +427,22 @@ namespace XData.Compiler {
         }
         private bool LengthRange(out IntegerRangeNode<ulong> result) {
             if (Keyword(ParserConstants.LengthRangeKeyword)) {
-                result = UInt64RangeExpected(false, DiagCodeEx.MaxLengthNotGreaterThanOrEqualToMinLength);
+                IntegerNode<ulong> minValue, maxValue;
+                UInt64Value(out minValue);
+                TextSpan dotdotTextSpan;
+                TokenExpected((int)TokenKind.DotDot, ".. expected.", out dotdotTextSpan);
+                if (UInt64Value(out maxValue)) {
+                    if (minValue.IsValid) {
+                        if (maxValue.Value < minValue.Value) {
+                            ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxLengthNotGreaterThanOrEqualToMinLength,
+                                maxValue.Value.ToInvString(), minValue.Value.ToInvString()), maxValue.TextSpan);
+                        }
+                    }
+                }
+                else if (!minValue.IsValid) {
+                    ErrorDiagAndThrow("Max length expected.");
+                }
+                result = new IntegerRangeNode<ulong>(minValue, maxValue, dotdotTextSpan);
                 return true;
             }
             result = default(IntegerRangeNode<ulong>);
@@ -542,41 +558,6 @@ namespace XData.Compiler {
             result = default(QualifiableNameNode);
             return false;
         }
-        private bool UInt64Range(bool minValueRequired, DiagCodeEx diagCode, out IntegerRangeNode<ulong> result) {
-            IntegerNode<ulong> minValue, maxValue;
-            TextSpan dotdotTextSpan = default(TextSpan);
-            if (!UInt64Value(out minValue)) {
-                if (minValueRequired || !Token((int)TokenKind.DotDot, out dotdotTextSpan)) {
-                    result = default(IntegerRangeNode<ulong>);
-                    return false;
-                }
-            }
-            if (minValue.IsValid && !dotdotTextSpan.IsValid) {
-                ErrorDiagAndThrow(".. expected.");
-            }
-            if (UInt64Value(out maxValue)) {
-                if (minValue.IsValid) {
-                    if (maxValue.Value < minValue.Value) {
-                        ErrorDiagAndThrow(new DiagMsgEx(diagCode,
-                            maxValue.Value.ToInvString(), minValue.Value.ToInvString()), maxValue.TextSpan);
-                    }
-                }
-            }
-            else {
-                if (!minValue.IsValid) {
-                    ErrorDiagAndThrow("UInt64 value expected.");
-                }
-            }
-            result = new IntegerRangeNode<ulong>(minValue, maxValue, dotdotTextSpan);
-            return true;
-        }
-        private IntegerRangeNode<ulong> UInt64RangeExpected(bool minValueRequired, DiagCodeEx diagCode) {
-            IntegerRangeNode<ulong> result;
-            if (!UInt64Range(minValueRequired, diagCode, out result)) {
-                ErrorDiagAndThrow("UInt64 range expected.");
-            }
-            return result;
-        }
         private bool ByteValue(out IntegerNode<byte> result) {
             AtomValueNode node;
             if (IntegerValue(out node)) {
@@ -610,13 +591,13 @@ namespace XData.Compiler {
             result = default(IntegerNode<ulong>);
             return false;
         }
-        private IntegerNode<ulong> UInt64ValueExpected() {
-            IntegerNode<ulong> result;
-            if (!UInt64Value(out result)) {
-                ErrorDiagAndThrow("UInt64 value expected.");
-            }
-            return result;
-        }
+        //private IntegerNode<ulong> UInt64ValueExpected() {
+        //    IntegerNode<ulong> result;
+        //    if (!UInt64Value(out result)) {
+        //        ErrorDiagAndThrow("UInt64 value expected.");
+        //    }
+        //    return result;
+        //}
         #endregion facets
         private bool Attributes(Node parent, out AttributesNode result) {
             TextSpan openBracketToken;
@@ -656,7 +637,7 @@ namespace XData.Compiler {
         private bool GlobalElement(Node parent, out NamespaceMemberNode result) {
             if (Keyword(ParserConstants.ElementKeyword)) {
                 var element = new GlobalElementNode(parent);
-                element.Name = NameExpected();
+                element.NameNode = NameExpected();
                 Unordered(_abstractOrSealedGetter, _nullableGetter, _substituteGetter,
                     out element.AbstractOrSealed, out element.Nullable, out element.SubstitutedGlobalElementQName,
                     "Abstract, sealed, nullable, substitutes or > expected.");
@@ -792,8 +773,39 @@ namespace XData.Compiler {
             result = default(QualifiableNameNode);
             return false;
         }
+        private bool UInt64Range(DiagCodeEx diagCode, out IntegerRangeNode<ulong> result) {
+            IntegerNode<ulong> minValue, maxValue;
+            TextSpan dotdotTextSpan;
+            if (!UInt64Value(out minValue)) {
+                result = default(IntegerRangeNode<ulong>);
+                return false;
+            }
+            if (!Token((int)TokenKind.DotDot, out dotdotTextSpan)) {
+                if (minValue.IsValid) {
+                    ErrorDiagAndThrow(".. expected.");
+                }
+                else {
+                    result = default(IntegerRangeNode<ulong>);
+                    return false;
+                }
+            }
+            if (UInt64Value(out maxValue)) {
+                if (minValue.IsValid) {
+                    if (maxValue.Value < minValue.Value) {
+                        ErrorDiagAndThrow(new DiagMsgEx(diagCode,
+                            maxValue.Value.ToInvString(), minValue.Value.ToInvString()), maxValue.TextSpan);
+                    }
+                }
+            }
+            else {
+
+            }
+            result = new IntegerRangeNode<ulong>(minValue, maxValue, dotdotTextSpan);
+            return true;
+        }
+
         private bool Occurrence(out OccurrenceNode result) {
-            ulong minValue = 0, maxValue = 0;
+            ulong minValue = 0, maxValue = ulong.MaxValue;
             TextSpan textSpan;
             if (Token('?', out textSpan)) {
                 minValue = 0;
@@ -801,23 +813,22 @@ namespace XData.Compiler {
             }
             else if (Token('*', out textSpan)) {
                 minValue = 0;
-                maxValue = ulong.MaxValue;
             }
             else if (Token('+', out textSpan)) {
                 minValue = 1;
-                maxValue = ulong.MaxValue;
             }
             else {
-                IntegerRangeNode<ulong> range;
-                if (UInt64Range(true, DiagCodeEx.MaxOccurrenceNotEqualToOrGreaterThanMinOccurrence, out range)) {
-                    minValue = range.MinValue.Value;
-                    if (range.MaxValue.IsValid) {
-                        maxValue = range.MaxValue.Value;
+                IntegerNode<ulong> minValueNode, maxValueNode;
+                if (UInt64Value(out minValueNode)) {
+                    minValue = minValueNode.Value;
+                    TokenExpected((int)TokenKind.DotDot, ".. expected.", out textSpan);
+                    if (UInt64Value(out maxValueNode)) {
+                        maxValue = maxValueNode.Value;
+                        if (maxValue < minValue) {
+                            ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxOccurrenceNotEqualToOrGreaterThanMinOccurrence,
+                                maxValue.ToInvString(), minValue.ToInvString()), maxValueNode.TextSpan);
+                        }
                     }
-                    else {
-                        maxValue = ulong.MaxValue;
-                    }
-                    textSpan = range.DotDotTextSpan;
                 }
             }
             if (textSpan.IsValid) {

@@ -49,7 +49,7 @@ namespace XData {
             return obj;
         }
         public override bool Equals(XSimpleType other) {
-            if ((object)this == other) return true;
+            if ((object)this == (object)other) return true;
             var otherType = other as XListType<T>;
             if ((object)otherType == null) return false;
             var count = _itemList.Count;

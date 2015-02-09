@@ -42,7 +42,8 @@ namespace XData.Compiler {
         public override void Resolve() {
             ItemType = NamespaceAncestor.ResolveAsType(ItemTypeQName);
             if (Facets != null && Facets.ListItemTypeQName.IsValid) {
-                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotAllowed), Facets.ListItemTypeQName.TextSpan);
+                DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.FacetNotAllowedForType, TypeKind.ListType.ToString()),
+                    Facets.ListItemTypeQName.TextSpan);
             }
         }
         public override TypeSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {

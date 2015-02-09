@@ -27,29 +27,35 @@ namespace XData.Compiler {
         }
         public FacetSetSymbol CreateSymbol(SimpleTypeSymbol parent, TypeKind typeKind, FacetSetSymbol baseFacetSet) {
             if (LengthRange.IsValid && !System.Linq.Enumerable.Contains(_lengthRangeTypeKinds, typeKind)) {
-                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotAllowed), LengthRange.TextSpan);
+                DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.FacetNotAllowedForType, typeKind.ToString()),
+                    LengthRange.TextSpan);
             }
             if (typeKind != TypeKind.Decimal) {
                 if (Precision.IsValid) {
-                    DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotAllowed), Precision.TextSpan);
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.FacetNotAllowedForType, typeKind.ToString()),
+                        Precision.TextSpan);
                 }
                 if (Scale.IsValid) {
-                    DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotAllowed), Scale.TextSpan);
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.FacetNotAllowedForType, typeKind.ToString()),
+                        Scale.TextSpan);
                 }
             }
             if (ValueRange.IsValid && !System.Linq.Enumerable.Contains(_valueRangeTypeKinds, typeKind)) {
-                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotAllowed), ValueRange.TextSpan);
+                DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.FacetNotAllowedForType, typeKind.ToString()),
+                    ValueRange.TextSpan);
             }
             if (Enum != null && !typeKind.IsConcreteAtomType()) {
-                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotAllowed), Enum[0].TextSpan);
+                DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.FacetNotAllowedForType, typeKind.ToString()),
+                    Enum[0].TextSpan);
             }
             if (Pattern.IsValid && !typeKind.IsConcreteAtomType()) {
-                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotAllowed), Pattern.TextSpan);
+                DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.FacetNotAllowedForType, typeKind.ToString()),
+                    Pattern.TextSpan);
             }
             if (typeKind != TypeKind.ListType && ListItemTypeQName.IsValid) {
-                DiagContextEx.ErrorDiag(new DiagMsgEx(DiagCodeEx.FacetNotAllowed), ListItemTypeQName.TextSpan);
+                DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.FacetNotAllowedForType, typeKind.ToString()),
+                    ListItemTypeQName.TextSpan);
             }
-            DiagContextEx.ThrowIfHasErrors();
             if (!HasCoreFacets) {
                 return baseFacetSet;
             }
@@ -129,11 +135,13 @@ namespace XData.Compiler {
                 for (var i = 0; i < Enum.Count; ++i) {
                     var item = Enum[i];
                     if (item.Name.IsValid && @enum != null) {
-                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.EnumItemNameNotAllowedInRestriction), item.Name.TextSpan);
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.EnumItemNameNotAllowedInRestriction),
+                            item.Name.TextSpan);
                     }
                     var literal = item.Value.Value;
                     if (!typeObj.TryParseAndSet(literal)) {
-                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidLiteral, literal), item.TextSpan);
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidLiteralForType, literal, typeKind.ToString()),
+                            item.TextSpan);
                     }
                     if (@enum != null) {
                         var found = false;
@@ -149,7 +157,7 @@ namespace XData.Compiler {
                     }
                     itemList.Add(new EnumItemInfo(typeObj.GetValue(), item.Name.Value));
                     if (i > 0) {
-                        textsb.Append(", ");
+                        textsb.Append(' ');
                     }
                     textsb.Append(literal);
                 }
@@ -161,7 +169,8 @@ namespace XData.Compiler {
                     minTypeObj = CreateXAtomType(typeKind);
                     var literal = ValueRange.MinValue.Value.Value;
                     if (!minTypeObj.TryParseAndSet(literal)) {
-                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidLiteral, literal), ValueRange.MinValue.TextSpan);
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidLiteralForType, literal, typeKind.ToString()),
+                            ValueRange.MinValue.TextSpan);
                     }
                     if (minValue != null) {
                         var minValueV = minValue.Value;
@@ -169,13 +178,11 @@ namespace XData.Compiler {
                         if (!minTypeObj.TryCompareValueTo(minValueV.Value, out result)) {
                             throw new InvalidOperationException("!TryCompareValueTo()");
                         }
-                        if (minValueV.IsInclusive) {
-                            if (result < 0) {
-                                DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MinValueNotGreaterThanOrEqualToBaseMinValue,
-                                    literal, minValueV.Text), ValueRange.MinValue.TextSpan);
-                            }
+                        if (result < 0) {
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MinValueNotGreaterThanOrEqualToBaseMinValue,
+                                literal, minValueV.Text), ValueRange.MinValue.TextSpan);
                         }
-                        else if (result <= 0) {
+                        else if (result == 0 && !minValueV.IsInclusive && ValueRange.MinValue.IsInclusive) {
                             DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MinValueNotGreaterThanBaseMinValue,
                                 literal, minValueV.Text), ValueRange.MinValue.TextSpan);
                         }
@@ -186,7 +193,8 @@ namespace XData.Compiler {
                     maxTypeObj = CreateXAtomType(typeKind);
                     var literal = ValueRange.MaxValue.Value.Value;
                     if (!maxTypeObj.TryParseAndSet(literal)) {
-                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidLiteral, literal), ValueRange.MaxValue.TextSpan);
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidLiteralForType, literal, typeKind.ToString()),
+                            ValueRange.MaxValue.TextSpan);
                     }
                     if (maxValue != null) {
                         var maxValueV = maxValue.Value;
@@ -194,13 +202,11 @@ namespace XData.Compiler {
                         if (!maxTypeObj.TryCompareValueTo(maxValueV.Value, out result)) {
                             throw new InvalidOperationException("!TryCompareValueTo()");
                         }
-                        if (maxValueV.IsInclusive) {
-                            if (result > 0) {
-                                DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxValueNotLessThanOrEqualToBaseMaxValue,
-                                    literal, maxValueV.Text), ValueRange.MaxValue.TextSpan);
-                            }
+                        if (result > 0) {
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxValueNotLessThanOrEqualToBaseMaxValue,
+                                literal, maxValueV.Text), ValueRange.MaxValue.TextSpan);
                         }
-                        else if (result >= 0) {
+                        else if (result == 0 && !maxValueV.IsInclusive && ValueRange.MaxValue.IsInclusive) {
                             DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxValueNotLessThanBaseMaxValue,
                                 literal, maxValueV.Text), ValueRange.MaxValue.TextSpan);
                         }
