@@ -20,6 +20,7 @@ namespace XData.Compiler {
         InvalidNameReference,
         InvalidTypeNameReference,
         InvalidElementNameReference,
+        CircularReferenceNotAllowed,
 
         //facets
         UInt64ValueRequired,
@@ -42,13 +43,10 @@ namespace XData.Compiler {
         MaxValueNotGreaterThanOrEqualToMinValue,
         MaxValueNotGreaterThanMinValue,
 
-        //
-        DuplicateMemberName,
-        DuplicateAttributeName,
-        CircularReferenceDetected,
+        //type
         SimpleTypeRequired,
         ComplexTypeRequired,
-        BaseTypeIsSealed,
+        BaseTypeSealed,
         CannotExtendOrRestrictSysComplexType,
         CannotRestrictSysSimpleAtomListType,
         CannotExtendSimpleChildWithComplexChildren,
@@ -59,20 +57,21 @@ namespace XData.Compiler {
         AttributesChildrenNotAllowedInSimpleTypeRestriction,
         FacetsNotAllowedInComplexTypeRestriction,
         TypeNotEqualToOrDeriveFrom,
-        CannotFindRestrictedAttribute,
-        AttributeFullNameNotEqualToRestricted,
-        AttributeIsOptionalButRestrictedIsRequired,
-        AttributeIsNullableButRestrictedIsNotNullable,
-        AttributeDeclarationNotEqualToRestricted,
-        RequiredAttributeNotRestricting,
-
         TypeNotEqualToOrDeriveFromRestricted,
         TypeNotEqualToOrDeriveFromSubstituted,
 
+        //
+        //attribute
+        DuplicateAttributeName,
+        CannotFindRestrictedAttribute,
+        CannotDeleteRequiredAttribute,
+        CannotChangeRequiredToOptional,
         DeletionNotAllowedInExtension,
-        CannotDeleteAttributeBecauseItIsNotOptional,
-        SubstitutedElementIsSealed,
-        ElementIsNullableButSubstitutedIsNotNullable,
+        //
+        CannotChangeNonNullableToNullable,
+        //child
+        SubstitutedElementSealed,
+        DuplicateMemberName,
         MaxOccurrenceCannotBeZeroInExtension,
         ChildKindNotEqualToRestricted,
         MaxOccurrenceNotEqualToOrGreaterThanMinOccurrence,
@@ -131,6 +130,8 @@ namespace XData.Compiler {
                     return "Invalid type name reference '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.InvalidElementNameReference:
                     return "Invalid element name reference '{0}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.CircularReferenceNotAllowed:
+                    return "Circular reference not allowed.";
 
                 //facets
                 case DiagCodeEx.UInt64ValueRequired:
@@ -172,20 +173,13 @@ namespace XData.Compiler {
                 case DiagCodeEx.MaxValueNotGreaterThanMinValue:
                     return "Max value '{0}' not greater than min value '{1}'.".InvFormat(_msgArgs);
 
-
-                case DiagCodeEx.DuplicateMemberName:
-                    return "Duplicate member name '{0}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.DuplicateAttributeName:
-                    return "Duplicate attribute name '{0}'.".InvFormat(_msgArgs);
-
-                case DiagCodeEx.CircularReferenceDetected:
-                    return "Circular reference detected.";
+                //type
                 case DiagCodeEx.SimpleTypeRequired:
                     return "Simple type required.";
                 case DiagCodeEx.ComplexTypeRequired:
                     return "Complex type required.";
-                case DiagCodeEx.BaseTypeIsSealed:
-                    return "Base type '{0}' is sealed.".InvFormat(_msgArgs);
+                case DiagCodeEx.BaseTypeSealed:
+                    return "Base type '{0}' sealed.".InvFormat(_msgArgs);
                 case DiagCodeEx.CannotExtendOrRestrictSysComplexType:
                     return "Cannot extend or restrict 'sys:ComplexType'.";
                 case DiagCodeEx.CannotRestrictSysSimpleAtomListType:
@@ -205,33 +199,32 @@ namespace XData.Compiler {
                 case DiagCodeEx.FacetsNotAllowedInComplexTypeRestriction:
                     return "Facets not allowed in complex type restriction.";
                 case DiagCodeEx.TypeNotEqualToOrDeriveFrom:
-                    return "Type '{0} not equal to or derive from '{1}'.";
-                case DiagCodeEx.CannotFindRestrictedAttribute:
-                    return "Cannot find the restricted attribute '{0}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.AttributeFullNameNotEqualToRestricted:
-                    return "Attribute full name '{0}' not equal to the restricted attribute full name '{1}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.AttributeIsOptionalButRestrictedIsRequired:
-                    return "Attribute is optional but the restricted is required.";
-                case DiagCodeEx.AttributeIsNullableButRestrictedIsNotNullable:
-                    return "Attribute is nullable but the restricted is not nullable.";
-                case DiagCodeEx.AttributeDeclarationNotEqualToRestricted:
-                    return "Attribute declaration '{0}' not equal to the restricted attribute '{1}'.";
+                    return "Type '{0}' not equal to or derive from '{1}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.TypeNotEqualToOrDeriveFromRestricted:
                     return "Type '{0}' not equal to or derive from the restricted '{1}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.TypeNotEqualToOrDeriveFromSubstituted:
                     return "Type '{0}' not equal to or derive from the substituted '{1}'.".InvFormat(_msgArgs);
 
-
-                case DiagCodeEx.RequiredAttributeNotRestricting:
-                    return "Required attribute with member name '{0}' not restricting.".InvFormat(_msgArgs);
+                //
+                //attribute
+                case DiagCodeEx.DuplicateAttributeName:
+                    return "Duplicate attribute name '{0}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.CannotFindRestrictedAttribute:
+                    return "Cannot find the restricted attribute '{0}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.CannotDeleteRequiredAttribute:
+                    return "Cannot delete the required attribute '{0}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.CannotChangeRequiredToOptional:
+                    return "Cannot change required to optional.";
                 case DiagCodeEx.DeletionNotAllowedInExtension:
                     return "Deletion not allowed in extension.";
-                case DiagCodeEx.CannotDeleteAttributeBecauseItIsNotOptional:
-                    return "Cannot delete attribute '{0}' because it is not optional.".InvFormat(_msgArgs);
-                case DiagCodeEx.SubstitutedElementIsSealed:
-                    return "Substituted element is sealed.";
-                case DiagCodeEx.ElementIsNullableButSubstitutedIsNotNullable:
-                    return "Element is nullable but the substituted element is not nullable.";
+                //
+                case DiagCodeEx.CannotChangeNonNullableToNullable:
+                    return "Cannot change non-nullable to nullable.";
+                //child
+                case DiagCodeEx.SubstitutedElementSealed:
+                    return "Substituted element '{0}' sealed.".InvFormat(_msgArgs);
+                case DiagCodeEx.DuplicateMemberName:
+                    return "Duplicate member name '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.MaxOccurrenceCannotBeZeroInExtension:
                     return "Max occurrence cannot be zero in extension.";
                 case DiagCodeEx.ChildKindNotEqualToRestricted:

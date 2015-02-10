@@ -290,7 +290,7 @@ namespace XData.Compiler {
         internal static QualifiedNameSyntax ChildInfoName {
             get { return CS.QualifiedName(XDataName, "ChildInfo"); }
         }
-        internal static ArrayTypeSyntax ChildInfoType {
+        internal static ArrayTypeSyntax ChildInfoArrayType {
             get { return CS.OneDimArrayType(ChildInfoName); }
         }
         internal static QualifiedNameSyntax ChildListInfoName {
@@ -328,6 +328,9 @@ namespace XData.Compiler {
         }
         internal static QualifiedNameSyntax XChildListOf(TypeSyntax item) {
             return SyntaxFactory.QualifiedName(XDataName, CS.GenericName("XChildList", item));
+        }
+        internal static QualifiedNameSyntax XListTypeOf(TypeSyntax item) {
+            return SyntaxFactory.QualifiedName(XDataName, CS.GenericName("XListType", item));
         }
 
         //>var obj = objExp; if(obj == null) return null; return obj.memberName;
@@ -369,15 +372,14 @@ namespace XData.Compiler {
             list.Add(CS.Method(CS.PublicTokenList, CS.BoolType, "Remove",
                 new[] { CS.Parameter(itemType, "item") },
                 CS.ReturnStm(CS.InvoExpr(CS.BaseMemberAccessExpr("Remove"), CS.IdName("item")))));
-            //>new public IEnumerator<TYPE> GetEnumerator(){ return GetEnumeratorCore<XInt32>(); }
+            //>new public IEnumerator<TYPE> GetEnumerator(){ return base.GetEnumeratorCore<XInt32>(); }
             list.Add(CS.Method(CS.NewPublicTokenList, CS.IEnumeratorOf(itemType), "GetEnumerator", null, new[] {
-                    CS.ReturnStm(CS.InvoExpr(CS.GenericName("GetEnumeratorCore", itemType)))
+                    CS.ReturnStm(CS.InvoExpr(CS.BaseMemberAccessExpr(CS.GenericName("GetEnumeratorCore", itemType))))
             }));
-            //>public void CopyTo(TYPE[] array, int arrayIndex) { CopyToCore(array, arrayIndex); }
+            //>public void CopyTo(TYPE[] array, int arrayIndex) { base.CopyToCore(array, arrayIndex); }
             list.Add(CS.Method(CS.PublicTokenList, CS.VoidType, "CopyTo",
                 new[] { CS.Parameter(CS.OneDimArrayType(itemType), "array"), CS.Parameter(CS.IntType, "arrayIndex") },
-                CS.ExprStm(CS.InvoExpr(CS.IdName("CopyToCore"), CS.IdName("array"), CS.IdName("arrayIndex")))));
-
+                CS.ExprStm(CS.InvoExpr(CS.BaseMemberAccessExpr("CopyToCore"), CS.IdName("array"), CS.IdName("arrayIndex")))));
 
         }
     }

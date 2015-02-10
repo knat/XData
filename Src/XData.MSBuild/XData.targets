@@ -6,19 +6,36 @@
     </ItemGroup>
     <PropertyGroup>
         <BuildDependsOn>
-            XDataCompilation;
+            XDataBuild;
             $(BuildDependsOn)
         </BuildDependsOn>
+        <CleanDependsOn>
+            XDataClean;
+            $(CleanDependsOn)
+        </CleanDependsOn>
     </PropertyGroup>
     <UsingTask TaskName="XData.MSBuild.XDataTask" AssemblyFile="$(MSBuildThisFileDirectory)XData.MSBuild.dll" />
-    <Target Name="XDataCompilation">
-        <Message Text="======== Begin XData Compilation ========" Importance="high" />
+    <Target Name="XDataBuild"
+        Inputs="@(XDataSchema);@(XDataIndicator)"
+        Outputs="$(MSBuildProjectDirectory)\__XDataGenerated.cs"
+        >
+        <Message Text="======== Begin XData Build ========" Importance="high" />
         <XDataTask
             ProjectDirectory="$(MSBuildProjectDirectory)"
+            IsBuild="true"
             XDataSchemaFiles="@(XDataSchema)"
             XDataIndicatorFiles="@(XDataIndicator)"
             >
         </XDataTask>
-        <Message Text="======== End XData Compilation ========" Importance="high" />
+        <Message Text="======== End XData Build ========" Importance="high" />
+    </Target>
+    <Target Name="XDataClean">
+        <Message Text="======== Begin XData Clean ========" Importance="high" />
+        <XDataTask
+            ProjectDirectory="$(MSBuildProjectDirectory)"
+            IsBuild="false"
+            >
+        </XDataTask>
+        <Message Text="======== End XData Clean ========" Importance="high" />
     </Target>
 </Project>

@@ -54,7 +54,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="XData.targets">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <SubType>Designer</SubType>
     </None>
   </ItemGroup>

@@ -51,7 +51,7 @@ type-body:
 type-list | type-directness | type-extension | type-restriction
 ;
 type-list:
-list-item-type simple-type-restrictions?
+list-item-type facets?
 ;
 list-item-type:
 'lists' qualifiable-name
@@ -64,7 +64,7 @@ type-extension:
 'extends' qualifiable-name attributes-children?
 ;
 type-restriction:
-'restricts' qualifiable-name (attributes-children | value-facets)?
+'restricts' qualifiable-name (attributes-children | facets)?
 ;
 
 attributes-children:
@@ -76,7 +76,7 @@ complex-children | simple-child
 simple-child:
 '$' qualifiable-name
 ;
-value-facets:
+facets:
 '${' (lengths | ?? | list-item-type)* '}'
 ;
 

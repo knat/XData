@@ -9,50 +9,58 @@ namespace XData.MSBuild {
     public sealed class XDataTask : Task {
         [Required]
         public string ProjectDirectory { get; set; }
+        [Required]
+        public bool IsBuild { get; set; }
         public ITaskItem[] XDataSchemaFiles { get; set; }
         public ITaskItem[] XDataIndicatorFiles { get; set; }
         //
+        private const string _genedFileName = "__XDataGenerated.cs";
+        private static readonly DateTime _minDateTime = new DateTime(2000, 1, 1);
         public override bool Execute() {
-            var diagStore = new DiagStore();
             try {
-                List<string> schemaFilePathList = null;
-                List<string> indicatorFilePathList = null;
-                if (XDataSchemaFiles != null && XDataSchemaFiles.Length > 0) {
-                    schemaFilePathList = new List<string>();
-                    foreach (var item in XDataSchemaFiles) {
-                        schemaFilePathList.Add(item.GetMetadata("FullPath"));
+                if (IsBuild) {
+                    List<string> schemaFilePathList = null;
+                    List<string> indicatorFilePathList = null;
+                    if (XDataSchemaFiles != null && XDataSchemaFiles.Length > 0) {
+                        schemaFilePathList = new List<string>();
+                        foreach (var item in XDataSchemaFiles) {
+                            schemaFilePathList.Add(item.GetMetadata("FullPath"));
+                        }
                     }
-                }
-                if (XDataIndicatorFiles != null && XDataIndicatorFiles.Length > 0) {
-                    indicatorFilePathList = new List<string>();
-                    foreach (var item in XDataIndicatorFiles) {
-                        indicatorFilePathList.Add(item.GetMetadata("FullPath"));
+                    if (XDataIndicatorFiles != null && XDataIndicatorFiles.Length > 0) {
+                        indicatorFilePathList = new List<string>();
+                        foreach (var item in XDataIndicatorFiles) {
+                            indicatorFilePathList.Add(item.GetMetadata("FullPath"));
+                        }
                     }
-                }
-                DiagContext diagContext;
-                string code;
-                var res = XData.Compiler.XDataCompiler.Compile(schemaFilePathList, indicatorFilePathList, out diagContext, out code);
-                if (diagContext != null) {
-                    foreach (var diag in diagContext) {
-                        LogDiag(diag, diagStore);
+                    DiagContext diagContext;
+                    string code;
+                    var res = XData.Compiler.XDataCompiler.Compile(schemaFilePathList, indicatorFilePathList, out diagContext, out code);
+                    var diagStore = new DiagStore();
+                    if (diagContext != null) {
+                        foreach (var diag in diagContext) {
+                            LogDiag(diag, diagStore);
+                        }
                     }
+                    diagStore.Save(ProjectDirectory);
+                    if (code != null) {
+                        File.WriteAllText(Path.Combine(ProjectDirectory, _genedFileName), code, System.Text.Encoding.UTF8);
+                    }
+                    return res;
                 }
-                if (!res) {
-                    return false;
+                else {//clean
+                    var filePath = Path.Combine(ProjectDirectory, _genedFileName);
+                    if (File.Exists(filePath)) {
+                        File.SetLastWriteTime(filePath, _minDateTime);
+                    }
+                    return true;
                 }
-                if (code != null) {
-                    File.WriteAllText(Path.Combine(ProjectDirectory, "__XDataGenerated.cs"), code);
-                }
-                return true;
             }
             catch (Exception ex) {
                 Log.LogErrorFromException(ex, true, true, null);
                 return false;
             }
-            finally {
-                diagStore.Save(ProjectDirectory);
-            }
-            //C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe D:\Test\TestPLX\TestPLX\TestPLX.csproj
+            //C:\Windows\Microsoft.NET\Framework\v4.0.30319\msbuild.exe xxx.csproj
             //  v:detailed
         }
         private void LogDiag(Diag diag, DiagStore diagStore) {
@@ -138,13 +146,14 @@ namespace XData.MSBuild {
         }
         public static DiagStore TryLoad(string filePath) {
             try {
-                using (var fs = File.OpenRead(filePath)) {
-                    return (DiagStore)_dcs.ReadObject(fs);
+                if (File.Exists(filePath)) {
+                    using (var fs = File.OpenRead(filePath)) {
+                        return (DiagStore)_dcs.ReadObject(fs);
+                    }
                 }
             }
-            catch (Exception) {
-                return null;
-            }
+            catch (Exception) { }
+            return null;
         }
 
     }

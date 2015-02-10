@@ -55,8 +55,8 @@ namespace XData.Compiler {
                         var isDelete = attribute.IsDelete;
                         if (isDelete) {
                             if (!restrictedAttributeSymbol.IsOptional) {
-                                DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotDeleteAttributeBecauseItIsNotOptional, attributeName),
-                                    attribute.NameNode.TextSpan);
+                                DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotDeleteRequiredAttribute, attributeName),
+                                    attribute.OptionalOrDelete.TextSpan);
                             }
                         }
                         attributeSymbolList.RemoveAt(idx);
@@ -109,11 +109,11 @@ namespace XData.Compiler {
             }
             else {
                 if (IsOptional && !restrictedAttributeSymbol.IsOptional) {
-                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AttributeIsOptionalButRestrictedIsRequired),
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotChangeRequiredToOptional),
                         OptionalOrDelete.TextSpan);
                 }
                 if (IsNullable && !restrictedAttributeSymbol.IsNullable) {
-                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.AttributeIsNullableButRestrictedIsNotNullable),
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotChangeNonNullableToNullable),
                         Nullable);
                 }
             }
@@ -124,12 +124,13 @@ namespace XData.Compiler {
             if (restrictedAttributeSymbol != null) {
                 if (!typeSymbol.EqualToOrDeriveFrom(restrictedAttributeSymbol.Type)) {
                     DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.TypeNotEqualToOrDeriveFromRestricted,
-                        typeSymbol.FullName.ToString(), restrictedAttributeSymbol.Type.FullName.ToString()),
+                        typeSymbol.DisplayName, restrictedAttributeSymbol.Type.DisplayName),
                         TypeQName.TextSpan);
                 }
             }
             var name = Name;
-            return new AttributeSymbol(parent, "CLS_" + name, name, parentDisplayName + "." + name, IsOptional, IsNullable, typeSymbol, restrictedAttributeSymbol);
+            return new AttributeSymbol(parent, "CLS_" + name, name, parentDisplayName + "." + name, IsOptional, IsNullable,
+                typeSymbol, restrictedAttributeSymbol);
         }
     }
     internal struct OptionalOrDeleteNode {

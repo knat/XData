@@ -106,7 +106,7 @@ namespace XData.Compiler {
             CreateAndAdd(SystemAtomType, TypeKind.TimeSpan, CS.TimeSpanName);
             CreateAndAdd(SystemAtomType, TypeKind.DateTimeOffset, CS.DateTimeOffsetName);
             SystemListType = new ListTypeSymbol(System, TypeKind.ListType.ToClassName(), true, false, TypeKind.ListType.ToFullName(),
-                SystemSimpleType, null, null);
+                SystemSimpleType, null, null, null);
             SystemComplexType = new ComplexTypeSymbol(System, TypeKind.ComplexType.ToClassName(), true, false,
                 TypeKind.ComplexType.ToFullName(), null);
             var objList = System.GlobalObjectList;
@@ -343,7 +343,6 @@ namespace XData.Compiler {
                     CS.ReturnStm(CS.NewObjExpr(CSFullName, null, new[] { CS.AssignExpr(CS.IdName("Value"), CS.IdName("value")) }))));
             }
             if (Facets != null) {
-                Facets.Generate();
                 if (Facets.Enum != null) {
                     foreach (var item in Facets.Enum.Value.ItemList) {
                         if (item.Name != null) {
@@ -352,6 +351,7 @@ namespace XData.Compiler {
                         }
                     }
                 }
+                Facets.Generate();
             }
             //>>new public static readonly AtomTypeInfo ThisInfo = ...;
             list.Add(CS.Field(CS.NewPublicStaticReadOnlyTokenList, CSEX.AtomTypeInfoName, "ThisInfo",
@@ -362,17 +362,17 @@ namespace XData.Compiler {
     }
     internal sealed class ListTypeSymbol : SimpleTypeSymbol {
         public ListTypeSymbol(NamespaceSymbol parent, string csName, bool isAbstract, bool isSealed,
-            FullName fullName, SimpleTypeSymbol baseType, NameSyntax[] csItfNames, SimpleTypeSymbol itemType)
-            : base(parent, csName, isAbstract, isSealed, baseType.CSFullName, csItfNames, fullName, TypeKind.ListType, baseType) {
+            FullName fullName, SimpleTypeSymbol baseType, NameSyntax csBaseFullName, NameSyntax[] csItfNames, SimpleTypeSymbol itemType)
+            : base(parent, csName, isAbstract, isSealed, csBaseFullName, csItfNames, fullName, TypeKind.ListType, baseType) {
             ItemType = itemType;
         }
         public readonly SimpleTypeSymbol ItemType;
         protected override void GenerateMembers(List<MemberDeclarationSyntax> list) {
-            if (Facets != null) {
-                Facets.Generate();
-            }
             if (CSItfNames != null) {
                 CSEX.IListOverrideMembers(list, ItemType.CSFullName);
+            }
+            if (Facets != null) {
+                Facets.Generate();
             }
             //>>new public static readonly ListTypeInfo ThisInfo = ...;
             list.Add(CS.Field(CS.NewPublicStaticReadOnlyTokenList, CSEX.ListTypeInfoName, "ThisInfo",
@@ -461,7 +461,7 @@ namespace XData.Compiler {
     internal sealed class AttributeSymbol : ObjectSymbol {
         public AttributeSymbol(AttributeSetSymbol parent, string csName,
             string name, string displayName, bool isOptional, bool isNullable, SimpleTypeSymbol type, AttributeSymbol restrictedAttribute) :
-                base(parent, csName, false, false, restrictedAttribute != null,
+            base(parent, csName, false, false, restrictedAttribute != null,
                     restrictedAttribute != null ? restrictedAttribute.CSFullName : CSEX.XAttributeName, null, displayName) {
             Name = name;
             IsOptional = isOptional;
@@ -525,7 +525,7 @@ namespace XData.Compiler {
     internal abstract class ChildSymbol : ObjectSymbol {
         protected ChildSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, bool isCSOverride, NameSyntax csBaseFullName, NameSyntax[] csItfNames,
             ChildKind kind, string displayName, string memberName, ulong minOccurrence, ulong maxOccurrence, bool isListItem, int order, ChildSymbol restrictedChild) :
-                base(parent, csName, isAbstract, isSealed, isCSOverride, csBaseFullName, csItfNames, displayName) {
+            base(parent, csName, isAbstract, isSealed, isCSOverride, csBaseFullName, csItfNames, displayName) {
             Kind = kind;
             MemberName = memberName;
             MinOccurrence = minOccurrence;
@@ -649,12 +649,12 @@ namespace XData.Compiler {
             Type.GenerateConcreteType(list);
             if (IsGlobal) {
                 //>public static bool TryLoadAndValidate(string filePath, System.IO.TextReader reader, DiagContext context, out XXX result) {
-                //  return base.TryLoadAndValidate<XXX>(filePath, reader, context, ThisInfo, out result);
+                //  return TryLoadAndValidate<XXX>(filePath, reader, context, ThisInfo, out result);
                 //}
                 list.Add(CS.Method(CS.PublicStaticTokenList, CS.BoolType, "TryLoadAndValidate", new[] {
                     CS.Parameter(CS.StringType, "filePath"), CS.Parameter(CS.TextReaderName, "reader"), CS.Parameter(CSEX.DiagContextName, "context"),
                         CS.OutParameter(CSFullName, "result") },
-                    CS.ReturnStm(CS.InvoExpr(CS.BaseMemberAccessExpr(CS.GenericName("TryLoadAndValidate", CSFullName)),
+                    CS.ReturnStm(CS.InvoExpr(CS.GenericName("TryLoadAndValidate", CSFullName),
                         SyntaxFactory.Argument(CS.IdName("filePath")), SyntaxFactory.Argument(CS.IdName("reader")), SyntaxFactory.Argument(CS.IdName("context")),
                         SyntaxFactory.Argument(CS.IdName("ThisInfo")), CS.OutArgument("result")))));
             }
@@ -819,7 +819,7 @@ namespace XData.Compiler {
             list.Add(CS.Field(BaseChildSet == null && RestrictedChild == null ? CS.PublicStaticReadOnlyTokenList : CS.NewPublicStaticReadOnlyTokenList,
                 CSEX.ChildSetInfoName, "ThisInfo", CS.NewObjExpr(CSEX.ChildSetInfoName, CS.TypeOfExpr(CSFullName), CS.Literal(DisplayName),
                 CSEX.ChildKind(Kind), CS.Literal(IsOptional), CS.Literal(Order),
-                ChildList == null ? CS.NullLiteral : CS.NewArrOrNullExpr(CSEX.AttributeInfoArrayType, ChildList.Select(i => i.ThisInfoExpr)))));
+                ChildList == null ? CS.NullLiteral : CS.NewArrOrNullExpr(CSEX.ChildInfoArrayType, ChildList.Select(i => i.ThisInfoExpr)))));
             list.Add(CSEX.ObjectInfoProperty(IsAbstract, CSFullName));
             if (IsRoot) {
                 //

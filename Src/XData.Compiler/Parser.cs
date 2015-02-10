@@ -45,6 +45,7 @@ namespace XData.Compiler {
             ScaleKeyword,
             SealedKeyword,
             SubstitutesKeyword,
+            TypeKeyword,
             ValueRangeKeyword,
             "true",
             "false"
@@ -304,7 +305,6 @@ namespace XData.Compiler {
                 var list = new TypeListNode(parent);
                 list.ItemTypeQName = QualifiableNameExpected();
                 Facets(list, out list.Facets);
-
                 result = list;
                 return true;
             }
@@ -672,7 +672,8 @@ namespace XData.Compiler {
                 var memberName = result.MemberNameNode;
                 foreach (var item in list) {
                     if (item.MemberNameNode == memberName) {
-                        ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateMemberName, memberName.ToString()), memberName.TextSpan);
+                        ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateMemberName, memberName.ToString()), 
+                            memberName.TextSpan);
                     }
                 }
             }

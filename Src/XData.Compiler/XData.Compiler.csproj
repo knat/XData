@@ -64,7 +64,7 @@
     <Compile Include="CS.cs" />
     <Compile Include="CSEX.cs" />
     <Compile Include="Diagnostics.cs" />
-    <Compile Include="ElementAndChildrenNodes.cs" />
+    <Compile Include="ChildNodes.cs" />
     <Compile Include="FacetNodes.cs" />
     <Compile Include="Parser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

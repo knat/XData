@@ -57,35 +57,40 @@ namespace XData.Compiler {
                 SubstitutedGlobalElement = NamespaceAncestor.ResolveAsElement(SubstitutedGlobalElementQName);
                 for (var i = SubstitutedGlobalElement; i != null; i = i.SubstitutedGlobalElement) {
                     if (i == this) {
-                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CircularReferenceDetected), SubstitutedGlobalElementQName.TextSpan);
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CircularReferenceNotAllowed),
+                            SubstitutedGlobalElementQName.TextSpan);
                     }
                 }
                 SubstitutedGlobalElement.DirectSubstitutorList.Add(this);
             }
             Type = NamespaceAncestor.ResolveAsType(TypeQName);
         }
-        protected override IGlobalObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName, bool isAbstract, bool isSealed) {
+        protected override IGlobalObjectSymbol CreateSymbolCore(NamespaceSymbol parent, string csName, FullName fullName,
+            bool isAbstract, bool isSealed) {
             ElementSymbol substitutedElementSymbol = null;
             if (SubstitutedGlobalElement != null) {
                 substitutedElementSymbol = (ElementSymbol)SubstitutedGlobalElement.CreateSymbol();
                 if (substitutedElementSymbol.IsSealed) {
-                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.SubstitutedElementIsSealed), SubstitutedGlobalElementQName.TextSpan);
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.SubstitutedElementSealed, substitutedElementSymbol.DisplayName),
+                        SubstitutedGlobalElementQName.TextSpan);
                 }
             }
             var typeSymbol = (TypeSymbol)Type.CreateSymbol();
             if (substitutedElementSymbol != null) {
                 if (IsNullable && !substitutedElementSymbol.IsNullable) {
-                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ElementIsNullableButSubstitutedIsNotNullable),
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotChangeNonNullableToNullable),
                         Nullable);
                 }
                 if (!typeSymbol.EqualToOrDeriveFrom(substitutedElementSymbol.Type)) {
                     DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.TypeNotEqualToOrDeriveFromSubstituted,
-                        typeSymbol.FullName.ToString(), substitutedElementSymbol.Type.FullName.ToString()),
+                        typeSymbol.DisplayName, substitutedElementSymbol.Type.DisplayName),
                         TypeQName.TextSpan);
                 }
             }
-            return new ElementSymbol(parent, csName, isAbstract, isSealed, ChildKind.GlobalElement, fullName.ToString(), null, 1, 1, false, -1, null, fullName,
-                IsNullable, typeSymbol, null, substitutedElementSymbol) { GlobalElementNode = this };
+            return new ElementSymbol(parent, csName, isAbstract, isSealed, ChildKind.GlobalElement, fullName.ToString(),
+                null, 1, 1, false, -1, null, fullName, IsNullable, typeSymbol, null, substitutedElementSymbol) {
+                    GlobalElementNode = this
+                };
         }
     }
     internal sealed class ComplexChildrenNode : Node {
@@ -190,7 +195,8 @@ namespace XData.Compiler {
             ChildSymbol restrictedItemSymbol = restrictedChildSymbol;
             if (restrictedChildSymbol == null) {
                 if (maxOccurrence == 0) {
-                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxOccurrenceCannotBeZeroInExtension), Occurrence.TextSpan);
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxOccurrenceCannotBeZeroInExtension),
+                        Occurrence.TextSpan);
                 }
             }
             else {
@@ -233,7 +239,8 @@ namespace XData.Compiler {
         protected MemberElementNode(Node parent) : base(parent) { }
     }
     internal sealed class LocalElementNode : MemberElementNode {
-        public LocalElementNode(Node parent) : base(parent) {
+        public LocalElementNode(Node parent)
+            : base(parent) {
             Kind = ChildKind.LocalElement;
         }
         public NameNode NameNode;
@@ -284,7 +291,8 @@ namespace XData.Compiler {
         }
     }
     internal sealed class GlobalElementRefNode : MemberElementNode {
-        public GlobalElementRefNode(Node parent) : base(parent) {
+        public GlobalElementRefNode(Node parent)
+            : base(parent) {
             Kind = ChildKind.GlobalElementRef;
         }
         public QualifiableNameNode GlobalElementQName;

@@ -273,7 +273,7 @@ namespace XData.Compiler {
         public IGlobalObjectSymbol CreateSymbol() {
             if (_objectSymbol == null) {
                 if (_isProcessing) {
-                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CircularReferenceDetected), NameNode.TextSpan);
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CircularReferenceNotAllowed), NameNode.TextSpan);
                 }
                 _isProcessing = true;
                 var parent = NamespaceAncestor.LogicalNamespace.NamespaceSymbol;
