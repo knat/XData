@@ -91,8 +91,11 @@ namespace XData.IO.Text {
                     }
                 }
             }
+            else {
+                _aliasUriList = new List<AliasUri>();
+            }
             var alias = "a" + _aliasUriList.Count.ToInvString();
-            Extensions.CreateAndAdd(ref _aliasUriList, new AliasUri(alias, uri));
+            _aliasUriList.Add(new AliasUri(alias, uri));
             return alias;
         }
         public void Append(FullName fullName) {

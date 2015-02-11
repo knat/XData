@@ -451,22 +451,24 @@ namespace XData {
                 if (res == CreationResult.Error) {
                     return false;
                 }
+                var childSeq = (XChildSequence)child;
+                if (childSeq == null) {
+                    if (!childSetInfo.IsOptional) {
+                        context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotMatched, childSetInfo.DisplayName),
+                            closeChildrenTextSpan);
+                        return false;
+                    }
+                }
                 if (!IsEOF) {
                     while (!IsEOF) {
                         var elementNode = GetElementNode();
-                        context.AddErrorDiag(new DiagMsg(DiagCode.RedundantElementNode, elementNode.FullName.ToString()), 
+                        context.AddErrorDiag(new DiagMsg(DiagCode.RedundantElementNode, elementNode.FullName.ToString()),
                             elementNode.QName.TextSpan);
                         ConsumeElementNode();
                     }
                     return false;
                 }
-                var childSeq = (XChildSequence)child;
                 if (childSeq == null) {
-                    if (!childSetInfo.IsOptional) {
-                        context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotMatched, childSetInfo.DisplayName), 
-                            closeChildrenTextSpan);
-                        return false;
-                    }
                     if (elementNodeList != null) {
                         childSeq = childSetInfo.CreateInstance<XChildSequence>();
                         childSeq.TextSpan = elementNodeList.OpenTokenTextSpan;
@@ -529,7 +531,7 @@ namespace XData {
                                             if (childList.CountOrZero() == 0) {
                                                 return res;
                                             }
-                                            _context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotMatched, memberChildInfo.DisplayName), 
+                                            _context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotMatched, memberChildInfo.DisplayName),
                                                 GetTextSpan());
                                             return CreationResult.Error;
                                         }
@@ -691,7 +693,8 @@ namespace XData {
         protected XChildList() {
             _list = new List<T>();
         }
-        protected XChildList(IEnumerable<T> items) : this() {
+        protected XChildList(IEnumerable<T> items)
+            : this() {
             AddRange(items);
         }
         private List<T> _list;
@@ -781,10 +784,10 @@ namespace XData {
                 array[arrayIndex++] = _list[i] as U;
             }
         }
-        public U CreateItem<U>() where U : T {
+        protected U CreateItem<U>() where U : T {
             return ChildListInfo.Item.CreateInstance<U>();
         }
-        public U CreateAndAddItem<U>() where U : T {
+        protected U CreateAndAddItem<U>() where U : T {
             var item = CreateItem<U>();
             Add(item);
             return item;

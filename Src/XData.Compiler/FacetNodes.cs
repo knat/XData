@@ -119,13 +119,14 @@ namespace XData.Compiler {
             }
             if (Pattern.IsValid) {
                 var patternValue = Pattern.Value;
-                if (patternList == null) {
-                    patternList = new List<string> { patternValue };
-                }
-                else {
-                    if (!patternList.Contains(patternValue)) {
-                        patternList.Add(patternValue);
+                if (patternList == null || !patternList.Contains(patternValue)) {
+                    try {
+                        PatternInfo.CreateRegex(patternValue);
                     }
+                    catch (Exception) {
+                        DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.InvalidPattern, patternValue), Pattern.TextSpan);
+                    }
+                    Extensions.CreateAndAdd(ref patternList, patternValue);
                 }
             }
             if (Enum != null) {

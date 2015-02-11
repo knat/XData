@@ -32,6 +32,7 @@ namespace XData.Compiler {
         ScaleNotLessThanOrEqualToPrecision,
         PrecisionNotLessThanOrEqualToBasePrecision,
         ScaleNotLessThanOrEqualToBaseScale,
+        InvalidPattern,
         InvalidLiteralForType,
         DuplicateEnumItemName,
         EnumItemNameNotAllowedInRestriction,
@@ -151,6 +152,8 @@ namespace XData.Compiler {
                     return "Precision '{0}' not less than or equal to base precision '{1}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.ScaleNotLessThanOrEqualToBaseScale:
                     return "Scale '{0}' not less than or equal to base scale '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.InvalidPattern:
+                    return "Invalid pattern '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.InvalidLiteralForType:
                     return "Invalid literal '{0}' for type '{1}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.DuplicateEnumItemName:

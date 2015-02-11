@@ -181,11 +181,14 @@ namespace XData {
                     if (_regexDict.TryGetValue(Pattern, out regex)) {
                         return regex;
                     }
-                    regex = new System.Text.RegularExpressions.Regex(Pattern, System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+                    regex = CreateRegex(Pattern);
                     _regexDict.Add(Pattern, regex);
                     return regex;
                 }
             }
+        }
+        internal static System.Text.RegularExpressions.Regex CreateRegex(string pattern) {
+            return new System.Text.RegularExpressions.Regex(pattern, System.Text.RegularExpressions.RegexOptions.CultureInvariant);
         }
     }
     public class SimpleTypeInfo : TypeInfo {
