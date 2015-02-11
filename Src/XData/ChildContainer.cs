@@ -399,7 +399,7 @@ namespace XData {
             context.PopIndent();
             context.Append('}');
         }
-        internal override bool TryValidateCore(DiagContext context) {
+        internal override sealed bool TryValidateCore(DiagContext context) {
             var childSetInfo = ChildSetInfo;
             var childList = new List<XChild>(_list);
             var dMarker = context.MarkDiags();
@@ -454,7 +454,8 @@ namespace XData {
                 if (!IsEOF) {
                     while (!IsEOF) {
                         var elementNode = GetElementNode();
-                        context.AddErrorDiag(new DiagMsg(DiagCode.RedundantElementNode, elementNode.FullName.ToString()), elementNode.QName.TextSpan);
+                        context.AddErrorDiag(new DiagMsg(DiagCode.RedundantElementNode, elementNode.FullName.ToString()), 
+                            elementNode.QName.TextSpan);
                         ConsumeElementNode();
                     }
                     return false;
@@ -462,7 +463,8 @@ namespace XData {
                 var childSeq = (XChildSequence)child;
                 if (childSeq == null) {
                     if (!childSetInfo.IsOptional) {
-                        context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotMatched, childSetInfo.DisplayName), closeChildrenTextSpan);
+                        context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotMatched, childSetInfo.DisplayName), 
+                            closeChildrenTextSpan);
                         return false;
                     }
                     if (elementNodeList != null) {
@@ -520,14 +522,15 @@ namespace XData {
                                     XChild child;
                                     var res = Create(memberChildInfo, out child);
                                     if (res == CreationResult.OK) {
-                                        EX.CreateAndAdd(ref childList, child);
+                                        Extensions.CreateAndAdd(ref childList, child);
                                     }
                                     else if (res == CreationResult.Skipped) {
                                         if (!memberChildInfo.IsOptional) {
                                             if (childList.CountOrZero() == 0) {
                                                 return res;
                                             }
-                                            _context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotMatched, memberChildInfo.DisplayName), GetTextSpan());
+                                            _context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotMatched, memberChildInfo.DisplayName), 
+                                                GetTextSpan());
                                             return CreationResult.Error;
                                         }
                                     }
@@ -582,7 +585,7 @@ namespace XData {
                             XChild item;
                             var res = Create(itemInfo, out item);
                             if (res == CreationResult.OK) {
-                                EX.CreateAndAdd(ref itemList, item);
+                                Extensions.CreateAndAdd(ref itemList, item);
                                 ++itemCount;
                             }
                             else if (res == CreationResult.Skipped) {

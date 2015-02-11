@@ -456,7 +456,7 @@ namespace XData.IO.Text {
                     }
                 }
             }
-            ErrorDiagAndThrow(new DiagMsg(DiagCode.InvalidUriAlias, alias.ToString()), alias.TextSpan);
+            ErrorDiagAndThrow(new DiagMsg(DiagCode.InvalidUriReference, alias.ToString()), alias.TextSpan);
             return null;
         }
         private bool Element(out ElementNode result) {

@@ -1449,19 +1449,19 @@ namespace XData.Compiler {
                     //
                     List<TypeParameterConstraintSyntax> constraintList = null;
                     if (symbol.HasConstructorConstraint) {
-                        EX.CreateAndAdd(ref constraintList, SyntaxFactory.ConstructorConstraint());
+                        Extensions.CreateAndAdd(ref constraintList, SyntaxFactory.ConstructorConstraint());
                     }
                     if (symbol.HasReferenceTypeConstraint) {
-                        EX.CreateAndAdd(ref constraintList, SyntaxFactory.ClassOrStructConstraint(SyntaxKind.ClassConstraint));
+                        Extensions.CreateAndAdd(ref constraintList, SyntaxFactory.ClassOrStructConstraint(SyntaxKind.ClassConstraint));
                     }
                     else if (symbol.HasValueTypeConstraint) {
-                        EX.CreateAndAdd(ref constraintList, SyntaxFactory.ClassOrStructConstraint(SyntaxKind.StructConstraint));
+                        Extensions.CreateAndAdd(ref constraintList, SyntaxFactory.ClassOrStructConstraint(SyntaxKind.StructConstraint));
                     }
                     foreach (var ct in symbol.ConstraintTypes) {
-                        EX.CreateAndAdd(ref constraintList, SyntaxFactory.TypeConstraint(ct.ToTypeSyntax()));
+                        Extensions.CreateAndAdd(ref constraintList, SyntaxFactory.TypeConstraint(ct.ToTypeSyntax()));
                     }
                     if (constraintList != null && constraintList.Count > 0) {
-                        EX.CreateAndAdd(ref constraintClauseList, SyntaxFactory.TypeParameterConstraintClause(
+                        Extensions.CreateAndAdd(ref constraintClauseList, SyntaxFactory.TypeParameterConstraintClause(
                             name: IdName(identifier),
                             constraints: SyntaxFactory.SeparatedList(constraintList)));
                     }

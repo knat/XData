@@ -161,7 +161,7 @@ namespace XData {
             context.PopIndent();
             context.Append(']');
         }
-        internal override bool TryValidateCore(DiagContext context) {
+        internal override sealed bool TryValidateCore(DiagContext context) {
             var attributeSetInfo = AttributeSetInfo;
             var dMarker = context.MarkDiags();
             var attributeList = new List<XAttribute>(_list);
@@ -186,7 +186,8 @@ namespace XData {
             }
             if (attributeList.Count > 0) {
                 foreach (var attribute in attributeList) {
-                    context.AddErrorDiag(new DiagMsg(DiagCode.RedundantAttribute, attribute.ObjectInfo.DisplayName), attribute);
+                    context.AddErrorDiag(new DiagMsg(DiagCode.RedundantAttribute, attribute.ObjectInfo.DisplayName), 
+                        attribute);
                 }
             }
             return !dMarker.HasErrors;
@@ -205,7 +206,7 @@ namespace XData {
                             if (attributeNode.Name == attributeInfo.Name) {
                                 XAttribute attribute;
                                 if (XAttribute.TryCreate(context, programInfo, attributeInfo, attributeNode, out attribute)) {
-                                    EX.CreateAndAdd(ref attributeList, attribute);
+                                    Extensions.CreateAndAdd(ref attributeList, attribute);
                                 }
                                 attributeNodeList.RemoveAt(i);
                                 found = true;
@@ -214,13 +215,15 @@ namespace XData {
                         }
                     }
                     if (!found && !attributeInfo.IsOptional) {
-                        context.AddErrorDiag(new DiagMsg(DiagCode.RequiredAttributeNotFound, attributeInfo.DisplayName), closeAttributesTextSpan);
+                        context.AddErrorDiag(new DiagMsg(DiagCode.RequiredAttributeNotFound, attributeInfo.DisplayName),
+                            closeAttributesTextSpan);
                     }
                 }
             }
             if (attributeNodeList.CountOrZero() > 0) {
                 foreach (var attributeNode in attributeNodeList) {
-                    context.AddErrorDiag(new DiagMsg(DiagCode.RedundantAttribute, attributeNode.NameNode.ToString()), attributeNode.NameNode.TextSpan);
+                    context.AddErrorDiag(new DiagMsg(DiagCode.RedundantAttribute, attributeNode.NameNode.ToString()), 
+                        attributeNode.NameNode.TextSpan);
                 }
             }
             if (dMarker.HasErrors) {

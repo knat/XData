@@ -30,7 +30,7 @@ namespace XData.Compiler {
             var hash = 17;
             var count = Math.Min(Count, 5);
             for (var i = 0; i < count; i++) {
-                hash = EX.AggregateHash(hash, this[i].GetHashCode());
+                hash = Extensions.AggregateHash(hash, this[i].GetHashCode());
             }
             return hash;
         }
@@ -46,7 +46,7 @@ namespace XData.Compiler {
         private string _string;
         public override string ToString() {
             if (_string == null) {
-                var sb = EX.AcquireStringBuilder();
+                var sb = Extensions.AcquireStringBuilder();
                 for (var i = 0; i < Count; ++i) {
                     if (i > 0) {
                         sb.Append('.');
@@ -138,8 +138,6 @@ namespace XData.Compiler {
         internal static ArrayTypeSyntax IGlobalObjectInfoNameArrayType {
             get { return CS.OneDimArrayType(IGlobalObjectInfoName); }
         }
-
-
         internal static QualifiedNameSyntax ObjectInfoName {
             get { return CS.QualifiedName(XDataName, "ObjectInfo"); }
         }

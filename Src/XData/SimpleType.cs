@@ -105,7 +105,8 @@ namespace XData {
             if (atomTypeInfo != null) {
                 var atomicValueNode = simpleValueNode.Atom;
                 if (!atomicValueNode.IsValid) {
-                    context.AddErrorDiag(new DiagMsg(DiagCode.TypeRequiresAtomValue, effSimpleTypeInfo.DisplayName), simpleValueTextSpan);
+                    context.AddErrorDiag(new DiagMsg(DiagCode.AtomValueRequiredForType, effSimpleTypeInfo.DisplayName),
+                        simpleValueTextSpan);
                     return false;
                 }
                 XAtomType atomicType;
@@ -117,7 +118,8 @@ namespace XData {
             else {
                 var listNode = simpleValueNode.List;
                 if (listNode == null) {
-                    context.AddErrorDiag(new DiagMsg(DiagCode.TypeRequiresListValue, effSimpleTypeInfo.DisplayName), simpleValueTextSpan);
+                    context.AddErrorDiag(new DiagMsg(DiagCode.ListValueRequiredForType, effSimpleTypeInfo.DisplayName),
+                        simpleValueTextSpan);
                     return false;
                 }
                 XListType listType;

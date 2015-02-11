@@ -14,30 +14,24 @@ namespace XData.Compiler {
             }
         }
         public AttributeSetSymbol CreateSymbol(ComplexTypeSymbol parent, AttributeSetSymbol baseAttributeSetSymbol, bool isExtension) {
-            var baseAttributeSymbolList = baseAttributeSetSymbol != null ? baseAttributeSetSymbol.AttributeList : null;
             var displayName = parent.DisplayName + ".[]";
             var attributeSetSymbol = new AttributeSetSymbol(parent, baseAttributeSetSymbol, displayName);
-            var attributeSymbolList = attributeSetSymbol.AttributeList;
-            if (baseAttributeSymbolList != null) {
-                attributeSymbolList.AddRange(baseAttributeSymbolList);
-            }
             if (isExtension) {
                 if (AttributeList != null) {
                     foreach (var attribute in AttributeList) {
-                        if (baseAttributeSymbolList != null) {
-                            foreach (var baseAttributeSymbol in baseAttributeSymbolList) {
-                                if (baseAttributeSymbol.Name == attribute.Name) {
-                                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateAttributeName, baseAttributeSymbol.Name),
-                                        attribute.NameNode.TextSpan);
-                                }
-                            }
+                        var attributeName = attribute.Name;
+                        if (attributeSetSymbol.AttributeNameList.Contains(attributeName)) {
+                            DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateAttributeName, attributeName),
+                                attribute.NameNode.TextSpan);
                         }
-                        attributeSymbolList.Add(attribute.CreateSymbol(attributeSetSymbol, null, displayName));
+                        attributeSetSymbol.AttributeNameList.Add(attributeName);
+                        attributeSetSymbol.AttributeList.Add(attribute.CreateSymbol(attributeSetSymbol, null, displayName));
                     }
                 }
             }
             else {//restriction
                 if (AttributeList != null) {
+                    var attributeSymbolList = attributeSetSymbol.AttributeList;
                     foreach (var attribute in AttributeList) {
                         AttributeSymbol restrictedAttributeSymbol = null;
                         int idx;

@@ -14,7 +14,7 @@ namespace XData {
                 var typeFullName = typeQName.FullName;
                 typeInfo = programInfo.TryGetGlobalObject(typeFullName) as TypeInfo;
                 if (typeInfo == null) {
-                    context.AddErrorDiag(new DiagMsg(DiagCode.InvalidTypeName, typeFullName.ToString()),
+                    context.AddErrorDiag(new DiagMsg(DiagCode.InvalidTypeReference, typeFullName.ToString()),
                         typeQName.TextSpan);
                     return null;
                 }

@@ -8,7 +8,7 @@ namespace XData.Compiler {
         static SystemTypeNode() {
             _dict = new Dictionary<string, SystemTypeNode>();
             var sysNs = NamespaceSymbol.System;
-            for (var kind = EX.TypeStart; kind <= EX.TypeEnd; ++kind) {
+            for (var kind = Extensions.TypeStart; kind <= Extensions.TypeEnd; ++kind) {
                 var name = kind.ToString();
                 _dict.Add(name, new SystemTypeNode() { _objectSymbol = sysNs.TryGetGlobalObject(name) });
             }

@@ -10,21 +10,22 @@ namespace XData {
         Parsing = -1000,
         AliasSysIsReserved,
         DuplicateUriAlias,
-        InvalidUriAlias,
+        InvalidUriReference,
+
         //object
         InvalidObject,
 
-        //types
-        InvalidTypeName,
+        //type
+        InvalidTypeReference,
         TypeNotEqualToOrDeriveFrom,
         TypeIsAbstract,
 
-        //simple types
-        TypeRequiresAtomValue,
-        TypeRequiresListValue,
+        //simple type
+        AtomValueRequiredForType,
+        ListValueRequiredForType,
         InvalidAtomTypeLiteral,
 
-        //facets
+        //facet
         LengthNotEqualTo,
         LengthNotGreaterThanOrEqualToMinLength,
         LengthNotLessThanOrEqualToMaxLength,
@@ -37,33 +38,34 @@ namespace XData {
         ValueNotInEnumeration,
         LiteralNotMatchWithPattern,
 
-        //complex types
+        //complex type
         AttributesNotAllowedForType,
         ChildrenNotAllowedForType,
         SimpleChildRequiredForType,
         ComplexChildrenRequiredForType,
 
-        //attributes
+        //attribute
         DuplicateAttributeName,
         RequiredAttributeNotFound,
         RedundantAttribute,
-        AttributeIsNotNullable,
+        AttributeNotNullable,
+
 
         //element
         ElementIsAbstract,
-        ElementIsNotNullable,
-        ComplexTypeValueRequiredForElement,
+        ElementNotNullable,
+        ComplexValueRequiredForElement,
         SimpleValueRequiredForElement,
         InvalidElementNode,
-        EntityElementIsNull,
+        GlobalElementNotSet,
         ElementNotEqualToOrSubstituteFor,
 
-        //children
+        //child
         RequiredChildNotMatched,
-        ChildListCountNotGreaterThanOrEqualToMinOccurrence,
         RedundantElementNode,
         RequiredChildNotFound,
         RedundantChild,
+        ChildListCountNotGreaterThanOrEqualToMinOccurrence,
 
 
     }
@@ -85,27 +87,30 @@ namespace XData {
                     return "Alias 'sys' is reserved.";
                 case DiagCode.DuplicateUriAlias:
                     return "Duplicate uri alias '{0}'.".InvFormat(_msgArgs);
-                case DiagCode.InvalidUriAlias:
-                    return "Invalid uri alias '{0}'.".InvFormat(_msgArgs);
+                case DiagCode.InvalidUriReference:
+                    return "Invalid uri reference '{0}'.".InvFormat(_msgArgs);
+
                 //object
                 case DiagCode.InvalidObject:
                     return "Invalid object '{0}'. '{1}' expected.".InvFormat(_msgArgs);
-                //
-                //types
-                case DiagCode.InvalidTypeName:
-                    return "Invalid type name '{0}'.".InvFormat(_msgArgs);
+
+                //type
+                case DiagCode.InvalidTypeReference:
+                    return "Invalid type reference '{0}'.".InvFormat(_msgArgs);
                 case DiagCode.TypeNotEqualToOrDeriveFrom:
                     return "Type '{0}' not equal to or derive from '{1}'.".InvFormat(_msgArgs);
                 case DiagCode.TypeIsAbstract:
                     return "Type '{0}' is abstract.".InvFormat(_msgArgs);
-                //simple types
-                case DiagCode.TypeRequiresAtomValue:
-                    return "Type '{0}' requires atom value.".InvFormat(_msgArgs);
-                case DiagCode.TypeRequiresListValue:
-                    return "Type '{0}' requires list value.".InvFormat(_msgArgs);
+
+                //simple type
+                case DiagCode.AtomValueRequiredForType:
+                    return "Atom value required for type '{0}'.".InvFormat(_msgArgs);
+                case DiagCode.ListValueRequiredForType:
+                    return "List value required for type '{0}'.".InvFormat(_msgArgs);
                 case DiagCode.InvalidAtomTypeLiteral:
                     return "Invalid atom type '{0}' literal '{1}'.".InvFormat(_msgArgs);
-                //facets
+
+                //facet
                 case DiagCode.LengthNotEqualTo:
                     return "Length '{0}' not equal to '{1}'.".InvFormat(_msgArgs);
                 case DiagCode.LengthNotGreaterThanOrEqualToMinLength:
@@ -129,7 +134,7 @@ namespace XData {
                 case DiagCode.LiteralNotMatchWithPattern:
                     return "Literal '{0}' not match with pattern '{1}'.".InvFormat(_msgArgs);
 
-                //complex types
+                //complex type
                 case DiagCode.AttributesNotAllowedForType:
                     return "Attributes not allowed for type '{0}'.".InvFormat(_msgArgs);
                 case DiagCode.ChildrenNotAllowedForType:
@@ -139,43 +144,43 @@ namespace XData {
                 case DiagCode.ComplexChildrenRequiredForType:
                     return "Complex children required for type '{0}'.".InvFormat(_msgArgs);
 
-                //attributes
+                //attribute
                 case DiagCode.DuplicateAttributeName:
                     return "Duplicate attribute name '{0}'.".InvFormat(_msgArgs);
                 case DiagCode.RequiredAttributeNotFound:
                     return "Required attribute '{0}' not found.".InvFormat(_msgArgs);
                 case DiagCode.RedundantAttribute:
                     return "Redundant attribute '{0}'.".InvFormat(_msgArgs);
-                case DiagCode.AttributeIsNotNullable:
-                    return "Attribute '{0}' is not nullable.".InvFormat(_msgArgs);
+                case DiagCode.AttributeNotNullable:
+                    return "Attribute '{0}' not nullable.".InvFormat(_msgArgs);
 
-                //elements
+                //element
                 case DiagCode.ElementIsAbstract:
                     return "Element '{0}' is abstract.".InvFormat(_msgArgs);
-                case DiagCode.ElementIsNotNullable:
-                    return "Element '{0}' is not nullable.".InvFormat(_msgArgs);
-                case DiagCode.ComplexTypeValueRequiredForElement:
-                    return "Complex type value for element '{0}'.".InvFormat(_msgArgs);
+                case DiagCode.ElementNotNullable:
+                    return "Element '{0}' not nullable.".InvFormat(_msgArgs);
+                case DiagCode.ComplexValueRequiredForElement:
+                    return "Complex value required for element '{0}'.".InvFormat(_msgArgs);
                 case DiagCode.SimpleValueRequiredForElement:
                     return "Simple value required for element '{0}'.".InvFormat(_msgArgs);
                 case DiagCode.InvalidElementNode:
                     return "Invalid element '{0}'. '{1}' or its substitutor expected.".InvFormat(_msgArgs);
-                case DiagCode.EntityElementIsNull:
-                    return "Entity element is null.";
+                case DiagCode.GlobalElementNotSet:
+                    return "Global element not set.";
                 case DiagCode.ElementNotEqualToOrSubstituteFor:
                     return "Element '{0}' not equal to or substitute for '{1}'.".InvFormat(_msgArgs);
 
-                //children
+                //child
                 case DiagCode.RequiredChildNotMatched:
                     return "Required child '{0}' not matched.".InvFormat(_msgArgs);
-                case DiagCode.ChildListCountNotGreaterThanOrEqualToMinOccurrence:
-                    return "Child list '{0}' count '{1}' not greater than or equal to min occurrence '{2}'.".InvFormat(_msgArgs);
                 case DiagCode.RedundantElementNode:
                     return "Redundant element '{0}'.".InvFormat(_msgArgs);
                 case DiagCode.RequiredChildNotFound:
                     return "Required child '{0}' not found.".InvFormat(_msgArgs);
                 case DiagCode.RedundantChild:
                     return "Redundant child '{0}'.".InvFormat(_msgArgs);
+                case DiagCode.ChildListCountNotGreaterThanOrEqualToMinOccurrence:
+                    return "Child list '{0}' count '{1}' not greater than or equal to min occurrence '{2}'.".InvFormat(_msgArgs);
 
                 default:
                     throw new InvalidOperationException("Invalid code: " + Code.ToString());
@@ -249,7 +254,7 @@ namespace XData {
         }
         public override string ToString() {
             if (IsValid) {
-                var sb = EX.AcquireStringBuilder();
+                var sb = Extensions.AcquireStringBuilder();
                 sb.Append(Severity.ToString());
                 sb.Append(' ');
                 sb.Append(RawCode.ToInvString());
@@ -337,7 +342,7 @@ namespace XData {
             return null;
         }
         internal void SetValidationResult(XObject obj, bool result) {
-            EX.CreateAndAdd(ref _validationResultList, new ValidationResult(obj, result));
+            Extensions.CreateAndAdd(ref _validationResultList, new ValidationResult(obj, result));
         }
         public virtual void Reset() {
             Clear();

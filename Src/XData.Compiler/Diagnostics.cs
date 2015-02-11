@@ -72,17 +72,16 @@ namespace XData.Compiler {
         //child
         SubstitutedElementSealed,
         DuplicateMemberName,
-        MaxOccurrenceCannotBeZeroInExtension,
-        ChildKindNotEqualToRestricted,
         MaxOccurrenceNotEqualToOrGreaterThanMinOccurrence,
+        MaxOccurrenceCannotBeZeroInExtension,
+        CannotFindRestrictedMember,
+        CannotDeleteRequiredMember,
+        MemberKindNotEqualToRestricted,
         MinOccurrenceNotEqualToOrGreaterThanRestricted,
         MaxOccurrenceNotEqualToOrLessThanRestricted,
         ElementNameNotEqualToRestricted,
-        ElementIsNullableButRestrictedIsNotNullable,
-        ElementNotEqualToOrSubstituteRestricted,
-        CannotFindRestrictedChild,
-        CannotDeleteChildBecauseItIsNotOptional,
-        AmbiguousElementFullName,
+        ElementNotEqualToOrSubstituteForRestricted,
+        //AmbiguousElementFullName,
 
         //
         //
@@ -210,9 +209,9 @@ namespace XData.Compiler {
                 case DiagCodeEx.DuplicateAttributeName:
                     return "Duplicate attribute name '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.CannotFindRestrictedAttribute:
-                    return "Cannot find the restricted attribute '{0}'.".InvFormat(_msgArgs);
+                    return "Cannot find restricted attribute '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.CannotDeleteRequiredAttribute:
-                    return "Cannot delete the required attribute '{0}'.".InvFormat(_msgArgs);
+                    return "Cannot delete required attribute '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.CannotChangeRequiredToOptional:
                     return "Cannot change required to optional.";
                 case DiagCodeEx.DeletionNotAllowedInExtension:
@@ -225,28 +224,26 @@ namespace XData.Compiler {
                     return "Substituted element '{0}' sealed.".InvFormat(_msgArgs);
                 case DiagCodeEx.DuplicateMemberName:
                     return "Duplicate member name '{0}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.MaxOccurrenceCannotBeZeroInExtension:
-                    return "Max occurrence cannot be zero in extension.";
-                case DiagCodeEx.ChildKindNotEqualToRestricted:
-                    return "Child kind '{0}' not equal to the restricted '{1}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.MaxOccurrenceNotEqualToOrGreaterThanMinOccurrence:
                     return "Max occurrence '{0}' not equal to or greater than min occurrence '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.MaxOccurrenceCannotBeZeroInExtension:
+                    return "Max occurrence cannot be zero in extension.";
+                case DiagCodeEx.CannotFindRestrictedMember:
+                    return "Cannot find restricted member '{0}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.CannotDeleteRequiredMember:
+                    return "Cannot delete required member '{0}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.MemberKindNotEqualToRestricted:
+                    return "Member kind '{0}' not equal to the restricted '{1}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.MinOccurrenceNotEqualToOrGreaterThanRestricted:
                     return "Min occurrence '{0}' not equal to or greater than the restricted '{1}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.MaxOccurrenceNotEqualToOrLessThanRestricted:
                     return "Max occurrence '{0}' not equal to or less than the restricted '{1}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.ElementNameNotEqualToRestricted:
                     return "Element name '{0}' not equal to the restricted '{1}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.ElementIsNullableButRestrictedIsNotNullable:
-                    return "Element iss nullable but the restricted is not nullable.";
-                case DiagCodeEx.ElementNotEqualToOrSubstituteRestricted:
-                    return "Element '{0}' not equal to or substitute the restricted '{1}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.CannotFindRestrictedChild:
-                    return "Cannot find restricted child '{0}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.CannotDeleteChildBecauseItIsNotOptional:
-                    return "Cannot delete child '{0}' because it is not optional.".InvFormat(_msgArgs);
-                case DiagCodeEx.AmbiguousElementFullName:
-                    return "Ambiguous element full name '{0}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.ElementNotEqualToOrSubstituteForRestricted:
+                    return "Element '{0}' not equal to or substitute for the restricted '{1}'.".InvFormat(_msgArgs);
+                //case DiagCodeEx.AmbiguousElementFullName:
+                //    return "Ambiguous element full name '{0}'.".InvFormat(_msgArgs);
 
 
                 default:

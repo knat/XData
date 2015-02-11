@@ -92,7 +92,7 @@ namespace XData.IO.Text {
                 }
             }
             var alias = "a" + _aliasUriList.Count.ToInvString();
-            EX.CreateAndAdd(ref _aliasUriList, new AliasUri(alias, uri));
+            Extensions.CreateAndAdd(ref _aliasUriList, new AliasUri(alias, uri));
             return alias;
         }
         public void Append(FullName fullName) {
@@ -104,7 +104,7 @@ namespace XData.IO.Text {
             Append(fullName.Name);
         }
         public void InsertRootElement(string alias, string name) {
-            var sb = EX.AcquireStringBuilder();
+            var sb = Extensions.AcquireStringBuilder();
             if (alias != null) {
                 sb.Append(alias);
                 sb.Append(':');

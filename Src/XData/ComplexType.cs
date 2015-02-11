@@ -32,7 +32,7 @@ namespace XData {
                 if (@try) {
                     return null;
                 }
-                throw new InvalidOperationException("Attribute set not allowed.");
+                throw new InvalidOperationException("Attributes not allowed.");
             }
             if ((obj = complexTypeInfo.Attributes.CreateInstance<T>()) != null) {
                 Attributes = obj;
@@ -54,7 +54,6 @@ namespace XData {
         public T CreateAttribute<T>(string name, bool @try = false) where T : XAttribute {
             return EnsureAttributes().CreateAttribute<T>(name, @try);
         }
-
         //
         private XObject _children;
         public XObject Children {
@@ -265,7 +264,7 @@ namespace XData {
             if (simpleTypeInfo != null) {
                 var simpleChild = _children as XSimpleType;
                 if ((object)simpleChild != null) {
-                    if (simpleChild.CheckEqualTo(context, simpleTypeInfo)) {
+                    if (simpleChild.CheckEqualToOrDeriveFrom(context, simpleTypeInfo)) {
                         simpleChild.TryValidate(context);
                     }
                 }

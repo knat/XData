@@ -69,7 +69,7 @@ namespace XData {
             return true;
         }
         internal override sealed void SaveValue(SavingContext context) {
-            EX.GetLiteral(_value, context.StringBuilder);
+            Extensions.GetLiteral(_value, context.StringBuilder);
         }
     }
     public class XString : XStringBase {

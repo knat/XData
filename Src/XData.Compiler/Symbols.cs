@@ -194,22 +194,6 @@ namespace XData.Compiler {
                 yield return itfName;
             }
         }
-        public void GenerateConcreteChildren(List<MemberDeclarationSyntax> list) {
-            //>new public XXX Children {
-            //    get { return base.GenericChildren as XXX; }
-            //    set { base.GenericChildren = value; }
-            //}
-            list.Add(CS.Property(CS.NewPublicTokenList, CSFullName, "Children", false,
-                default(SyntaxTokenList), new[] { CS.ReturnStm(CS.AsExpr(CS.BaseMemberAccessExpr("GenericChildren"), CSFullName)) },
-                default(SyntaxTokenList), new[] { CS.AssignStm(CS.BaseMemberAccessExpr("GenericChildren"), CS.IdName("value")) }));
-            ////>new public XXX EnsureChildren(bool @try = false){
-            ////  return base.EnsureChildren<XXX>(@try);
-            ////}
-            //list.Add(CS.Method(CS.NewPublicTokenList, CSFullName, "EnsureChildren",
-            //    new[] { CS.Parameter(CS.BoolType, "@try", CS.FalseLiteral) },
-            //    CS.ReturnStm(CS.InvoExpr(CS.BaseMemberAccessExpr(CS.GenericName("EnsureChildren", CSFullName)), CS.IdName("@try")))));
-        }
-
     }
     internal interface IGlobalObjectSymbol {
         FullName FullName { get; }
@@ -400,15 +384,22 @@ namespace XData.Compiler {
             }
         }
         protected override void GenerateMembers(List<MemberDeclarationSyntax> list) {
-            //BaseType.Generate();
             if (Attributes != null) {
                 Attributes.Generate();
             }
             if (Children != null) {
-                Children.Generate();
                 var simpleType = Children as SimpleTypeSymbol;
                 if (simpleType != null) {
-                    Children.GenerateConcreteChildren(list);
+                    //>new public XXX Children {
+                    //    get { return base.GenericChildren as XXX; }
+                    //    set { base.GenericChildren = value; }
+                    //}
+                    list.Add(CS.Property(CS.NewPublicTokenList, simpleType.CSFullName, "Children", false,
+                        default(SyntaxTokenList), new[] { CS.ReturnStm(CS.AsExpr(CS.BaseMemberAccessExpr("GenericChildren"), simpleType.CSFullName)) },
+                        default(SyntaxTokenList), new[] { CS.AssignStm(CS.BaseMemberAccessExpr("GenericChildren"), CS.IdName("value")) }));
+                }
+                else {
+                    Children.Generate();
                 }
             }
             //>>new public static readonly ComplexTypeInfo ThisInfo = ...;
@@ -426,9 +417,15 @@ namespace XData.Compiler {
                 baseAttributeSet != null ? baseAttributeSet.CSFullName : CSEX.XAttributeSetName, null, displayName) {
             BaseAttributeSet = baseAttributeSet;
             AttributeList = new List<AttributeSymbol>();
+            AttributeNameList = new List<string>();
+            if (baseAttributeSet != null) {
+                AttributeList.AddRange(baseAttributeSet.AttributeList);
+                AttributeNameList.AddRange(baseAttributeSet.AttributeNameList);
+            }
         }
         public readonly AttributeSetSymbol BaseAttributeSet;//opt
         public readonly List<AttributeSymbol> AttributeList;
+        public readonly List<string> AttributeNameList;
         protected override void GenerateMembers(List<MemberDeclarationSyntax> list) {
             if (AttributeList != null) {
                 foreach (var attribute in AttributeList) {
@@ -475,7 +472,6 @@ namespace XData.Compiler {
         public readonly SimpleTypeSymbol Type;
         public readonly AttributeSymbol RestrictedAttribute;
         protected override void GenerateMembers(List<MemberDeclarationSyntax> list) {
-            //Type.Generate();
             Type.GenerateConcreteType(list);
             //>new public static readonly AttributeInfo ThisInfo = ...;
             list.Add(CS.Field(RestrictedAttribute == null ? CS.PublicStaticReadOnlyTokenList : CS.NewPublicStaticReadOnlyTokenList,
@@ -523,8 +519,9 @@ namespace XData.Compiler {
     }
 
     internal abstract class ChildSymbol : ObjectSymbol {
-        protected ChildSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, bool isCSOverride, NameSyntax csBaseFullName, NameSyntax[] csItfNames,
-            ChildKind kind, string displayName, string memberName, ulong minOccurrence, ulong maxOccurrence, bool isListItem, int order, ChildSymbol restrictedChild) :
+        protected ChildSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed, bool isCSOverride,
+            NameSyntax csBaseFullName, NameSyntax[] csItfNames, ChildKind kind, string displayName, string memberName,
+            ulong minOccurrence, ulong maxOccurrence, bool isListItem, int order, ChildSymbol restrictedChild) :
             base(parent, csName, isAbstract, isSealed, isCSOverride, csBaseFullName, csItfNames, displayName) {
             Kind = kind;
             MemberName = memberName;
@@ -556,10 +553,10 @@ namespace XData.Compiler {
                 return MinOccurrence == 0;
             }
         }
-        public bool HasIntersection(FullName fullName) {
-            return HasIntersection(fullName, false);
-        }
-        public abstract bool HasIntersection(FullName fullName, bool forChoice);
+        //public bool HasIntersection(FullName fullName) {
+        //    return HasIntersection(fullName, false);
+        //}
+        //public abstract bool HasIntersection(FullName fullName, bool forChoice);
         protected void GenerateConcreteChild(List<MemberDeclarationSyntax> list) {
             var modifiers = RestrictedChild == null ? CS.PublicTokenList : CS.NewPublicTokenList;
             var c_name = "C_" + MemberName;
@@ -588,8 +585,9 @@ namespace XData.Compiler {
 
     internal sealed class ElementSymbol : ChildSymbol, IGlobalObjectSymbol {
         public ElementSymbol(ObjectBaseSymbol parent, string csName, bool isAbstract, bool isSealed,
-            ChildKind kind, string displayName, string memberName, ulong minOccurrence, ulong maxOccurrence, bool isListItem, int order, ElementSymbol restrictedElement,
-            FullName fullName, bool isNullable, TypeSymbol type, ElementSymbol referencedElement, ElementSymbol substitutedElement
+            ChildKind kind, string displayName, string memberName, ulong minOccurrence, ulong maxOccurrence, bool isListItem,
+            int order, ElementSymbol restrictedElement, FullName fullName, bool isNullable, TypeSymbol type,
+            ElementSymbol referencedElement, ElementSymbol substitutedElement
              )
             : base(parent, csName, isAbstract, isSealed, restrictedElement != null,
                  restrictedElement != null ? restrictedElement.CSFullName : substitutedElement != null ? substitutedElement.CSFullName :
@@ -636,15 +634,15 @@ namespace XData.Compiler {
             }
             return false;
         }
-        public override bool HasIntersection(FullName fullName, bool forChoice) {
-            if (MaxOccurrence > MinOccurrence || forChoice) {
-                if (IsLocal) {
-                    return FullName == fullName;
-                }
-                return ReferencedElement.GlobalElementNode.HasIntersection(fullName);
-            }
-            return false;
-        }
+        //public override bool HasIntersection(FullName fullName, bool forChoice) {
+        //    if (MaxOccurrence > MinOccurrence || forChoice) {
+        //        if (IsLocal) {
+        //            return FullName == fullName;
+        //        }
+        //        return ReferencedElement.GlobalElementNode.HasIntersection(fullName);
+        //    }
+        //    return false;
+        //}
         protected override void GenerateMembers(List<MemberDeclarationSyntax> list) {
             Type.GenerateConcreteType(list);
             if (IsGlobal) {
@@ -675,7 +673,8 @@ namespace XData.Compiler {
                 CS.Literal(IsNullable), Type.ThisInfoExpr,
                 ReferencedElement == null ? CS.NullLiteral : ReferencedElement.ThisInfoExpr,
                 SubstitutedElement == null ? CS.NullLiteral : SubstitutedElement.ThisInfoExpr,
-                GlobalElementNode == null ? CS.NullLiteral : CS.NewArrOrNullExpr(CSEX.FullNameArrayType, GlobalElementNode.DirectSubstitutorFullNames.Select(i => CSEX.FullName(i))),
+                GlobalElementNode == null ? CS.NullLiteral : CS.NewArrOrNullExpr(CSEX.FullNameArrayType,
+                    GlobalElementNode.DirectSubstitutorFullNames.Select(i => CSEX.FullName(i))),
                 CSEX.XDataProgramInfoInstanceExpr
                 )));
             list.Add(CSEX.ObjectInfoProperty(IsAbstract, CSFullName));
@@ -688,7 +687,8 @@ namespace XData.Compiler {
                 }
             }
         }
-        protected override void GenerateConcreteChildEx(List<MemberDeclarationSyntax> list, SyntaxTokenList modifiers, string c_name, string ensurec_name) {
+        protected override void GenerateConcreteChildEx(List<MemberDeclarationSyntax> list, SyntaxTokenList modifiers,
+            string c_name, string ensurec_name) {
             //public TYPE CT_NAME {
             //  get { var obj = C_NAME; if(obj == null) return null; return obj.Type; }
             //  set { EnsureC_NAME().Type = value; }
@@ -701,15 +701,17 @@ namespace XData.Compiler {
     }
     internal abstract class ChildContainerSymbol : ChildSymbol {
         protected ChildContainerSymbol(ObjectSymbol parent, string csName, bool isCSOverride, NameSyntax csBaseFullName, NameSyntax[] csItfNames,
-            ChildKind kind, string displayName, string memberName, ulong minOccurrence, ulong maxOccurrence, bool isListItem, int order, ChildContainerSymbol restrictedChildContainer)
-            : base(parent, csName, false, false, isCSOverride, csBaseFullName, csItfNames, kind, displayName, memberName, minOccurrence, maxOccurrence, isListItem, order, restrictedChildContainer) {
+            ChildKind kind, string displayName, string memberName, ulong minOccurrence, ulong maxOccurrence, bool isListItem, int order,
+            ChildContainerSymbol restrictedChildContainer)
+            : base(parent, csName, false, false, isCSOverride, csBaseFullName, csItfNames, kind, displayName, memberName,
+                minOccurrence, maxOccurrence, isListItem, order, restrictedChildContainer) {
         }
     }
 
     internal sealed class ChildSetSymbol : ChildContainerSymbol {
-        public ChildSetSymbol(ObjectSymbol parent, string csName,
-            ChildKind kind, string displayName, string memberName, ulong minOccurrence, ulong maxOccurrence, bool isListItem, int order, ChildSetSymbol restrictedChildSet,
-            bool isRoot, ChildSetSymbol baseChildSet)
+        public ChildSetSymbol(ObjectSymbol parent, string csName, ChildKind kind, string displayName, string memberName,
+            ulong minOccurrence, ulong maxOccurrence, bool isListItem, int order,
+            ChildSetSymbol restrictedChildSet, bool isRoot, ChildSetSymbol baseChildSet)
             : base(parent, csName, restrictedChildSet != null || baseChildSet != null,
                  restrictedChildSet != null ? restrictedChildSet.CSFullName : baseChildSet != null ? baseChildSet.CSFullName :
                     kind == ChildKind.Sequence ? CSEX.XChildSequenceName : CSEX.XChildChoiceName, null,
@@ -717,10 +719,19 @@ namespace XData.Compiler {
             IsRoot = isRoot;
             BaseChildSet = baseChildSet;
             ChildList = new List<ChildSymbol>();
+            if (isRoot) {
+                MemberNameList = new List<string>();
+                if (baseChildSet != null) {
+                    ChildList.AddRange(baseChildSet.ChildList);
+                    MemberNameList.AddRange(baseChildSet.MemberNameList);
+                    NextChildOrder = baseChildSet.NextChildOrder;
+                }
+            }
         }
         public readonly bool IsRoot;
-        public int NextChildOrder;//for root
         public readonly ChildSetSymbol BaseChildSet;//for root
+        public readonly List<string> MemberNameList;//for root
+        public int NextChildOrder;//for root
         public readonly List<ChildSymbol> ChildList;
         private bool? _isOptional;
         public override bool IsOptional {
@@ -768,46 +779,46 @@ namespace XData.Compiler {
                 return Kind == ChildKind.Choice;
             }
         }
-        public override bool HasIntersection(FullName fullName, bool forChoice) {
-            if (IsSequence) {
-                if (forChoice) {
-                    foreach (var child in ChildList) {
-                        if (child.HasIntersection(fullName, true)) {
-                            return true;
-                        }
-                        if (child.MinOccurrence == child.MaxOccurrence) {
-                            break;
-                        }
-                    }
-                    return false;
-                }
-                else {
-                    for (var i = ChildList.Count - 1; i >= 0; --i) {
-                        var child = ChildList[i];
-                        if (child.HasIntersection(fullName, false)) {
-                            return true;
-                        }
-                        if (child.MinOccurrence == child.MaxOccurrence) {
-                            return false;
-                        }
-                    }
-                }
-            }
-            else {//choice
-                foreach (var child in ChildList) {
-                    if (child.HasIntersection(fullName, true)) {
-                        return true;
-                    }
-                }
-            }
-            if (!forChoice) {
-                var parentChildSet = Parent as ChildSetSymbol;
-                if (parentChildSet != null) {
-                    return parentChildSet.HasIntersection(fullName, false);
-                }
-            }
-            return false;
-        }
+        //public override bool HasIntersection(FullName fullName, bool forChoice) {
+        //    if (IsSequence) {
+        //        if (forChoice) {
+        //            foreach (var child in ChildList) {
+        //                if (child.HasIntersection(fullName, true)) {
+        //                    return true;
+        //                }
+        //                if (child.MinOccurrence == child.MaxOccurrence) {
+        //                    break;
+        //                }
+        //            }
+        //            return false;
+        //        }
+        //        else {
+        //            for (var i = ChildList.Count - 1; i >= 0; --i) {
+        //                var child = ChildList[i];
+        //                if (child.HasIntersection(fullName, false)) {
+        //                    return true;
+        //                }
+        //                if (child.MinOccurrence == child.MaxOccurrence) {
+        //                    return false;
+        //                }
+        //            }
+        //        }
+        //    }
+        //    else {//choice
+        //        foreach (var child in ChildList) {
+        //            if (child.HasIntersection(fullName, true)) {
+        //                return true;
+        //            }
+        //        }
+        //    }
+        //    if (!forChoice) {
+        //        var parentChildSet = Parent as ChildSetSymbol;
+        //        if (parentChildSet != null) {
+        //            return parentChildSet.HasIntersection(fullName, false);
+        //        }
+        //    }
+        //    return false;
+        //}
         protected override void GenerateMembers(List<MemberDeclarationSyntax> list) {
             if (ChildList != null) {
                 foreach (var child in ChildList) {
@@ -860,9 +871,9 @@ namespace XData.Compiler {
             Item = item;
         }
         public readonly ChildSymbol Item;
-        public override bool HasIntersection(FullName fullName, bool forChoice) {
-            return Item.HasIntersection(fullName, forChoice);
-        }
+        //public override bool HasIntersection(FullName fullName, bool forChoice) {
+        //    return Item.HasIntersection(fullName, forChoice);
+        //}
         protected override void GenerateMembers(List<MemberDeclarationSyntax> list) {
             Item.Generate();
             if (CSItfNames != null) {

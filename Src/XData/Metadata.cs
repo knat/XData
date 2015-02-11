@@ -17,7 +17,7 @@ namespace XData {
         protected abstract List<NamespaceInfo> GetNamespaces();
         public NamespaceInfo TryGetNamespace(string uri) {
             foreach (var ns in Namespaces) {
-                if (EX.UriEquals(ns.Uri, uri)) {
+                if (Extensions.UriEquals(ns.Uri, uri)) {
                     return ns;
                 }
             }
@@ -34,7 +34,6 @@ namespace XData {
     public sealed class NamespaceInfo {
         public NamespaceInfo(string uri, IGlobalObjectInfo[] globalObjects) {
             if (uri == null) throw new ArgumentNullException("uri");
-            if (globalObjects == null) throw new ArgumentNullException("globalObjects");
             Uri = uri;
             GlobalObjects = globalObjects;
         }
@@ -57,8 +56,28 @@ namespace XData {
         }
         //
         public static readonly NamespaceInfo System = new NamespaceInfo(Extensions.SystemUri, new IGlobalObjectInfo[] {
-
-
+            XString.ThisInfo,
+            XIgnoreCaseString.ThisInfo,
+            XDecimal.ThisInfo,
+            XInt64.ThisInfo,
+            XInt32.ThisInfo,
+            XInt16.ThisInfo,
+            XSByte.ThisInfo,
+            XUInt64.ThisInfo,
+            XUInt32.ThisInfo,
+            XUInt16.ThisInfo,
+            XByte.ThisInfo,
+            XDouble.ThisInfo,
+            XSingle.ThisInfo,
+            XBoolean.ThisInfo,
+            XBinary.ThisInfo,
+            XGuid.ThisInfo,
+            XTimeSpan.ThisInfo,
+            XDateTimeOffset.ThisInfo,
+            XAtomType.ThisInfo,
+            XListType.ThisInfo,
+            XSimpleType.ThisInfo,
+            XComplexType.ThisInfo,
         });
     }
 
@@ -173,7 +192,6 @@ namespace XData {
         public SimpleTypeInfo(Type clrType, bool isAbstract, FullName fullName, SimpleTypeInfo baseType,
             FacetSetInfo facets)
             : base(clrType, isAbstract, fullName, baseType) {
-            //if (baseType == null) throw new ArgumentNullException("baseType");
             Facets = facets;
         }
         public readonly FacetSetInfo Facets;
@@ -203,8 +221,6 @@ namespace XData {
         Guid,
         TimeSpan,
         DateTimeOffset,
-        //Date,
-        //Time,
     }
 
     public sealed class AtomTypeInfo : SimpleTypeInfo {
@@ -224,7 +240,7 @@ namespace XData {
         public readonly SimpleTypeInfo ItemType;
     }
     public sealed class ComplexTypeInfo : TypeInfo {
-        public ComplexTypeInfo(Type clrType, bool isAbstract, FullName fullName, TypeInfo baseType,
+        public ComplexTypeInfo(Type clrType, bool isAbstract, FullName fullName, ComplexTypeInfo baseType,
             AttributeSetInfo attributes, ObjectInfo children)
             : base(clrType, isAbstract, fullName, baseType) {
             Attributes = attributes;
@@ -251,10 +267,13 @@ namespace XData {
         }
         public readonly AttributeInfo[] Attributes;
         public AttributeInfo TryGetAttribute(string name) {
-            if (Attributes != null) {
-                foreach (var attribute in Attributes) {
-                    if (attribute.Name == name) {
-                        return attribute;
+            var atts = Attributes;
+            if (atts != null) {
+                var length = atts.Length;
+                for (var i = 0; i < length; ++i) {
+                    var att = atts[i];
+                    if (att.Name == name) {
+                        return att;
                     }
                 }
             }
@@ -405,8 +424,11 @@ namespace XData {
             }
         }
         public ChildInfo TryGetChild(int order) {
-            if (Children != null) {
-                foreach (var child in Children) {
+            var children = Children;
+            if (children != null) {
+                var length = children.Length;
+                for (var i = 0; i < length; ++i) {
+                    var child = children[i];
                     if (child.Order == order) {
                         return child;
                     }

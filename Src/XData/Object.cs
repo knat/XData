@@ -79,7 +79,6 @@ namespace XData {
                 }
             }
         }
-
         //
         public virtual XObject DeepClone() {
             var obj = (XObject)MemberwiseClone();
@@ -95,9 +94,6 @@ namespace XData {
             return TryValidateCore(context);
         }
         internal abstract bool TryValidateCore(DiagContext context);
-        //internal bool EqualTo(ObjectInfo otherObjectInfo) {
-        //    return ObjectInfo == otherObjectInfo;
-        //}
         internal bool CheckEqualTo(DiagContext context, ObjectInfo otherObjectInfo) {
             var objectInfo = ObjectInfo;
             if (objectInfo != otherObjectInfo) {

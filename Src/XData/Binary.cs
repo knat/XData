@@ -61,7 +61,7 @@ namespace XData {
             var hash = 17;
             var count = Math.Min(_value.Length, 7);
             for (var i = 0; i < count; ++i) {
-                hash = EX.AggregateHash(hash, _value[i]);
+                hash = Extensions.AggregateHash(hash, _value[i]);
             }
             return hash;
         }

@@ -33,17 +33,6 @@ namespace XData {
                 Type = value;
             }
         }
-        //public T EnsureType<T>(bool @try = false) where T : XSimpleType {
-        //    var obj = _type as T;
-        //    if (obj != null) return obj;
-        //    if ((obj = AttributeInfo.Type.CreateInstance<T>(@try)) != null) {
-        //        Type = obj;
-        //    }
-        //    return obj;
-        //}
-        //public XSimpleType EnsureType(bool @try = false) {
-        //    return EnsureType<XSimpleType>(@try);
-        //}
         public override XObject DeepClone() {
             var obj = (XAttribute)base.DeepClone();
             obj.Type = _type;
@@ -62,7 +51,7 @@ namespace XData {
                 context.AppendLine();
             }
         }
-        internal override bool TryValidateCore(DiagContext context) {
+        internal override sealed bool TryValidateCore(DiagContext context) {
             var attributeInfo = AttributeInfo;
             if (_type != null) {
                 if (!_type.CheckEqualToOrDeriveFrom(context, attributeInfo.Type)) {
@@ -73,7 +62,7 @@ namespace XData {
                 }
             }
             else if (!attributeInfo.IsNullable) {
-                context.AddErrorDiag(new DiagMsg(DiagCode.AttributeIsNotNullable, attributeInfo.DisplayName), this);
+                context.AddErrorDiag(new DiagMsg(DiagCode.AttributeNotNullable, attributeInfo.DisplayName), this);
                 return false;
             }
             return true;
@@ -88,7 +77,8 @@ namespace XData {
                 }
             }
             else if (!attributeInfo.IsNullable) {
-                context.AddErrorDiag(new DiagMsg(DiagCode.AttributeIsNotNullable, attributeInfo.DisplayName), attributeNode.NameNode.TextSpan);
+                context.AddErrorDiag(new DiagMsg(DiagCode.AttributeNotNullable, attributeInfo.DisplayName), 
+                    attributeNode.NameNode.TextSpan);
                 return false;
             }
             var attribute = attributeInfo.CreateInstance<XAttribute>();

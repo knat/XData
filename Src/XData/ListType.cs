@@ -83,7 +83,7 @@ namespace XData {
             var hash = 17;
             var count = Math.Min(_itemList.Count, 5);
             for (var i = 0; i < count; ++i) {
-                hash = EX.AggregateHash(hash, _itemList[i].GetHashCode());
+                hash = Extensions.AggregateHash(hash, _itemList[i].GetHashCode());
             }
             return hash;
         }
@@ -95,7 +95,7 @@ namespace XData {
             if (count == 1) {
                 return "#[" + _itemList[0].ToString() + "]";
             }
-            var sb = EX.AcquireStringBuilder();
+            var sb = Extensions.AcquireStringBuilder();
             sb.Append("#[");
             for (var i = 0; i < count; ++i) {
                 if (i > 0) {

@@ -163,7 +163,7 @@ namespace XData {
                 if (complexTypeInfo != null) {
                     var complexValueNode = elementValueNode.ComplexValue;
                     if (!complexValueNode.IsValid) {
-                        context.AddErrorDiag(new DiagMsg(DiagCode.ComplexTypeValueRequiredForElement, effElementInfo.DisplayName),
+                        context.AddErrorDiag(new DiagMsg(DiagCode.ComplexValueRequiredForElement, effElementInfo.DisplayName),
                             elementNameTextSpan);
                         return CreationResult.Error;
                     }
@@ -191,7 +191,8 @@ namespace XData {
             }
             else {
                 if (!isNullable) {
-                    context.AddErrorDiag(new DiagMsg(DiagCode.ElementIsNotNullable, effElementInfo.DisplayName), elementNameTextSpan);
+                    context.AddErrorDiag(new DiagMsg(DiagCode.ElementNotNullable, effElementInfo.DisplayName),
+                        elementNameTextSpan);
                     return CreationResult.Error;
                 }
             }
@@ -256,7 +257,7 @@ namespace XData {
                 }
             }
             else if (!elementInfo.IsNullable) {
-                context.AddErrorDiag(new DiagMsg(DiagCode.ElementIsNotNullable, elementInfo.DisplayName), this);
+                context.AddErrorDiag(new DiagMsg(DiagCode.ElementNotNullable, elementInfo.DisplayName), this);
                 return false;
             }
             return true;
@@ -306,7 +307,7 @@ namespace XData {
             context.SetValidationResult(this, success);
             return success;
         }
-        internal static bool TryCreate<T>(DiagContext context, ElementInfo elementInfo, ElementNode elementNode, out T result) where T : XGlobalElement {
+        private static bool TryCreate<T>(DiagContext context, ElementInfo elementInfo, ElementNode elementNode, out T result) where T : XGlobalElement {
             if (!elementInfo.IsGlobal) throw new ArgumentException("!elementInfo.IsGlobal");
             result = null;
             XChild child;
@@ -381,7 +382,7 @@ namespace XData {
         }
         internal override sealed bool TryValidateCore(DiagContext context) {
             if (_globalElement == null) {
-                context.AddErrorDiag(new DiagMsg(DiagCode.EntityElementIsNull), this);
+                context.AddErrorDiag(new DiagMsg(DiagCode.GlobalElementNotSet), this);
                 return false;
             }
             if (_globalElement.CheckEqualToOrSubstituteFor(context, ElementInfo.ReferencedElement)) {

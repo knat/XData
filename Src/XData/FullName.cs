@@ -33,7 +33,7 @@ namespace XData {
             return null;
         }
         public bool Equals(FullName other) {
-            return EX.UriEquals(Uri, other.Uri) && Name == other.Name;
+            return Extensions.UriEquals(Uri, other.Uri) && Name == other.Name;
         }
         public override bool Equals(object obj) {
             return obj is FullName && Equals((FullName)obj);
@@ -43,7 +43,7 @@ namespace XData {
             if (IsUnqualified) {
                 return nameHash;
             }
-            return EX.CombineHash(Uri.GetHashCode(), nameHash);
+            return Extensions.CombineHash(Uri.GetHashCode(), nameHash);
         }
         public static bool operator ==(FullName left, FullName right) {
             return left.Equals(right);

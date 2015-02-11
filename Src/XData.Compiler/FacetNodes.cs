@@ -131,7 +131,7 @@ namespace XData.Compiler {
             if (Enum != null) {
                 var typeObj = CreateXAtomType(typeKind);
                 var itemList = new List<EnumItemInfo>();
-                var textsb = EX.AcquireStringBuilder();
+                var textsb = Extensions.AcquireStringBuilder();
                 for (var i = 0; i < Enum.Count; ++i) {
                     var item = Enum[i];
                     if (item.Name.IsValid && @enum != null) {
