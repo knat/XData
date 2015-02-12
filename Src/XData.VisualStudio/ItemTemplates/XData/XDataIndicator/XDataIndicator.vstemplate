@@ -7,6 +7,7 @@
         <ProjectType>CSharp</ProjectType>
         <NumberOfParentCategoriesToRollUp>1</NumberOfParentCategoriesToRollUp>
         <DefaultName>File.xdi</DefaultName>
+        <AppliesTo>CSharp + MultiTarget</AppliesTo>
     </TemplateData>
     <TemplateContent>
         <ProjectItem ReplaceParameters="false" ItemType="XDataIndicator" TargetFileName="$fileinputname$.xdi">XDataIndicator.xdi</ProjectItem>

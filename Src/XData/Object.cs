@@ -69,7 +69,7 @@ namespace XData {
             }
             return null;
         }
-        public IEnumerable<T> Ancestors<T>(Func<T, bool> filter = null) where T : XObject {
+        public IEnumerable<T> Ancestors<T>(Func<T, bool> filter = null) where T : class {
             for (var obj = _parent; obj != null; obj = obj._parent) {
                 var ancestor = obj as T;
                 if (ancestor != null) {

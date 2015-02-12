@@ -10,8 +10,9 @@ namespace XData {
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void PublicParameterlessConstructorRequired<T>() where T : new() { }
         //
+        #region LINQ
         public static IEnumerable<T> Ancestors<T>(this IEnumerable<XObject> source,
-            Func<T, bool> filter = null) where T : XObject {
+            Func<T, bool> filter = null) where T : class {
             if (source == null) throw new ArgumentNullException("source");
             foreach (var i in source) {
                 foreach (var j in i.Ancestors(filter)) {
@@ -245,11 +246,10 @@ namespace XData {
         }
 
         #endregion element
-
+        #endregion LINQ
         //
         internal const string DefaultIndentString = "\t";
         internal const string DefaultNewLineString = "\n";
-        //
         //
         //
         private const int _stringBuilderCount = 4;
