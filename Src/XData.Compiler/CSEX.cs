@@ -282,8 +282,8 @@ namespace XData.Compiler {
         internal static QualifiedNameSyntax ElementInfoName {
             get { return CS.QualifiedName(XDataName, "ElementInfo"); }
         }
-        internal static QualifiedNameSyntax ChildSetInfoName {
-            get { return CS.QualifiedName(XDataName, "ChildSetInfo"); }
+        internal static QualifiedNameSyntax ChildStructInfoName {
+            get { return CS.QualifiedName(XDataName, "ChildStructInfo"); }
         }
         internal static QualifiedNameSyntax ChildInfoName {
             get { return CS.QualifiedName(XDataName, "ChildInfo"); }
@@ -317,6 +317,9 @@ namespace XData.Compiler {
         }
         internal static QualifiedNameSyntax XGlobalElementRefName {
             get { return CS.QualifiedName(XDataName, "XGlobalElementRef"); }
+        }
+        internal static QualifiedNameSyntax XChildSetName {
+            get { return CS.QualifiedName(XDataName, "XChildSet"); }
         }
         internal static QualifiedNameSyntax XChildSequenceName {
             get { return CS.QualifiedName(XDataName, "XChildSequence"); }

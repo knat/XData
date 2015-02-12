@@ -71,7 +71,10 @@ attributes-children:
 attributes children? | children
 ;
 children:
-complex-children | simple-child
+simple-child | complex-children
+;
+complex-children:
+element-children | sequence-children
 ;
 simple-child:
 '$' qualifiable-name
@@ -97,11 +100,18 @@ global-element:
 global-element-annotations:
 '<' (nullable | abstract-or-sealed | substitute)* '>'
 ;
-complex-children:
-'{' member-child* '}'
+
+element-children:
+'{' member-element-child* '}'
+;
+sequence-children:
+'#{' member-child* '}'
+;
+member-element-child:
+local-element | global-element-ref
 ;
 member-child:
-local-element | global-element-ref | sequence-children | choice-children
+member-element-child | member-sequence-children | member-choice-children
 ;
 local-element:
 name local-element-annotations? 'as' qualifiable-name
@@ -116,10 +126,10 @@ member-child-annotations:
 '<' (member-name | occurrence)* '>'
 ;
 
-sequence-children:
-'{' member-child* '}' member-child-annotations?
+member-sequence-children:
+'#{' member-child* '}' member-child-annotations?
 ;
-choice-children:
+member-choice-children:
 '?{' member-child* '}' member-child-annotations?
 ;
 

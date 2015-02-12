@@ -67,14 +67,14 @@ namespace XData.Compiler {
         CannotFindRestrictedAttribute,
         CannotDeleteRequiredAttribute,
         CannotChangeRequiredToOptional,
-        DeletionNotAllowedInExtension,
         //
+        DeletionNotAllowedInExtension,
         CannotChangeNonNullableToNullable,
         //child
         SubstitutedElementSealed,
         DuplicateMemberName,
         MaxOccurrenceNotEqualToOrGreaterThanMinOccurrence,
-        MaxOccurrenceCannotBeZeroInExtension,
+        MaxOccurrenceCannotBeZero,
         CannotFindRestrictedMember,
         CannotDeleteRequiredMember,
         MemberKindNotEqualToRestricted,
@@ -217,9 +217,9 @@ namespace XData.Compiler {
                     return "Cannot delete required attribute '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.CannotChangeRequiredToOptional:
                     return "Cannot change required to optional.";
+                //
                 case DiagCodeEx.DeletionNotAllowedInExtension:
                     return "Deletion not allowed in extension.";
-                //
                 case DiagCodeEx.CannotChangeNonNullableToNullable:
                     return "Cannot change non-nullable to nullable.";
                 //child
@@ -229,8 +229,8 @@ namespace XData.Compiler {
                     return "Duplicate member name '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.MaxOccurrenceNotEqualToOrGreaterThanMinOccurrence:
                     return "Max occurrence '{0}' not equal to or greater than min occurrence '{1}'.".InvFormat(_msgArgs);
-                case DiagCodeEx.MaxOccurrenceCannotBeZeroInExtension:
-                    return "Max occurrence cannot be zero in extension.";
+                case DiagCodeEx.MaxOccurrenceCannotBeZero:
+                    return "Max occurrence cannot be zero.";
                 case DiagCodeEx.CannotFindRestrictedMember:
                     return "Cannot find restricted member '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.CannotDeleteRequiredMember:

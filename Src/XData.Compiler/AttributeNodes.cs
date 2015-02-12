@@ -146,10 +146,10 @@ namespace XData.Compiler {
         }
         public TextSpan TextSpan {
             get {
-                if (Delete.IsValid) {
-                    return Delete.TextSpan;
+                if (Optional.IsValid) {
+                    return Optional;
                 }
-                return Optional;
+                return Delete.TextSpan;
             }
         }
     }

@@ -256,9 +256,9 @@ namespace XData {
                 return Children as SimpleTypeInfo;
             }
         }
-        public ChildSetInfo ComplexChildren {
+        public ChildStructInfo ComplexChildren {
             get {
-                return Children as ChildSetInfo;
+                return Children as ChildStructInfo;
             }
         }
     }
@@ -305,6 +305,7 @@ namespace XData {
         GlobalElementRef,
         Sequence,
         Choice,
+        ElementSet,
         List
     }
     public abstract class ChildInfo : ObjectInfo {
@@ -410,8 +411,8 @@ namespace XData {
             : base(clrType, false, displayName, kind, isOptional, order) {
         }
     }
-    public sealed class ChildSetInfo : ChildContainerInfo {
-        public ChildSetInfo(Type clrType, string displayName, ChildKind kind, bool isOptional, int order, ChildInfo[] children)
+    public sealed class ChildStructInfo : ChildContainerInfo {
+        public ChildStructInfo(Type clrType, string displayName, ChildKind kind, bool isOptional, int order, ChildInfo[] children)
             : base(clrType, displayName, kind, isOptional, order) {
             Children = children;
         }
@@ -424,6 +425,11 @@ namespace XData {
         public bool IsChoice {
             get {
                 return Kind == ChildKind.Choice;
+            }
+        }
+        public bool IsElementSet {
+            get {
+                return Kind == ChildKind.ElementSet;
             }
         }
         public ChildInfo TryGetChild(int order) {

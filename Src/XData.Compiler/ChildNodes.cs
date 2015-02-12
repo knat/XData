@@ -95,8 +95,19 @@ namespace XData.Compiler {
     }
     internal sealed class ComplexChildrenNode : Node {
         public ComplexChildrenNode(Node parent) : base(parent) { }
+        public ChildKind Kind;
         public List<MemberChildNode> ChildList;
         public TextSpan OpenBraceTextSpan, CloseBraceTextSpan;
+        public bool IsSequence {
+            get {
+                return Kind == ChildKind.Sequence;
+            }
+        }
+        public bool IsElementSet {
+            get {
+                return Kind == ChildKind.ElementSet;
+            }
+        }
         public void Resolve() {
             if (ChildList != null) {
                 foreach (var child in ChildList) {
@@ -104,9 +115,9 @@ namespace XData.Compiler {
                 }
             }
         }
-        public ChildSetSymbol CreateSymbol(ComplexTypeSymbol parent, ChildSetSymbol baseChildSetSymbol, bool isExtension) {
+        public ChildStructSymbol CreateSymbol(ComplexTypeSymbol parent, ChildStructSymbol baseChildSetSymbol, bool isExtension) {
             var displayName = parent.DisplayName + ".{}";
-            var childSetSymbol = new ChildSetSymbol(parent, "CLS_Children", ChildKind.Sequence, displayName, null, 1, 1, false, -1, null,
+            var childSetSymbol = new ChildStructSymbol(parent, "CLS_Children", ChildKind.Sequence, displayName, null, 1, 1, false, -1, null,
                 true, baseChildSetSymbol);
             if (isExtension) {
                 if (ChildList != null) {
@@ -126,7 +137,7 @@ namespace XData.Compiler {
             }
             return childSetSymbol;
         }
-        public static void CreateRestrictionSymbols(ChildSetSymbol childSetSymbol, List<MemberChildNode> childList, string parentDisplayName) {
+        public static void CreateRestrictionSymbols(ChildStructSymbol childSetSymbol, List<MemberChildNode> childList, string parentDisplayName) {
             if (childList != null) {
                 var childSymbolList = childSetSymbol.ChildList;
                 foreach (var child in childList) {
@@ -143,11 +154,11 @@ namespace XData.Compiler {
                         DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotFindRestrictedMember, memberName),
                             child.MemberNameNode.TextSpan);
                     }
-                    var isDelete = child.MaxOccurrence == 0;
+                    var isDelete = child.IsDelete;
                     if (isDelete) {
                         if (!restrictedChildSymbol.IsOptional) {
                             DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotDeleteRequiredMember, memberName),
-                                child.MemberNameNode.TextSpan);
+                                child.Occurrence.TextSpan);
                         }
                     }
                     childSymbolList.RemoveAt(idx);
@@ -179,16 +190,21 @@ namespace XData.Compiler {
                 return Occurrence.IsValid ? Occurrence.MaxValue : 1;
             }
         }
+        public bool IsDelete {
+            get {
+                return Occurrence.IsValid && Occurrence.MaxValue == 0;
+            }
+        }
         public abstract void Resolve();
-        public ChildSymbol CreateSymbol(ChildSetSymbol parent, ChildSymbol restrictedChildSymbol, int order, string parentDisplayName) {
+        public ChildSymbol CreateSymbol(ChildStructSymbol parent, ChildSymbol restrictedChildSymbol, int order, string parentDisplayName) {
             var minOccurrence = MinOccurrence;
             var maxOccurrence = MaxOccurrence;
             var isList = maxOccurrence > 1;
             ChildSymbol restrictedItemSymbol = restrictedChildSymbol;
             var restrictedListSymbol = restrictedChildSymbol as ChildListSymbol;
             if (restrictedChildSymbol == null) {
-                if (maxOccurrence == 0) {
-                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxOccurrenceCannotBeZeroInExtension),
+                if (IsDelete) {
+                    DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DeletionNotAllowedInExtension),
                         Occurrence.TextSpan);
                 }
             }
@@ -222,7 +238,7 @@ namespace XData.Compiler {
             return new ChildListSymbol(parent, "CLS_" + memberName, displayName, memberName, minOccurrence, maxOccurrence,
                 order, restrictedListSymbol, childSymbol);
         }
-        protected abstract ChildSymbol CreateSymbolCore(ChildSetSymbol parent, ChildSymbol restrictedChildSymbol, bool isListItem,
+        protected abstract ChildSymbol CreateSymbolCore(ChildStructSymbol parent, ChildSymbol restrictedChildSymbol, bool isListItem,
             int order, string displayName, string csName);
 
     }
@@ -251,7 +267,7 @@ namespace XData.Compiler {
         public override void Resolve() {
             Type = NamespaceAncestor.ResolveAsType(TypeQName);
         }
-        protected override ChildSymbol CreateSymbolCore(ChildSetSymbol parent, ChildSymbol restrictedChildSymbol, bool isListItem,
+        protected override ChildSymbol CreateSymbolCore(ChildStructSymbol parent, ChildSymbol restrictedChildSymbol, bool isListItem,
             int order, string displayName, string csName) {
             var restrictedElementSymbol = (ElementSymbol)restrictedChildSymbol;
             var name = Name;
@@ -294,7 +310,7 @@ namespace XData.Compiler {
         public override void Resolve() {
             GlobalElement = NamespaceAncestor.ResolveAsElement(GlobalElementQName);
         }
-        protected override ChildSymbol CreateSymbolCore(ChildSetSymbol parent, ChildSymbol restrictedChildSymbol, bool isListItem,
+        protected override ChildSymbol CreateSymbolCore(ChildStructSymbol parent, ChildSymbol restrictedChildSymbol, bool isListItem,
             int order, string displayName, string csName) {
             var restrictedElementSymbol = (ElementSymbol)restrictedChildSymbol;
             var globalElementSymbol = (ElementSymbol)GlobalElement.CreateSymbol();
@@ -325,7 +341,7 @@ namespace XData.Compiler {
     internal sealed class MemberComplexChildrenNode : MemberChildNode {
         public MemberComplexChildrenNode(Node parent) : base(parent) { }
         public List<MemberChildNode> ChildList;
-        public TextSpan OpenBraceToken, CloseBraceToken;
+        public TextSpan OpenBraceTextSpan, CloseBraceTextSpan;
         public bool IsSequence {
             get {
                 return Kind == ChildKind.Sequence;
@@ -343,10 +359,10 @@ namespace XData.Compiler {
                 }
             }
         }
-        protected override ChildSymbol CreateSymbolCore(ChildSetSymbol parent, ChildSymbol restrictedChildSymbol, bool isListItem,
+        protected override ChildSymbol CreateSymbolCore(ChildStructSymbol parent, ChildSymbol restrictedChildSymbol, bool isListItem,
             int order, string displayName, string csName) {
-            var restrictedChildSetSymbol = (ChildSetSymbol)restrictedChildSymbol;
-            var childSetSymbol = new ChildSetSymbol(parent, csName, Kind, displayName, MemberName, MinOccurrence, MaxOccurrence,
+            var restrictedChildSetSymbol = (ChildStructSymbol)restrictedChildSymbol;
+            var childSetSymbol = new ChildStructSymbol(parent, csName, Kind, displayName, MemberName, MinOccurrence, MaxOccurrence,
                 isListItem, order, restrictedChildSetSymbol, false, null);
             if (restrictedChildSetSymbol == null) {
                 if (ChildList != null) {

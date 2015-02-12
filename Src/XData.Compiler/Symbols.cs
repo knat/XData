@@ -378,9 +378,9 @@ namespace XData.Compiler {
                 return Children as SimpleTypeSymbol;
             }
         }
-        public ChildSetSymbol ComplexChildren {
+        public ChildStructSymbol ComplexChildren {
             get {
-                return Children as ChildSetSymbol;
+                return Children as ChildStructSymbol;
             }
         }
         protected override void GenerateMembers(List<MemberDeclarationSyntax> list) {
@@ -542,7 +542,7 @@ namespace XData.Compiler {
         public bool AtTopLevel {
             get {
                 if (_atTopLevel == null) {
-                    var cs = Parent as ChildSetSymbol;
+                    var cs = Parent as ChildStructSymbol;
                     _atTopLevel = cs != null && cs.IsRoot;
                 }
                 return _atTopLevel.Value;
@@ -708,10 +708,10 @@ namespace XData.Compiler {
         }
     }
 
-    internal sealed class ChildSetSymbol : ChildContainerSymbol {
-        public ChildSetSymbol(ObjectSymbol parent, string csName, ChildKind kind, string displayName, string memberName,
+    internal sealed class ChildStructSymbol : ChildContainerSymbol {
+        public ChildStructSymbol(ObjectSymbol parent, string csName, ChildKind kind, string displayName, string memberName,
             ulong minOccurrence, ulong maxOccurrence, bool isListItem, int order,
-            ChildSetSymbol restrictedChildSet, bool isRoot, ChildSetSymbol baseChildSet)
+            ChildStructSymbol restrictedChildSet, bool isRoot, ChildStructSymbol baseChildSet)
             : base(parent, csName, restrictedChildSet != null || baseChildSet != null,
                  restrictedChildSet != null ? restrictedChildSet.CSFullName : baseChildSet != null ? baseChildSet.CSFullName :
                     kind == ChildKind.Sequence ? CSEX.XChildSequenceName : CSEX.XChildChoiceName, null,
@@ -729,7 +729,7 @@ namespace XData.Compiler {
             }
         }
         public readonly bool IsRoot;
-        public readonly ChildSetSymbol BaseChildSet;//for root
+        public readonly ChildStructSymbol BaseChildSet;//for root
         public readonly List<string> MemberNameList;//for root
         public int NextChildOrder;//for root
         public readonly List<ChildSymbol> ChildList;
@@ -828,7 +828,7 @@ namespace XData.Compiler {
             //
             //>>new public static readonly ChildSetInfo ThisInfo = ...;
             list.Add(CS.Field(BaseChildSet == null && RestrictedChild == null ? CS.PublicStaticReadOnlyTokenList : CS.NewPublicStaticReadOnlyTokenList,
-                CSEX.ChildSetInfoName, "ThisInfo", CS.NewObjExpr(CSEX.ChildSetInfoName, CS.TypeOfExpr(CSFullName), CS.Literal(DisplayName),
+                CSEX.ChildStructInfoName, "ThisInfo", CS.NewObjExpr(CSEX.ChildStructInfoName, CS.TypeOfExpr(CSFullName), CS.Literal(DisplayName),
                 CSEX.ChildKind(Kind), CS.Literal(IsOptional), CS.Literal(Order),
                 ChildList == null ? CS.NullLiteral : CS.NewArrOrNullExpr(CSEX.ChildInfoArrayType, ChildList.Select(i => i.ThisInfoExpr)))));
             list.Add(CSEX.ObjectInfoProperty(IsAbstract, CSFullName));
@@ -861,7 +861,7 @@ namespace XData.Compiler {
         }
     }
     internal sealed class ChildListSymbol : ChildContainerSymbol {
-        public ChildListSymbol(ChildSetSymbol parent, string csName,
+        public ChildListSymbol(ChildStructSymbol parent, string csName,
             string displayName, string memberName, ulong minOccurrence, ulong maxOccurrence, int order, ChildListSymbol restrictedChildList,
              ChildSymbol item)
             : base(parent, csName, restrictedChildList != null,

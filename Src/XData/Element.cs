@@ -57,7 +57,7 @@ namespace XData {
             return Enumerable.Empty<T>();
         }
         public IEnumerable<T> SubElements<T>(Func<T, bool> filter = null) where T : XElement {
-            var complexChildren = Children as XChildSequence;
+            var complexChildren = Children as XChildCollection;
             if (complexChildren != null) {
                 return complexChildren.SubElements(filter);
             }
@@ -65,7 +65,7 @@ namespace XData {
         }
         public IEnumerable<T> SubElementTypes<T>(Func<XElement, bool> elementFilter = null,
             Func<T, bool> typeFilter = null) where T : XType {
-            var complexChildren = Children as XChildSequence;
+            var complexChildren = Children as XChildCollection;
             if (complexChildren != null) {
                 return complexChildren.SubElementTypes(elementFilter, typeFilter);
             }
@@ -73,7 +73,7 @@ namespace XData {
         }
         public IEnumerable<T> SubElementAttributes<T>(Func<XElement, bool> elementFilter = null,
             Func<T, bool> attributeFilter = null) where T : XAttribute {
-            var complexChildren = Children as XChildSequence;
+            var complexChildren = Children as XChildCollection;
             if (complexChildren != null) {
                 return complexChildren.SubElementAttributes(elementFilter, attributeFilter);
             }
@@ -81,7 +81,7 @@ namespace XData {
         }
         public IEnumerable<T> SubElementAttributeTypes<T>(Func<XElement, bool> elementFilter = null,
             Func<XAttribute, bool> attributeFilter = null, Func<T, bool> typeFilter = null) where T : XSimpleType {
-            var complexChildren = Children as XChildSequence;
+            var complexChildren = Children as XChildCollection;
             if (complexChildren != null) {
                 return complexChildren.SubElementAttributeTypes(elementFilter, attributeFilter, typeFilter);
             }
@@ -89,14 +89,14 @@ namespace XData {
         }
         public IEnumerable<T> SubElementChildren<T>(Func<XElement, bool> elementFilter = null,
             Func<T, bool> childrenFilter = null) where T : XObject {
-            var complexChildren = Children as XChildSequence;
+            var complexChildren = Children as XChildCollection;
             if (complexChildren != null) {
                 return complexChildren.SubElementChildren(elementFilter, childrenFilter);
             }
             return Enumerable.Empty<T>();
         }
         public IEnumerable<T> DescendantElements<T>(Func<T, bool> filter = null) where T : XElement {
-            var complexChildren = Children as XChildSequence;
+            var complexChildren = Children as XChildCollection;
             if (complexChildren != null) {
                 return complexChildren.DescendantElements(filter);
             }
@@ -104,7 +104,7 @@ namespace XData {
         }
         public IEnumerable<T> DescendantElementTypes<T>(Func<XElement, bool> elementFilter = null,
             Func<T, bool> typeFilter = null) where T : XType {
-            var complexChildren = Children as XChildSequence;
+            var complexChildren = Children as XChildCollection;
             if (complexChildren != null) {
                 return complexChildren.DescendantElementTypes(elementFilter, typeFilter);
             }
@@ -112,7 +112,7 @@ namespace XData {
         }
         public IEnumerable<T> DescendantElementAttributes<T>(Func<XElement, bool> elementFilter = null,
             Func<T, bool> attributeFilter = null) where T : XAttribute {
-            var complexChildren = Children as XChildSequence;
+            var complexChildren = Children as XChildCollection;
             if (complexChildren != null) {
                 return complexChildren.DescendantElementAttributes(elementFilter, attributeFilter);
             }
@@ -120,7 +120,7 @@ namespace XData {
         }
         public IEnumerable<T> DescendantElementAttributeTypes<T>(Func<XElement, bool> elementFilter = null,
             Func<XAttribute, bool> attributeFilter = null, Func<T, bool> typeFilter = null) where T : XSimpleType {
-            var complexChildren = Children as XChildSequence;
+            var complexChildren = Children as XChildCollection;
             if (complexChildren != null) {
                 return complexChildren.DescendantElementAttributeTypes(elementFilter, attributeFilter, typeFilter);
             }
@@ -128,7 +128,7 @@ namespace XData {
         }
         public IEnumerable<T> DescendantElementChildren<T>(Func<XElement, bool> elementFilter = null,
             Func<T, bool> childrenFilter = null) where T : XObject {
-            var complexChildren = Children as XChildSequence;
+            var complexChildren = Children as XChildCollection;
             if (complexChildren != null) {
                 return complexChildren.DescendantElementChildren(elementFilter, childrenFilter);
             }
@@ -144,7 +144,7 @@ namespace XData {
                 return (ElementInfo)ObjectInfo;
             }
         }
-        internal static CreationResult TrySkippableCreate(DiagContext context, ElementInfo elementInfo, ElementNode elementNode, out XChild result) {
+        internal static CreationResult TrySkippableCreate(DiagContext context, ElementInfo elementInfo, ElementNode elementNode, out XElement result) {
             result = null;
             var effElementInfo = elementInfo.TryGetEffectiveElement(elementNode.FullName);
             if (effElementInfo == null) {
@@ -310,8 +310,8 @@ namespace XData {
         private static bool TryCreate<T>(DiagContext context, ElementInfo elementInfo, ElementNode elementNode, out T result) where T : XGlobalElement {
             if (!elementInfo.IsGlobal) throw new ArgumentException("!elementInfo.IsGlobal");
             result = null;
-            XChild child;
-            var res = TrySkippableCreate(context, elementInfo, elementNode, out child);
+            XElement element;
+            var res = TrySkippableCreate(context, elementInfo, elementNode, out element);
             if (res == CreationResult.Error) {
                 return false;
             }
@@ -320,7 +320,7 @@ namespace XData {
                     elementNode.QName.TextSpan);
                 return false;
             }
-            result = (T)child;
+            result = (T)element;
             return true;
         }
         protected static bool TryLoadAndValidate<T>(string filePath, System.IO.TextReader reader, DiagContext context, ElementInfo elementInfo, out T result) where T : XGlobalElement {

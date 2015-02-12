@@ -44,17 +44,18 @@ namespace XData.IO.Text {
         SingleLineComment,
         MultiLineComment,
         Name,
-        VerbatimName,
+        VerbatimName,// @name
         StringValue,
-        VerbatimStringValue,
+        VerbatimStringValue,// @".."
         //CharValue,
-        IntegerValue,
-        DecimalValue,
-        RealValue,
-        DotDot,
-        HashOpenBracket,
-        DollarOpenBrace,
-        QuestionOpenBrace,
+        IntegerValue,// +-123
+        DecimalValue,// +-123.45
+        RealValue,// +-123.45Ee+-12
+        DotDot,// ..
+        HashOpenBracket,// #[
+        HashOpenBrace,// #{
+        DollarOpenBrace,// ${
+        QuestionOpenBrace,// ?{
     }
     internal sealed class Lexer {
         [ThreadStatic]
@@ -505,6 +506,12 @@ namespace XData.IO.Text {
                         AdvanceChar();
                         AdvanceChar();
                         return CreateToken(TokenKind.HashOpenBracket, state);
+                    }
+                    else if (nextch == '{') {
+                        state = CreateState(StateKind.None);
+                        AdvanceChar();
+                        AdvanceChar();
+                        return CreateToken(TokenKind.HashOpenBrace, state);
                     }
                     else {
                         return CreateTokenAndAdvanceChar(ch);

@@ -232,63 +232,30 @@ namespace XData {
         }
         #endregion LINQ
         internal abstract IEnumerable<XChild> InternalChildren { get; }
-        internal abstract void InternalAdd(XChild child);
     }
-    public abstract class XChildSet : XChildContainer {
-        public T CreateChild<T>(int order, bool @try = false) where T : XChild {
-            var childInfo = ChildSetInfo.TryGetChild(order);
-            if (childInfo == null) {
-                if (@try) {
-                    return null;
-                }
-                throw new InvalidOperationException("Cannot find child '{0}'.".InvFormat(order.ToInvString()));
-            }
-            return childInfo.CreateInstance<T>(@try);
-        }
-        public ChildSetInfo ChildSetInfo {
-            get {
-                return (ChildSetInfo)ObjectInfo;
-            }
-        }
-    }
-    public abstract class XChildSequence : XChildSet, ICollection<XChild>, IReadOnlyCollection<XChild> {
-        protected XChildSequence() {
+    public abstract class XChildCollection : XChildContainer, ICollection<XChild>, IReadOnlyCollection<XChild> {
+        protected XChildCollection() {
             _list = new List<XChild>();
         }
-        private List<XChild> _list;
+        internal List<XChild> _list;
         public override XObject DeepClone() {
-            var obj = (XChildSequence)base.DeepClone();
+            var obj = (XChildCollection)base.DeepClone();
             obj._list = new List<XChild>();
             foreach (var child in _list) {
                 obj._list.Add(obj.SetParentTo(child));
             }
             return obj;
         }
-        private bool TryGetIndexOf(int order, out int index) {
-            int i;
-            var found = false;
-            var list = _list;
-            var count = list.Count;
-            for (i = 0; i < count; i++) {
-                var itemOrder = list[i].Order;
-                if (itemOrder == order) {
-                    found = true;
-                    break;
-                }
-                if (itemOrder > order) {
-                    break;
-                }
+        internal override sealed IEnumerable<XChild> InternalChildren {
+            get {
+                return _list;
             }
-            index = i;
-            return found;
         }
-        private int IndexOf(int order) {
-            int index;
-            if (TryGetIndexOf(order, out index)) {
-                return index;
-            }
-            return -1;
+        internal void InternalAdd(XChild child) {
+            _list.Add(SetParentTo(child));
         }
+        public abstract void Add(XChild child);
+        public abstract void AddOrSetChild(XChild child);
         public void AddRange(IEnumerable<XChild> children) {
             if (children != null) {
                 foreach (var child in children) {
@@ -296,52 +263,34 @@ namespace XData {
                 }
             }
         }
-        public void Add(XChild child) {
-            if (child == null) {
-                throw new ArgumentNullException("child");
+        public int Count {
+            get {
+                return _list.Count;
             }
-            var order = child.Order;
-            int index;
-            if (TryGetIndexOf(order, out index)) {
-                throw new ArgumentException("Child '{0}' already exists.".InvFormat(order.ToInvString()));
-            }
-            _list.Insert(index, SetParentTo(child));
         }
-        public void AddOrSetChild(XChild child) {
-            if (child == null) {
-                throw new ArgumentNullException("child");
+        internal int IndexOf(int order) {
+            var list = _list;
+            var count = list.Count;
+            for (var i = 0; i < count; ++i) {
+                if (list[i].Order == order) {
+                    return i;
+                }
             }
-            int index;
-            if (TryGetIndexOf(child.Order, out index)) {
-                _list[index] = SetParentTo(child);
+            return -1;
+        }
+        public XChild TryGetChild(int order) {
+            var idx = IndexOf(order);
+            if (idx != -1) {
+                return _list[idx];
             }
-            else {
-                _list.Insert(index, SetParentTo(child));
-            }
+            return null;
         }
         public bool ContainsChild(int order) {
             return IndexOf(order) != -1;
         }
         public bool Contains(XChild child) {
-            if (child == null) {
-                throw new ArgumentNullException("child");
-            }
+            if (child == null) throw new ArgumentNullException("child");
             return ContainsChild(child.Order);
-        }
-        public XChild TryGetChild(int order) {
-            var list = _list;
-            var count = list.Count;
-            for (var i = 0; i < count; ++i) {
-                if (list[i].Order == order) {
-                    return list[i];
-                }
-            }
-            return null;
-        }
-        public int Count {
-            get {
-                return _list.Count;
-            }
         }
         public bool RemoveChild(int order) {
             var idx = IndexOf(order);
@@ -352,9 +301,7 @@ namespace XData {
             return false;
         }
         public bool Remove(XChild child) {
-            if (child == null) {
-                throw new ArgumentNullException("child");
-            }
+            if (child == null) throw new ArgumentNullException("child");
             return RemoveChild(child.Order);
         }
         public void Clear() {
@@ -377,13 +324,15 @@ namespace XData {
                 return false;
             }
         }
-        internal override sealed IEnumerable<XChild> InternalChildren {
-            get {
-                return _list;
+        public T CreateChild<T>(int order, bool @try = false) where T : XChild {
+            var childInfo = ChildStructInfo.TryGetChild(order);
+            if (childInfo == null) {
+                if (@try) {
+                    return null;
+                }
+                throw new InvalidOperationException("Cannot find child '{0}'.".InvFormat(order.ToInvString()));
             }
-        }
-        internal override sealed void InternalAdd(XChild child) {
-            _list.Add(SetParentTo(child));
+            return childInfo.CreateInstance<T>(@try);
         }
         internal override sealed void Save(SavingContext context) {
             foreach (var child in _list) {
@@ -399,12 +348,18 @@ namespace XData {
             context.PopIndent();
             context.Append('}');
         }
+        public ChildStructInfo ChildStructInfo {
+            get {
+                return (ChildStructInfo)ObjectInfo;
+            }
+        }
         internal override sealed bool TryValidateCore(DiagContext context) {
-            var childSetInfo = ChildSetInfo;
+            var childStructInfo = ChildStructInfo;
+            var isSeq = childStructInfo.IsSequence;
             var childList = new List<XChild>(_list);
             var dMarker = context.MarkDiags();
-            if (childSetInfo.Children != null) {
-                foreach (var childInfo in childSetInfo.Children) {
+            if (childStructInfo.Children != null) {
+                foreach (var childInfo in childStructInfo.Children) {
                     var found = false;
                     for (var i = 0; i < childList.Count; ++i) {
                         var child = childList[i];
@@ -416,7 +371,7 @@ namespace XData {
                             found = true;
                             break;
                         }
-                        else if (child.Order > childInfo.Order) {
+                        else if (isSeq && child.Order > childInfo.Order) {
                             break;
                         }
                     }
@@ -432,13 +387,62 @@ namespace XData {
             }
             return !dMarker.HasErrors;
         }
-        internal static bool TryCreate(DiagContext context, ChildSetInfo childSetInfo,
-            NodeList<ElementNode> elementNodeList, TextSpan closeChildrenTextSpan, out XChildSequence result) {
-            return new CreationStruct().TryCreate(context, childSetInfo, elementNodeList, closeChildrenTextSpan, out result);
+
+        internal static bool TryCreate(DiagContext context, ChildStructInfo childStructInfo,
+            NodeList<ElementNode> elementNodeList, TextSpan closeChildrenTextSpan, out XChildCollection result) {
+            if (childStructInfo.IsElementSet) {
+                result = null;
+                var dMarker = context.MarkDiags();
+                List<XElement> elementList = null;
+                if (childStructInfo.Children != null) {
+                    foreach (ElementInfo elementInfo in childStructInfo.Children) {
+                        var found = false;
+                        if (elementNodeList != null) {
+                            for (var i = 0; i < elementNodeList.Count; ++i) {
+                                var elementNode = elementNodeList[i];
+                                XElement element;
+                                var res = XElement.TrySkippableCreate(context, elementInfo, elementNode, out element);
+                                if (res == CreationResult.OK) {
+                                    Extensions.CreateAndAdd(ref  elementList, element);
+                                    elementNodeList.RemoveAt(i);
+                                    found = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!found && !elementInfo.IsOptional) {
+                            context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotMatched, elementInfo.DisplayName),
+                                closeChildrenTextSpan);
+                        }
+                    }
+                }
+                if (elementNodeList.CountOrZero() > 0) {
+                    foreach (var elementNode in elementNodeList) {
+                        context.AddErrorDiag(new DiagMsg(DiagCode.RedundantElementNode, elementNode.FullName.ToString()),
+                            elementNode.QName.TextSpan);
+                    }
+                }
+                if (dMarker.HasErrors) {
+                    return false;
+                }
+                if (elementNodeList != null) {
+                    var childSet = childStructInfo.CreateInstance<XChildSet>();
+                    childSet.TextSpan = elementNodeList.OpenTokenTextSpan;
+                    if (elementList != null) {
+                        foreach (var element in elementList) {
+                            childSet.InternalAdd(element);
+                        }
+                    }
+                    result = childSet;
+                }
+                return true;
+            }
+            return new CreationStruct().TryCreate(context, childStructInfo, elementNodeList, closeChildrenTextSpan, out result);
         }
+
         private struct CreationStruct {
-            internal bool TryCreate(DiagContext context, ChildSetInfo childSetInfo,
-                NodeList<ElementNode> elementNodeList, TextSpan closeChildrenTextSpan, out XChildSequence result) {
+            internal bool TryCreate(DiagContext context, ChildStructInfo childStructInfo,
+                NodeList<ElementNode> elementNodeList, TextSpan closeChildrenTextSpan, out XChildCollection result) {
                 _context = context;
                 _elementNodeList = elementNodeList;
                 _closeChildrenTextSpan = closeChildrenTextSpan;
@@ -447,14 +451,14 @@ namespace XData {
                 //
                 result = null;
                 XChild child;
-                var res = Create(childSetInfo, out child);
+                var res = Create(childStructInfo, out child);
                 if (res == CreationResult.Error) {
                     return false;
                 }
-                var childSeq = (XChildSequence)child;
-                if (childSeq == null) {
-                    if (!childSetInfo.IsOptional) {
-                        context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotMatched, childSetInfo.DisplayName),
+                var childColl = (XChildCollection)child;
+                if (childColl == null) {
+                    if (!childStructInfo.IsOptional) {
+                        context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotMatched, childStructInfo.DisplayName),
                             closeChildrenTextSpan);
                         return false;
                     }
@@ -468,13 +472,13 @@ namespace XData {
                     }
                     return false;
                 }
-                if (childSeq == null) {
+                if (childColl == null) {
                     if (elementNodeList != null) {
-                        childSeq = childSetInfo.CreateInstance<XChildSequence>();
-                        childSeq.TextSpan = elementNodeList.OpenTokenTextSpan;
+                        childColl = childStructInfo.CreateInstance<XChildCollection>();
+                        childColl.TextSpan = elementNodeList.OpenTokenTextSpan;
                     }
                 }
-                result = childSeq;
+                result = childColl;
                 return true;
             }
             private DiagContext _context;
@@ -508,19 +512,21 @@ namespace XData {
                 }
                 var elementInfo = childInfo as ElementInfo;
                 if (elementInfo != null) {
-                    var res = XElement.TrySkippableCreate(_context, elementInfo, GetElementNode(), out result);
+                    XElement element;
+                    var res = XElement.TrySkippableCreate(_context, elementInfo, GetElementNode(), out element);
                     if (res == CreationResult.OK) {
+                        result = element;
                         ConsumeElementNode();
                     }
                     return res;
                 }
                 else {
-                    var childSetInfo = childInfo as ChildSetInfo;
-                    if (childSetInfo != null) {
-                        if (childSetInfo.IsSequence) {
+                    var childStructInfo = childInfo as ChildStructInfo;
+                    if (childStructInfo != null) {
+                        if (childStructInfo.IsSequence) {
                             List<XChild> childList = null;
-                            if (childSetInfo.Children != null) {
-                                foreach (var memberChildInfo in childSetInfo.Children) {
+                            if (childStructInfo.Children != null) {
+                                foreach (var memberChildInfo in childStructInfo.Children) {
                                     XChild child;
                                     var res = Create(memberChildInfo, out child);
                                     if (res == CreationResult.OK) {
@@ -544,18 +550,18 @@ namespace XData {
                             if (childList.CountOrZero() == 0) {
                                 return CreationResult.Skipped;
                             }
-                            var container = childInfo.CreateInstance<XChildContainer>();
-                            container.TextSpan = childList[0].TextSpan;
+                            var childSeq = childInfo.CreateInstance<XChildSequence>();
+                            childSeq.TextSpan = childList[0].TextSpan;
                             foreach (var child in childList) {
-                                container.InternalAdd(child);
+                                childSeq.InternalAdd(child);
                             }
-                            result = container;
+                            result = childSeq;
                             return CreationResult.OK;
                         }
                         else {//choice
                             XChild choice = null;
-                            if (childSetInfo.Children != null) {
-                                foreach (var memberChildInfo in childSetInfo.Children) {
+                            if (childStructInfo.Children != null) {
+                                foreach (var memberChildInfo in childStructInfo.Children) {
                                     XChild child;
                                     var res = Create(memberChildInfo, out child);
                                     if (res == CreationResult.OK) {
@@ -570,10 +576,10 @@ namespace XData {
                             if (choice == null) {
                                 return CreationResult.Skipped;
                             }
-                            var container = childInfo.CreateInstance<XChildContainer>();
-                            container.TextSpan = choice.TextSpan;
-                            container.InternalAdd(choice);
-                            result = container;
+                            var childChoice = childInfo.CreateInstance<XChildChoice>();
+                            childChoice.TextSpan = choice.TextSpan;
+                            childChoice.Choice = choice;
+                            result = childChoice;
                             return CreationResult.OK;
                         }
                     }
@@ -610,21 +616,78 @@ namespace XData {
                         if (itemList.CountOrZero() == 0) {
                             return CreationResult.Skipped;
                         }
-                        var container = childInfo.CreateInstance<XChildContainer>();
-                        container.TextSpan = itemList[0].TextSpan;
+                        var childList = childInfo.CreateInstance<XChildList>();
+                        childList.TextSpan = itemList[0].TextSpan;
                         foreach (var item in itemList) {
-                            container.InternalAdd(item);
+                            childList.InternalAdd(item);
                         }
-                        result = container;
+                        result = childList;
                         return CreationResult.OK;
                     }
                 }
             }
 
         }
+    }
+    public abstract class XChildSet : XChildCollection {
+        public override sealed void Add(XChild child) {
+            if (Contains(child)) {
+                throw new ArgumentException("Child '{0}' already exists.".InvFormat(child.Order.ToInvString()));
+            }
+            _list.Add(SetParentTo(child));
+        }
+        public override sealed void AddOrSetChild(XChild child) {
+            if (child == null) throw new ArgumentNullException("child");
+            var idx = IndexOf(child.Order);
+            if (idx == -1) {
+                _list.Add(SetParentTo(child));
+            }
+            else {
+                _list[idx] = SetParentTo(child);
+            }
+        }
+    }
+    public abstract class XChildSequence : XChildCollection {
+        private bool TryGetIndexOf(int order, out int index) {
+            int i;
+            var found = false;
+            var list = _list;
+            var count = list.Count;
+            for (i = 0; i < count; i++) {
+                var itemOrder = list[i].Order;
+                if (itemOrder == order) {
+                    found = true;
+                    break;
+                }
+                if (itemOrder > order) {
+                    break;
+                }
+            }
+            index = i;
+            return found;
+        }
+        public override sealed void Add(XChild child) {
+            if (child == null) throw new ArgumentNullException("child");
+            var order = child.Order;
+            int index;
+            if (TryGetIndexOf(order, out index)) {
+                throw new ArgumentException("Child '{0}' already exists.".InvFormat(order.ToInvString()));
+            }
+            _list.Insert(index, SetParentTo(child));
+        }
+        public override sealed void AddOrSetChild(XChild child) {
+            if (child == null) throw new ArgumentNullException("child");
+            int index;
+            if (TryGetIndexOf(child.Order, out index)) {
+                _list[index] = SetParentTo(child);
+            }
+            else {
+                _list.Insert(index, SetParentTo(child));
+            }
+        }
 
     }
-    public abstract class XChildChoice : XChildSet {
+    public abstract class XChildChoice : XChildContainer {
         private XChild _choice;
         public XChild Choice {
             get {
@@ -644,7 +707,21 @@ namespace XData {
             _choice = null;
             return true;
         }
-        //
+        public T CreateChild<T>(int order, bool @try = false) where T : XChild {
+            var childInfo = ChildStructInfo.TryGetChild(order);
+            if (childInfo == null) {
+                if (@try) {
+                    return null;
+                }
+                throw new InvalidOperationException("Cannot find child '{0}'.".InvFormat(order.ToInvString()));
+            }
+            return childInfo.CreateInstance<T>(@try);
+        }
+        internal override sealed void Save(SavingContext context) {
+            if (_choice != null) {
+                _choice.Save(context);
+            }
+        }
         internal override sealed IEnumerable<XChild> InternalChildren {
             get {
                 if (_choice != null) {
@@ -653,22 +730,19 @@ namespace XData {
                 return Enumerable.Empty<XChild>();
             }
         }
-        internal override sealed void InternalAdd(XChild child) {
-            Choice = child;
-        }
-        internal override sealed void Save(SavingContext context) {
-            if (_choice != null) {
-                _choice.Save(context);
+        public ChildStructInfo ChildStructInfo {
+            get {
+                return (ChildStructInfo)ObjectInfo;
             }
         }
         internal override bool TryValidateCore(DiagContext context) {
-            var childSetInfo = ChildSetInfo;
+            var childStructInfo = ChildStructInfo;
             var choice = _choice;
             var dMarker = context.MarkDiags();
             if (choice != null) {
                 var found = false;
-                if (childSetInfo.Children != null) {
-                    foreach (var childInfo in childSetInfo.Children) {
+                if (childStructInfo.Children != null) {
+                    foreach (var childInfo in childStructInfo.Children) {
                         if (choice.Order == childInfo.Order) {
                             if (choice.CheckEqualTo(context, childInfo)) {
                                 choice.TryValidate(context);
@@ -682,14 +756,22 @@ namespace XData {
                     context.AddErrorDiag(new DiagMsg(DiagCode.RedundantChild, choice.ObjectInfo.DisplayName), choice);
                 }
             }
-            else if (!childSetInfo.IsOptional) {
-                context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotFound, childSetInfo.DisplayName), this);
+            else if (!childStructInfo.IsOptional) {
+                context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotFound, childStructInfo.DisplayName), this);
             }
             return !dMarker.HasErrors;
         }
 
     }
-    public abstract class XChildList<T> : XChildContainer, IList<T>, IReadOnlyList<T> where T : XChild {
+    public abstract class XChildList : XChildContainer {
+        public ChildListInfo ChildListInfo {
+            get {
+                return (ChildListInfo)ObjectInfo;
+            }
+        }
+        internal abstract void InternalAdd(XChild child);
+    }
+    public abstract class XChildList<T> : XChildList, IList<T>, IReadOnlyList<T> where T : XChild {
         protected XChildList() {
             _list = new List<T>();
         }
@@ -792,11 +874,6 @@ namespace XData {
             Add(item);
             return item;
         }
-        public ChildListInfo ChildListInfo {
-            get {
-                return (ChildListInfo)ObjectInfo;
-            }
-        }
         internal override sealed IEnumerable<XChild> InternalChildren {
             get {
                 return _list;
@@ -806,8 +883,8 @@ namespace XData {
             Add((T)child);
         }
         internal override sealed void Save(SavingContext context) {
-            foreach (var item in _list) {
-                item.Save(context);
+            foreach (var child in _list) {
+                child.Save(context);
             }
         }
         internal override bool TryValidateCore(DiagContext context) {

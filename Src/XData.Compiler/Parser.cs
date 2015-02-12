@@ -282,19 +282,19 @@ namespace XData.Compiler {
         }
         private bool Type(Node parent, out NamespaceMemberNode result) {
             if (Keyword(ParserConstants.TypeKeyword)) {
-                var type = new TypeNode(parent);
-                type.NameNode = NameExpected();
-                Unordered(_abstractOrSealedGetter, out type.AbstractOrSealed, "abstract, sealed or > expected.");
-                if (!TypeDirectness(type, out type.Body)) {
-                    if (!TypeList(type, out type.Body)) {
-                        if (!TypeExtension(type, out type.Body)) {
-                            if (!TypeRestriction(type, out type.Body)) {
+                var obj = new TypeNode(parent);
+                obj.NameNode = NameExpected();
+                Unordered(_abstractOrSealedGetter, out obj.AbstractOrSealed, "abstract, sealed or > expected.");
+                if (!TypeDirectness(obj, out obj.Body)) {
+                    if (!TypeList(obj, out obj.Body)) {
+                        if (!TypeExtension(obj, out obj.Body)) {
+                            if (!TypeRestriction(obj, out obj.Body)) {
                                 ErrorDiagAndThrow("Type directness, type list, type extension or type restriction expected.");
                             }
                         }
                     }
                 }
-                result = type;
+                result = obj;
                 return true;
             }
             result = null;
@@ -302,22 +302,22 @@ namespace XData.Compiler {
         }
         private bool TypeList(Node parent, out TypeBodyNode result) {
             if (Keyword(ParserConstants.ListsKeyword)) {
-                var list = new TypeListNode(parent);
-                list.ItemTypeQName = QualifiableNameExpected();
-                Facets(list, out list.Facets);
-                result = list;
+                var obj = new TypeListNode(parent);
+                obj.ItemTypeQName = QualifiableNameExpected();
+                Facets(obj, out obj.Facets);
+                result = obj;
                 return true;
             }
             result = null;
             return false;
         }
         private bool TypeDirectness(Node parent, out TypeBodyNode result) {
-            if (PeekToken('[', '{', '$', ';')) {
-                var directness = new TypeDirectnessNode(parent);
-                if (!AttributesChildren(directness, out directness.AttributesChildren)) {
+            if (PeekToken('[', '{', (int)TokenKind.HashOpenBrace, '$', ';')) {
+                var obj = new TypeDirectnessNode(parent);
+                if (!AttributesChildren(obj, out obj.AttributesChildren)) {
                     Token(';');
                 }
-                result = directness;
+                result = obj;
                 return true;
             }
             result = null;
@@ -325,10 +325,10 @@ namespace XData.Compiler {
         }
         private bool TypeExtension(Node parent, out TypeBodyNode result) {
             if (Keyword(ParserConstants.ExtendsKeyword)) {
-                var extension = new TypeExtension(parent);
-                extension.BaseTypeQName = QualifiableNameExpected();
-                AttributesChildren(extension, out extension.AttributesChildren);
-                result = extension;
+                var obj = new TypeExtension(parent);
+                obj.BaseTypeQName = QualifiableNameExpected();
+                AttributesChildren(obj, out obj.AttributesChildren);
+                result = obj;
                 return true;
             }
             result = null;
@@ -336,27 +336,27 @@ namespace XData.Compiler {
         }
         private bool TypeRestriction(Node parent, out TypeBodyNode result) {
             if (Keyword(ParserConstants.RestrictsKeyword)) {
-                var restriction = new TypeRestriction(parent);
-                restriction.BaseTypeQName = QualifiableNameExpected();
-                if (!AttributesChildren(restriction, out restriction.AttributesChildren)) {
-                    Facets(restriction, out restriction.Facets);
+                var obj = new TypeRestriction(parent);
+                obj.BaseTypeQName = QualifiableNameExpected();
+                if (!AttributesChildren(obj, out obj.AttributesChildren)) {
+                    Facets(obj, out obj.Facets);
                 }
-                result = restriction;
+                result = obj;
                 return true;
             }
             result = null;
             return false;
         }
         private bool AttributesChildren(Node parent, out AttributesChildrenNode result) {
-            if (PeekToken('[', '{', '$')) {
-                var attributesChildren = new AttributesChildrenNode(parent);
-                Attributes(attributesChildren, out attributesChildren.Attributes);
-                if (!ComplexChildren(attributesChildren, out attributesChildren.ComplexChildren)) {
+            if (PeekToken('[', '{', (int)TokenKind.HashOpenBrace, '$')) {
+                var obj = new AttributesChildrenNode(parent);
+                Attributes(obj, out obj.Attributes);
+                if (!ComplexChildren(obj, out obj.ComplexChildren)) {
                     if (Token('$')) {
-                        attributesChildren.SimpleChildQName = QualifiableNameExpected();
+                        obj.SimpleChildQName = QualifiableNameExpected();
                     }
                 }
-                result = attributesChildren;
+                result = obj;
                 return true;
             }
             result = null;
@@ -366,55 +366,56 @@ namespace XData.Compiler {
         private bool Facets(Node parent, out FacetsNode result) {
             TextSpan openBraceTextSpan;
             if (Token((int)TokenKind.DollarOpenBrace, out openBraceTextSpan)) {
-                result = new FacetsNode(parent) { OpenBraceTextSpan = openBraceTextSpan };
+                var obj = new FacetsNode(parent) { OpenBraceTextSpan = openBraceTextSpan };
                 bool hasLengthRange = false, hasPrecision = false, hasScale = false, hasValueRange = false,
                     hasEnum = false, hasPattern = false, hasListItemType = false;
                 while (true) {
                     var get = false;
                     if (!hasLengthRange) {
-                        if (hasLengthRange = LengthRange(out result.LengthRange)) {
+                        if (hasLengthRange = LengthRange(out obj.LengthRange)) {
                             get = true;
                         }
                     }
                     if (!get && !hasPrecision) {
-                        if (hasPrecision = Precision(out result.Precision)) {
+                        if (hasPrecision = Precision(out obj.Precision)) {
                             get = true;
                         }
                     }
                     if (!get && !hasScale) {
-                        if (hasScale = Scale(out result.Scale)) {
+                        if (hasScale = Scale(out obj.Scale)) {
                             get = true;
                         }
                     }
                     if (!get && !hasValueRange) {
-                        if (hasValueRange = ValueRange(out result.ValueRange)) {
+                        if (hasValueRange = ValueRange(out obj.ValueRange)) {
                             get = true;
                         }
                     }
                     if (!get && !hasEnum) {
-                        if (hasEnum = Enum(out result.Enum)) {
+                        if (hasEnum = Enum(out obj.Enum)) {
                             get = true;
                         }
                     }
                     if (!get && !hasPattern) {
-                        if (hasPattern = Pattern(out result.Pattern)) {
+                        if (hasPattern = Pattern(out obj.Pattern)) {
                             get = true;
                         }
                     }
                     if (!get && !hasListItemType) {
-                        if (hasListItemType = ListItemType(out result.ListItemTypeQName)) {
+                        if (hasListItemType = ListItemType(out obj.ListItemTypeQName)) {
                             get = true;
                         }
                     }
-                    if (Token('}', out result.CloseBraceTextSpan)) {
+                    if (Token('}', out obj.CloseBraceTextSpan)) {
                         if (hasPrecision && hasScale) {
-                            var p = result.Precision.Value;
-                            var s = result.Scale.Value;
+                            var p = obj.Precision.Value;
+                            var s = obj.Scale.Value;
                             if (p < s) {
                                 ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ScaleNotLessThanOrEqualToPrecision,
-                                     s.ToInvString(), p.ToInvString()), result.Scale.TextSpan);
+                                     s.ToInvString(), p.ToInvString()), obj.Scale.TextSpan);
                             }
                         }
+                        result = obj;
                         return true;
                     }
                     if (!get) {
@@ -602,9 +603,10 @@ namespace XData.Compiler {
         private bool Attributes(Node parent, out AttributesNode result) {
             TextSpan openBracketToken;
             if (Token('[', out openBracketToken)) {
-                result = new AttributesNode(parent) { OpenBracketTextSpan = openBracketToken };
-                List(result, _attributeGetter, out result.AttributeList);
-                TokenExpected(']', out result.CloseBracketTextSpan);
+                var obj = new AttributesNode(parent) { OpenBracketTextSpan = openBracketToken };
+                List(obj, _attributeGetter, out obj.AttributeList);
+                TokenExpected(']', out obj.CloseBracketTextSpan);
+                result = obj;
                 return true;
             }
             result = null;
@@ -613,9 +615,9 @@ namespace XData.Compiler {
         private bool Attribute(Node parent, List<AttributeNode> list, out AttributeNode result) {
             NameNode name;
             if (Name(out name)) {
-                var attribute = new AttributeNode(parent) { NameNode = name };
+                var obj = new AttributeNode(parent) { NameNode = name };
                 Unordered(_nullableGetter, _optionalOrDeleteGetter,
-                    out attribute.Nullable, out attribute.OptionalOrDelete,
+                    out obj.Nullable, out obj.OptionalOrDelete,
                     "Nullable, ?, x, or > expected.");
                 if (list.CountOrZero() > 0) {
                     foreach (var item in list) {
@@ -625,8 +627,8 @@ namespace XData.Compiler {
                     }
                 }
                 KeywordExpected(ParserConstants.AsKeyword);
-                attribute.TypeQName = QualifiableNameExpected();
-                result = attribute;
+                obj.TypeQName = QualifiableNameExpected();
+                result = obj;
                 return true;
             }
             result = null;
@@ -636,25 +638,33 @@ namespace XData.Compiler {
 
         private bool GlobalElement(Node parent, out NamespaceMemberNode result) {
             if (Keyword(ParserConstants.ElementKeyword)) {
-                var element = new GlobalElementNode(parent);
-                element.NameNode = NameExpected();
+                var obj = new GlobalElementNode(parent);
+                obj.NameNode = NameExpected();
                 Unordered(_abstractOrSealedGetter, _nullableGetter, _substituteGetter,
-                    out element.AbstractOrSealed, out element.Nullable, out element.SubstitutedGlobalElementQName,
+                    out obj.AbstractOrSealed, out obj.Nullable, out obj.SubstitutedGlobalElementQName,
                     "Abstract, sealed, nullable, substitutes or > expected.");
                 KeywordExpected(ParserConstants.AsKeyword);
-                element.TypeQName = QualifiableNameExpected();
-                result = element;
+                obj.TypeQName = QualifiableNameExpected();
+                result = obj;
                 return true;
             }
             result = null;
             return false;
         }
         private bool ComplexChildren(Node parent, out ComplexChildrenNode result) {
-            TextSpan openBraceToken;
-            if (Token('{', out openBraceToken)) {
-                result = new ComplexChildrenNode(parent) { OpenBraceTextSpan = openBraceToken };
-                List(result, _memberChildGetter, out result.ChildList);
-                TokenExpected('}', out result.CloseBraceTextSpan);
+            var kind = ChildKind.None;
+            TextSpan openBraceTextSpan;
+            if (Token('{', out openBraceTextSpan)) {
+                kind = ChildKind.ElementSet;
+            }
+            else if (Token((int)TokenKind.HashOpenBrace, out openBraceTextSpan)) {
+                kind = ChildKind.Sequence;
+            }
+            if (kind != ChildKind.None) {
+                var obj = new ComplexChildrenNode(parent) { Kind = kind, OpenBraceTextSpan = openBraceTextSpan };
+                List(obj, _memberChildGetter, out obj.ChildList);
+                TokenExpected('}', out obj.CloseBraceTextSpan);
+                result = obj;
                 return true;
             }
             result = null;
@@ -663,6 +673,10 @@ namespace XData.Compiler {
         private bool MemberChild(Node parent, List<MemberChildNode> list, out MemberChildNode result) {
             if (!LocalElement(parent, out result)) {
                 if (!GlobalElementRef(parent, out result)) {
+                    var complexChildrenNode = parent as ComplexChildrenNode;
+                    if (complexChildrenNode != null && complexChildrenNode.IsElementSet) {
+                        return false;
+                    }
                     if (!MemberComplexChildren(parent, out result)) {
                         return false;
                     }
@@ -672,7 +686,7 @@ namespace XData.Compiler {
                 var memberName = result.MemberNameNode;
                 foreach (var item in list) {
                     if (item.MemberNameNode == memberName) {
-                        ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateMemberName, memberName.ToString()), 
+                        ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateMemberName, memberName.ToString()),
                             memberName.TextSpan);
                     }
                 }
@@ -682,16 +696,16 @@ namespace XData.Compiler {
         private bool LocalElement(Node parent, out MemberChildNode result) {
             NameNode name;
             if (Name(out name)) {
-                var element = new LocalElementNode(parent) { NameNode = name };
+                var obj = new LocalElementNode(parent) { NameNode = name };
                 Unordered(_nullableGetter, _occurrenceGetter, _memberNameGetter,
-                    out element.Nullable, out element.Occurrence, out element.MemberNameNode,
-                    "Nullable, occurrence, membername or > expected.");
-                if (!element.MemberNameNode.IsValid) {
-                    element.MemberNameNode = name;
+                    out obj.Nullable, out obj.Occurrence, out obj.MemberNameNode,
+                    "Nullable, occurrence, x, membername or > expected.");
+                if (!obj.MemberNameNode.IsValid) {
+                    obj.MemberNameNode = name;
                 }
                 KeywordExpected(ParserConstants.AsKeyword);
-                element.TypeQName = QualifiableNameExpected();
-                result = element;
+                obj.TypeQName = QualifiableNameExpected();
+                result = obj;
                 return true;
             }
             result = null;
@@ -699,38 +713,38 @@ namespace XData.Compiler {
         }
         private bool GlobalElementRef(Node parent, out MemberChildNode result) {
             if (Token('&')) {
-                var element = new GlobalElementRefNode(parent);
-                element.GlobalElementQName = QualifiableNameExpected();
+                var obj = new GlobalElementRefNode(parent);
+                obj.GlobalElementQName = QualifiableNameExpected();
                 Unordered(_occurrenceGetter, _memberNameGetter,
-                    out element.Occurrence, out element.MemberNameNode, "Occurrence, membername or > expected.");
-                if (!element.MemberNameNode.IsValid) {
-                    element.MemberNameNode = element.GlobalElementQName.Name;
+                    out obj.Occurrence, out obj.MemberNameNode, "Occurrence, x, membername or > expected.");
+                if (!obj.MemberNameNode.IsValid) {
+                    obj.MemberNameNode = obj.GlobalElementQName.Name;
                 }
-                result = element;
+                result = obj;
                 return true;
             }
             result = null;
             return false;
         }
         private bool MemberComplexChildren(Node parent, out MemberChildNode result) {
-            ChildKind kind = ChildKind.None;
-            TextSpan openBraceToken;
-            if (Token('{', out openBraceToken)) {
+            var kind = ChildKind.None;
+            TextSpan openBraceTextSpan;
+            if (Token((int)TokenKind.HashOpenBrace, out openBraceTextSpan)) {
                 kind = ChildKind.Sequence;
             }
-            else if (Token((int)TokenKind.QuestionOpenBrace, out openBraceToken)) {
+            else if (Token((int)TokenKind.QuestionOpenBrace, out openBraceTextSpan)) {
                 kind = ChildKind.Choice;
             }
             if (kind != ChildKind.None) {
-                var complexChildren = new MemberComplexChildrenNode(parent) { Kind = kind, OpenBraceToken = openBraceToken };
-                List(complexChildren, _memberChildGetter, out complexChildren.ChildList);
-                TokenExpected('}', out complexChildren.CloseBraceToken);
+                var obj = new MemberComplexChildrenNode(parent) { Kind = kind, OpenBraceTextSpan = openBraceTextSpan };
+                List(obj, _memberChildGetter, out obj.ChildList);
+                TokenExpected('}', out obj.CloseBraceTextSpan);
                 Unordered(_occurrenceGetter, _memberNameGetter,
-                    out complexChildren.Occurrence, out complexChildren.MemberNameNode, "Occurrence, membername or > expected.");
-                if (!complexChildren.MemberNameNode.IsValid) {
-                    complexChildren.MemberNameNode = new NameNode(kind == ChildKind.Sequence ? "Seq" : "Choice", complexChildren.CloseBraceToken);
+                    out obj.Occurrence, out obj.MemberNameNode, "Occurrence, x, membername or > expected.");
+                if (!obj.MemberNameNode.IsValid) {
+                    obj.MemberNameNode = new NameNode(kind == ChildKind.Sequence ? "Seq" : "Choice", obj.CloseBraceTextSpan);
                 }
-                result = complexChildren;
+                result = obj;
                 return true;
             }
             result = null;
@@ -774,49 +788,19 @@ namespace XData.Compiler {
             result = default(QualifiableNameNode);
             return false;
         }
-        private bool UInt64Range(DiagCodeEx diagCode, out IntegerRangeNode<ulong> result) {
-            IntegerNode<ulong> minValue, maxValue;
-            TextSpan dotdotTextSpan;
-            if (!UInt64Value(out minValue)) {
-                result = default(IntegerRangeNode<ulong>);
-                return false;
-            }
-            if (!Token((int)TokenKind.DotDot, out dotdotTextSpan)) {
-                if (minValue.IsValid) {
-                    ErrorDiagAndThrow(".. expected.");
-                }
-                else {
-                    result = default(IntegerRangeNode<ulong>);
-                    return false;
-                }
-            }
-            if (UInt64Value(out maxValue)) {
-                if (minValue.IsValid) {
-                    if (maxValue.Value < minValue.Value) {
-                        ErrorDiagAndThrow(new DiagMsgEx(diagCode,
-                            maxValue.Value.ToInvString(), minValue.Value.ToInvString()), maxValue.TextSpan);
-                    }
-                }
-            }
-            else {
-
-            }
-            result = new IntegerRangeNode<ulong>(minValue, maxValue, dotdotTextSpan);
-            return true;
-        }
-
         private bool Occurrence(out OccurrenceNode result) {
             ulong minValue = 0, maxValue = ulong.MaxValue;
             TextSpan textSpan;
             if (Token('?', out textSpan)) {
-                minValue = 0;
                 maxValue = 1;
             }
             else if (Token('*', out textSpan)) {
-                minValue = 0;
             }
             else if (Token('+', out textSpan)) {
                 minValue = 1;
+            }
+            else if (Keyword("x", out textSpan)) {
+                maxValue = 0;
             }
             else {
                 IntegerNode<ulong> minValueNode, maxValueNode;
@@ -825,6 +809,9 @@ namespace XData.Compiler {
                     TokenExpected((int)TokenKind.DotDot, ".. expected.", out textSpan);
                     if (UInt64Value(out maxValueNode)) {
                         maxValue = maxValueNode.Value;
+                        if (maxValue == 0) {
+                            ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxOccurrenceCannotBeZero), maxValueNode.TextSpan);
+                        }
                         if (maxValue < minValue) {
                             ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxOccurrenceNotEqualToOrGreaterThanMinOccurrence,
                                 maxValue.ToInvString(), minValue.ToInvString()), maxValueNode.TextSpan);

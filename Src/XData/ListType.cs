@@ -4,7 +4,6 @@ using XData.IO.Text;
 
 namespace XData {
     public abstract class XListType : XSimpleType {
-        internal abstract void InternalAdd(XSimpleType item);
         public ListTypeInfo ListTypeInfo {
             get {
                 return (ListTypeInfo)ObjectInfo;
@@ -12,6 +11,7 @@ namespace XData {
         }
         new public static readonly ListTypeInfo ThisInfo = new ListTypeInfo(typeof(XListType), true, TypeKind.ListType.ToFullName(),
             XSimpleType.ThisInfo, null, null);
+        internal abstract void InternalAdd(XSimpleType item);
         internal static bool TryCreate(DiagContext context, ProgramInfo programInfo, ListTypeInfo listTypeInfo,
             NodeList<SimpleValueNode> listNode, out XListType result) {
             result = null;
