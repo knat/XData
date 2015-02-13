@@ -75,6 +75,9 @@ namespace XData.Compiler {
         DuplicateMemberName,
         MaxOccurrenceNotEqualToOrGreaterThanMinOccurrence,
         MaxOccurrenceCannotBeZero,
+        MaxOccurrenceCannotGreaterThanOneInChildSet,
+        ComplexChildrenKindNotEqualToBase,
+        DuplicateElementFullName,
         CannotFindRestrictedMember,
         CannotDeleteRequiredMember,
         MemberKindNotEqualToRestricted,
@@ -231,6 +234,12 @@ namespace XData.Compiler {
                     return "Max occurrence '{0}' not equal to or greater than min occurrence '{1}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.MaxOccurrenceCannotBeZero:
                     return "Max occurrence cannot be zero.";
+                case DiagCodeEx.MaxOccurrenceCannotGreaterThanOneInChildSet:
+                    return "Max occurrence cannot greater than one in child set";
+                case DiagCodeEx.ComplexChildrenKindNotEqualToBase:
+                    return "Complex children kind '{0}' not equal to the base '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.DuplicateElementFullName:
+                    return "Duplicate element full name '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.CannotFindRestrictedMember:
                     return "Cannot find restricted member '{0}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.CannotDeleteRequiredMember:

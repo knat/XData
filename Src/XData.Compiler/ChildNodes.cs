@@ -29,28 +29,46 @@ namespace XData.Compiler {
                 return Nullable.IsValid;
             }
         }
-        public bool HasIntersection(FullName fullName) {
-            if (!IsAbstract && FullName == fullName) {
-                return true;
+        //public bool HasIntersection(FullName fullName) {
+        //    if (!IsAbstract && FullName == fullName) {
+        //        return true;
+        //    }
+        //    if (_directSubstitutorList != null) {
+        //        foreach (var i in _directSubstitutorList) {
+        //            if (i.HasIntersection(fullName)) {
+        //                return true;
+        //            }
+        //        }
+        //    }
+        //    return false;
+        //}
+        //public void GetNonAbstractFullNames(ref List<FullName> list) {
+        //    if (!IsAbstract) {
+        //        Extensions.CreateAndAdd(ref list, FullName);
+        //    }
+        //    if (_directSubstitutorList != null) {
+        //        foreach (var i in _directSubstitutorList) {
+        //            i.GetNonAbstractFullNames(ref list);
+        //        }
+        //    }
+        //}
+        public bool AddNonAbstractFullNames(List<FullName> fullNameList, out FullName dupFullName) {
+            if (!IsAbstract) {
+                if (fullNameList.Contains(FullName)) {
+                    dupFullName = FullName;
+                    return false;
+                }
+                fullNameList.Add(FullName);
             }
             if (_directSubstitutorList != null) {
                 foreach (var i in _directSubstitutorList) {
-                    if (i.HasIntersection(fullName)) {
-                        return true;
+                    if (!i.AddNonAbstractFullNames(fullNameList, out dupFullName)) {
+                        return false;
                     }
                 }
             }
-            return false;
-        }
-        public void GetNonAbstractFullNames(ref List<FullName> list) {
-            if (!IsAbstract) {
-                Extensions.CreateAndAdd(ref list, FullName);
-            }
-            if (_directSubstitutorList != null) {
-                foreach (var i in _directSubstitutorList) {
-                    i.GetNonAbstractFullNames(ref list);
-                }
-            }
+            dupFullName = default(FullName);
+            return true;
         }
         public override void Resolve() {
             if (SubstitutedGlobalElementQName.IsValid) {
@@ -98,14 +116,14 @@ namespace XData.Compiler {
         public ChildKind Kind;
         public List<MemberChildNode> ChildList;
         public TextSpan OpenBraceTextSpan, CloseBraceTextSpan;
+        public bool IsSet {
+            get {
+                return Kind == ChildKind.Set;
+            }
+        }
         public bool IsSequence {
             get {
                 return Kind == ChildKind.Sequence;
-            }
-        }
-        public bool IsElementSet {
-            get {
-                return Kind == ChildKind.ElementSet;
             }
         }
         public void Resolve() {
@@ -115,31 +133,44 @@ namespace XData.Compiler {
                 }
             }
         }
-        public ChildStructSymbol CreateSymbol(ComplexTypeSymbol parent, ChildStructSymbol baseChildSetSymbol, bool isExtension) {
-            var displayName = parent.DisplayName + ".{}";
-            var childSetSymbol = new ChildStructSymbol(parent, "CLS_Children", ChildKind.Sequence, displayName, null, 1, 1, false, -1, null,
-                true, baseChildSetSymbol);
+        public ChildStructSymbol CreateSymbol(ComplexTypeSymbol parent, ChildStructSymbol baseChildStructSymbol, bool isExtension) {
+            if (baseChildStructSymbol != null && baseChildStructSymbol.Kind != Kind) {
+                DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.ComplexChildrenKindNotEqualToBase, Kind.ToString(),
+                    baseChildStructSymbol.Kind.ToString()), OpenBraceTextSpan);
+            }
+            var isSet = IsSet;
+            var displayName = parent.DisplayName + (isSet ? ".{}" : ".#{}");
+            var childStructSymbol = new ChildStructSymbol(parent, "CLS_Children", Kind, displayName, null, 1, 1, false, -1, null,
+                true, baseChildStructSymbol);
             if (isExtension) {
                 if (ChildList != null) {
                     foreach (var child in ChildList) {
                         var memberName = child.MemberName;
-                        if (childSetSymbol.MemberNameList.Contains(memberName)) {
+                        if (childStructSymbol.MemberNameList.Contains(memberName)) {
                             DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateMemberName, memberName),
                                 child.MemberNameNode.TextSpan);
                         }
-                        childSetSymbol.MemberNameList.Add(memberName);
-                        childSetSymbol.ChildList.Add(child.CreateSymbol(childSetSymbol, null, childSetSymbol.NextChildOrder++, displayName));
+                        childStructSymbol.MemberNameList.Add(memberName);
+                        var childSymbol = child.CreateSymbol(childStructSymbol, null, childStructSymbol.NextChildOrder++, displayName);
+                        if (isSet) {
+                            FullName dupFullName;
+                            if (!((ElementSymbol)childSymbol).AddFullNames(childStructSymbol.FullNameList, out dupFullName)) {
+                                DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.DuplicateElementFullName, dupFullName.ToString()),
+                                    child.MemberNameNode.TextSpan);
+                            }
+                        }
+                        childStructSymbol.ChildList.Add(childSymbol);
                     }
                 }
             }
             else {//restriction
-                CreateRestrictionSymbols(childSetSymbol, ChildList, displayName);
+                CreateRestrictionSymbols(childStructSymbol, ChildList, displayName);
             }
-            return childSetSymbol;
+            return childStructSymbol;
         }
-        public static void CreateRestrictionSymbols(ChildStructSymbol childSetSymbol, List<MemberChildNode> childList, string parentDisplayName) {
+        public static void CreateRestrictionSymbols(ChildStructSymbol childStructSymbol, List<MemberChildNode> childList, string parentDisplayName) {
             if (childList != null) {
-                var childSymbolList = childSetSymbol.ChildList;
+                var childSymbolList = childStructSymbol.ChildList;
                 foreach (var child in childList) {
                     ChildSymbol restrictedChildSymbol = null;
                     int idx;
@@ -163,7 +194,7 @@ namespace XData.Compiler {
                     }
                     childSymbolList.RemoveAt(idx);
                     if (!isDelete) {
-                        childSymbolList.Insert(idx, child.CreateSymbol(childSetSymbol, restrictedChildSymbol,
+                        childSymbolList.Insert(idx, child.CreateSymbol(childStructSymbol, restrictedChildSymbol,
                             restrictedChildSymbol.Order, parentDisplayName));
                     }
                 }

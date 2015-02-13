@@ -191,7 +191,7 @@ namespace XData {
             }
             else {
                 if (!isNullable) {
-                    context.AddErrorDiag(new DiagMsg(DiagCode.ElementNotNullable, effElementInfo.DisplayName),
+                    context.AddErrorDiag(new DiagMsg(DiagCode.ElementValueNotSet, effElementInfo.DisplayName),
                         elementNameTextSpan);
                     return CreationResult.Error;
                 }
@@ -257,7 +257,7 @@ namespace XData {
                 }
             }
             else if (!elementInfo.IsNullable) {
-                context.AddErrorDiag(new DiagMsg(DiagCode.ElementNotNullable, elementInfo.DisplayName), this);
+                context.AddErrorDiag(new DiagMsg(DiagCode.ElementValueNotSet, elementInfo.DisplayName), this);
                 return false;
             }
             return true;

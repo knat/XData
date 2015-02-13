@@ -635,7 +635,6 @@ namespace XData.Compiler {
             return false;
         }
 
-
         private bool GlobalElement(Node parent, out NamespaceMemberNode result) {
             if (Keyword(ParserConstants.ElementKeyword)) {
                 var obj = new GlobalElementNode(parent);
@@ -655,7 +654,7 @@ namespace XData.Compiler {
             var kind = ChildKind.None;
             TextSpan openBraceTextSpan;
             if (Token('{', out openBraceTextSpan)) {
-                kind = ChildKind.ElementSet;
+                kind = ChildKind.Set;
             }
             else if (Token((int)TokenKind.HashOpenBrace, out openBraceTextSpan)) {
                 kind = ChildKind.Sequence;
@@ -671,15 +670,22 @@ namespace XData.Compiler {
             return false;
         }
         private bool MemberChild(Node parent, List<MemberChildNode> list, out MemberChildNode result) {
+            var complexChildrenNode = parent as ComplexChildrenNode;
+            var isInSet = complexChildrenNode != null && complexChildrenNode.IsSet;
             if (!LocalElement(parent, out result)) {
                 if (!GlobalElementRef(parent, out result)) {
-                    var complexChildrenNode = parent as ComplexChildrenNode;
-                    if (complexChildrenNode != null && complexChildrenNode.IsElementSet) {
+                    if (isInSet) {
                         return false;
                     }
                     if (!MemberComplexChildren(parent, out result)) {
                         return false;
                     }
+                }
+            }
+            if (isInSet) {
+                if (result.MaxOccurrence > 1) {
+                    ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.MaxOccurrenceCannotGreaterThanOneInChildSet),
+                        result.Occurrence.TextSpan);
                 }
             }
             if (list.CountOrZero() > 0) {

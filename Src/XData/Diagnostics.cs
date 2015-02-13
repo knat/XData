@@ -46,14 +46,14 @@ namespace XData {
 
         //attribute
         DuplicateAttributeName,
-        RequiredAttributeNotFound,
+        RequiredAttributeNotMatched,
+        RequiredAttributeNotSet,
         RedundantAttribute,
-        AttributeNotNullable,
-
+        AttributeValueNotSet,
 
         //element
         ElementIsAbstract,
-        ElementNotNullable,
+        ElementValueNotSet,
         ComplexValueRequiredForElement,
         SimpleValueRequiredForElement,
         InvalidElementNode,
@@ -62,8 +62,8 @@ namespace XData {
 
         //child
         RequiredChildNotMatched,
-        RedundantElementNode,
-        RequiredChildNotFound,
+        RequiredChildNotSet,
+        ChoiceNotSet,
         RedundantChild,
         ChildListCountNotGreaterThanOrEqualToMinOccurrence,
 
@@ -147,18 +147,20 @@ namespace XData {
                 //attribute
                 case DiagCode.DuplicateAttributeName:
                     return "Duplicate attribute name '{0}'.".InvFormat(_msgArgs);
-                case DiagCode.RequiredAttributeNotFound:
-                    return "Required attribute '{0}' not found.".InvFormat(_msgArgs);
+                case DiagCode.RequiredAttributeNotMatched:
+                    return "Required attribute '{0}' not matched.".InvFormat(_msgArgs);
+                case DiagCode.RequiredAttributeNotSet:
+                    return "Required attribute '{0}' not set.".InvFormat(_msgArgs);
                 case DiagCode.RedundantAttribute:
                     return "Redundant attribute '{0}'.".InvFormat(_msgArgs);
-                case DiagCode.AttributeNotNullable:
-                    return "Attribute '{0}' not nullable.".InvFormat(_msgArgs);
+                case DiagCode.AttributeValueNotSet:
+                    return "Attribute '{0}' value not set.".InvFormat(_msgArgs);
 
                 //element
                 case DiagCode.ElementIsAbstract:
                     return "Element '{0}' is abstract.".InvFormat(_msgArgs);
-                case DiagCode.ElementNotNullable:
-                    return "Element '{0}' not nullable.".InvFormat(_msgArgs);
+                case DiagCode.ElementValueNotSet:
+                    return "Element '{0}' value not set.".InvFormat(_msgArgs);
                 case DiagCode.ComplexValueRequiredForElement:
                     return "Complex value required for element '{0}'.".InvFormat(_msgArgs);
                 case DiagCode.SimpleValueRequiredForElement:
@@ -173,10 +175,10 @@ namespace XData {
                 //child
                 case DiagCode.RequiredChildNotMatched:
                     return "Required child '{0}' not matched.".InvFormat(_msgArgs);
-                case DiagCode.RedundantElementNode:
-                    return "Redundant element '{0}'.".InvFormat(_msgArgs);
-                case DiagCode.RequiredChildNotFound:
-                    return "Required child '{0}' not found.".InvFormat(_msgArgs);
+                case DiagCode.RequiredChildNotSet:
+                    return "Required child '{0}' not set.".InvFormat(_msgArgs);
+                case DiagCode.ChoiceNotSet:
+                    return "Choice '{0}' not set.".InvFormat(_msgArgs);
                 case DiagCode.RedundantChild:
                     return "Redundant child '{0}'.".InvFormat(_msgArgs);
                 case DiagCode.ChildListCountNotGreaterThanOrEqualToMinOccurrence:

@@ -26,7 +26,7 @@ namespace XData {
         public IGlobalObjectInfo TryGetGlobalObject(FullName fullName) {
             var ns = TryGetNamespace(fullName.Uri);
             if (ns != null) {
-                return ns.TryGetGlobalObject(fullName);
+                return ns.TryGetGlobalObject(fullName.Name);
             }
             return null;
         }
@@ -44,10 +44,10 @@ namespace XData {
                 return Uri == Extensions.SystemUri;
             }
         }
-        public IGlobalObjectInfo TryGetGlobalObject(FullName fullName) {
+        public IGlobalObjectInfo TryGetGlobalObject(string name) {
             if (GlobalObjects != null) {
                 foreach (var obj in GlobalObjects) {
-                    if (obj.FullName == fullName) {
+                    if (obj.FullName.Name == name) {
                         return obj;
                     }
                 }
@@ -305,7 +305,7 @@ namespace XData {
         GlobalElementRef,
         Sequence,
         Choice,
-        ElementSet,
+        Set,
         List
     }
     public abstract class ChildInfo : ObjectInfo {
@@ -417,6 +417,11 @@ namespace XData {
             Children = children;
         }
         public readonly ChildInfo[] Children;
+        public bool IsSet {
+            get {
+                return Kind == ChildKind.Set;
+            }
+        }
         public bool IsSequence {
             get {
                 return Kind == ChildKind.Sequence;
@@ -425,11 +430,6 @@ namespace XData {
         public bool IsChoice {
             get {
                 return Kind == ChildKind.Choice;
-            }
-        }
-        public bool IsElementSet {
-            get {
-                return Kind == ChildKind.ElementSet;
             }
         }
         public ChildInfo TryGetChild(int order) {

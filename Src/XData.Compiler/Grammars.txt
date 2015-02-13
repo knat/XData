@@ -74,7 +74,7 @@ children:
 simple-child | complex-children
 ;
 complex-children:
-element-children | sequence-children
+child-set | child-sequence
 ;
 simple-child:
 '$' qualifiable-name
@@ -101,10 +101,10 @@ global-element-annotations:
 '<' (nullable | abstract-or-sealed | substitute)* '>'
 ;
 
-element-children:
+child-set:
 '{' member-element-child* '}'
 ;
-sequence-children:
+child-sequence:
 '#{' member-child* '}'
 ;
 member-element-child:

@@ -634,6 +634,22 @@ namespace XData.Compiler {
             }
             return false;
         }
+        public bool AddFullNames(List<FullName> fullNameList, out FullName dupFullName) {
+            if (IsLocal) {
+                if (fullNameList.Contains(FullName)) {
+                    dupFullName = FullName;
+                    return false;
+                }
+                fullNameList.Add(FullName);
+            }
+            else {//global element ref
+                if (!ReferencedElement.GlobalElementNode.AddNonAbstractFullNames(fullNameList, out dupFullName)) {
+                    return false;
+                }
+            }
+            dupFullName = default(FullName);
+            return true;
+        }
         //public override bool HasIntersection(FullName fullName, bool forChoice) {
         //    if (MaxOccurrence > MinOccurrence || forChoice) {
         //        if (IsLocal) {
@@ -711,26 +727,33 @@ namespace XData.Compiler {
     internal sealed class ChildStructSymbol : ChildContainerSymbol {
         public ChildStructSymbol(ObjectSymbol parent, string csName, ChildKind kind, string displayName, string memberName,
             ulong minOccurrence, ulong maxOccurrence, bool isListItem, int order,
-            ChildStructSymbol restrictedChildSet, bool isRoot, ChildStructSymbol baseChildSet)
-            : base(parent, csName, restrictedChildSet != null || baseChildSet != null,
-                 restrictedChildSet != null ? restrictedChildSet.CSFullName : baseChildSet != null ? baseChildSet.CSFullName :
-                    kind == ChildKind.Sequence ? CSEX.XChildSequenceName : CSEX.XChildChoiceName, null,
-                 kind, displayName, memberName, minOccurrence, maxOccurrence, isListItem, order, restrictedChildSet) {
+            ChildStructSymbol restrictedChildStruct, bool isRoot, ChildStructSymbol baseChildStruct)
+            : base(parent, csName, restrictedChildStruct != null || baseChildStruct != null,
+                 restrictedChildStruct != null ? restrictedChildStruct.CSFullName : baseChildStruct != null ? baseChildStruct.CSFullName :
+                    kind == ChildKind.Set ? CSEX.XChildSetName : kind == ChildKind.Sequence ? CSEX.XChildSequenceName : CSEX.XChildChoiceName, null,
+                 kind, displayName, memberName, minOccurrence, maxOccurrence, isListItem, order, restrictedChildStruct) {
             IsRoot = isRoot;
-            BaseChildSet = baseChildSet;
+            BaseChildStruct = baseChildStruct;
             ChildList = new List<ChildSymbol>();
             if (isRoot) {
                 MemberNameList = new List<string>();
-                if (baseChildSet != null) {
-                    ChildList.AddRange(baseChildSet.ChildList);
-                    MemberNameList.AddRange(baseChildSet.MemberNameList);
-                    NextChildOrder = baseChildSet.NextChildOrder;
+                if (IsSet) {
+                    FullNameList = new List<FullName>();
+                }
+                if (baseChildStruct != null) {
+                    ChildList.AddRange(baseChildStruct.ChildList);
+                    MemberNameList.AddRange(baseChildStruct.MemberNameList);
+                    NextChildOrder = baseChildStruct.NextChildOrder;
+                    if (IsSet) {
+                        FullNameList.AddRange(baseChildStruct.FullNameList);
+                    }
                 }
             }
         }
         public readonly bool IsRoot;
-        public readonly ChildStructSymbol BaseChildSet;//for root
+        public readonly ChildStructSymbol BaseChildStruct;//for root
         public readonly List<string> MemberNameList;//for root
+        public readonly List<FullName> FullNameList;//for set
         public int NextChildOrder;//for root
         public readonly List<ChildSymbol> ChildList;
         private bool? _isOptional;
@@ -741,7 +764,7 @@ namespace XData.Compiler {
                         _isOptional = true;
                     }
                     else {
-                        if (IsSequence) {
+                        if (IsSet || IsSequence) {
                             _isOptional = true;
                             foreach (var child in ChildList) {
                                 if (!child.IsOptional) {
@@ -764,11 +787,11 @@ namespace XData.Compiler {
                 return _isOptional.Value;
             }
         }
-        //public ChildSetSymbol RestrictedChildSet {
-        //    get {
-        //        return (ChildSetSymbol)RestrictedChild;
-        //    }
-        //}
+        public bool IsSet {
+            get {
+                return Kind == ChildKind.Set;
+            }
+        }
         public bool IsSequence {
             get {
                 return Kind == ChildKind.Sequence;
@@ -827,7 +850,7 @@ namespace XData.Compiler {
             }
             //
             //>>new public static readonly ChildSetInfo ThisInfo = ...;
-            list.Add(CS.Field(BaseChildSet == null && RestrictedChild == null ? CS.PublicStaticReadOnlyTokenList : CS.NewPublicStaticReadOnlyTokenList,
+            list.Add(CS.Field(BaseChildStruct == null && RestrictedChild == null ? CS.PublicStaticReadOnlyTokenList : CS.NewPublicStaticReadOnlyTokenList,
                 CSEX.ChildStructInfoName, "ThisInfo", CS.NewObjExpr(CSEX.ChildStructInfoName, CS.TypeOfExpr(CSFullName), CS.Literal(DisplayName),
                 CSEX.ChildKind(Kind), CS.Literal(IsOptional), CS.Literal(Order),
                 ChildList == null ? CS.NullLiteral : CS.NewArrOrNullExpr(CSEX.ChildInfoArrayType, ChildList.Select(i => i.ThisInfoExpr)))));

@@ -251,7 +251,7 @@ namespace XData {
                 else if (attributeSetInfo.Attributes != null) {
                     foreach (var attributeInfo in attributeSetInfo.Attributes) {
                         if (!attributeInfo.IsOptional) {
-                            context.AddErrorDiag(new DiagMsg(DiagCode.RequiredAttributeNotFound, attributeInfo.DisplayName), this);
+                            context.AddErrorDiag(new DiagMsg(DiagCode.RequiredAttributeNotSet, attributeInfo.DisplayName), this);
                         }
                     }
                 }
@@ -284,7 +284,7 @@ namespace XData {
                     else if (complexChildrenInfo.Children != null) {
                         foreach (var childInfo in complexChildrenInfo.Children) {
                             if (!childInfo.IsOptional) {
-                                context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotFound, childInfo.DisplayName), this);
+                                context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotSet, childInfo.DisplayName), this);
                             }
                         }
                     }

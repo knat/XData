@@ -180,7 +180,7 @@ namespace XData {
                         }
                     }
                     if (!found && !attributeInfo.IsOptional) {
-                        context.AddErrorDiag(new DiagMsg(DiagCode.RequiredAttributeNotFound, attributeInfo.DisplayName), this);
+                        context.AddErrorDiag(new DiagMsg(DiagCode.RequiredAttributeNotSet, attributeInfo.DisplayName), this);
                     }
                 }
             }
@@ -215,7 +215,7 @@ namespace XData {
                         }
                     }
                     if (!found && !attributeInfo.IsOptional) {
-                        context.AddErrorDiag(new DiagMsg(DiagCode.RequiredAttributeNotFound, attributeInfo.DisplayName),
+                        context.AddErrorDiag(new DiagMsg(DiagCode.RequiredAttributeNotMatched, attributeInfo.DisplayName),
                             closeAttributesTextSpan);
                     }
                 }

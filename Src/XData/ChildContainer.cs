@@ -263,11 +263,6 @@ namespace XData {
                 }
             }
         }
-        public int Count {
-            get {
-                return _list.Count;
-            }
-        }
         internal int IndexOf(int order) {
             var list = _list;
             var count = list.Count;
@@ -303,6 +298,11 @@ namespace XData {
         public bool Remove(XChild child) {
             if (child == null) throw new ArgumentNullException("child");
             return RemoveChild(child.Order);
+        }
+        public int Count {
+            get {
+                return _list.Count;
+            }
         }
         public void Clear() {
             _list.Clear();
@@ -355,10 +355,10 @@ namespace XData {
         }
         internal override sealed bool TryValidateCore(DiagContext context) {
             var childStructInfo = ChildStructInfo;
-            var isSeq = childStructInfo.IsSequence;
             var childList = new List<XChild>(_list);
             var dMarker = context.MarkDiags();
             if (childStructInfo.Children != null) {
+                var isSeq = childStructInfo.IsSequence;
                 foreach (var childInfo in childStructInfo.Children) {
                     var found = false;
                     for (var i = 0; i < childList.Count; ++i) {
@@ -376,7 +376,7 @@ namespace XData {
                         }
                     }
                     if (!found && !childInfo.IsOptional) {
-                        context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotFound, childInfo.DisplayName), this);
+                        context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotSet, childInfo.DisplayName), this);
                     }
                 }
             }
@@ -390,7 +390,7 @@ namespace XData {
 
         internal static bool TryCreate(DiagContext context, ChildStructInfo childStructInfo,
             NodeList<ElementNode> elementNodeList, TextSpan closeChildrenTextSpan, out XChildCollection result) {
-            if (childStructInfo.IsElementSet) {
+            if (childStructInfo.IsSet) {
                 result = null;
                 var dMarker = context.MarkDiags();
                 List<XElement> elementList = null;
@@ -403,7 +403,7 @@ namespace XData {
                                 XElement element;
                                 var res = XElement.TrySkippableCreate(context, elementInfo, elementNode, out element);
                                 if (res == CreationResult.OK) {
-                                    Extensions.CreateAndAdd(ref  elementList, element);
+                                    Extensions.CreateAndAdd(ref elementList, element);
                                     elementNodeList.RemoveAt(i);
                                     found = true;
                                     break;
@@ -418,7 +418,7 @@ namespace XData {
                 }
                 if (elementNodeList.CountOrZero() > 0) {
                     foreach (var elementNode in elementNodeList) {
-                        context.AddErrorDiag(new DiagMsg(DiagCode.RedundantElementNode, elementNode.FullName.ToString()),
+                        context.AddErrorDiag(new DiagMsg(DiagCode.RedundantChild, elementNode.FullName.ToString()),
                             elementNode.QName.TextSpan);
                     }
                 }
@@ -466,7 +466,7 @@ namespace XData {
                 if (!IsEOF) {
                     while (!IsEOF) {
                         var elementNode = GetElementNode();
-                        context.AddErrorDiag(new DiagMsg(DiagCode.RedundantElementNode, elementNode.FullName.ToString()),
+                        context.AddErrorDiag(new DiagMsg(DiagCode.RedundantChild, elementNode.FullName.ToString()),
                             elementNode.QName.TextSpan);
                         ConsumeElementNode();
                     }
@@ -653,7 +653,7 @@ namespace XData {
             var found = false;
             var list = _list;
             var count = list.Count;
-            for (i = 0; i < count; i++) {
+            for (i = 0; i < count; ++i) {
                 var itemOrder = list[i].Order;
                 if (itemOrder == order) {
                     found = true;
@@ -756,8 +756,8 @@ namespace XData {
                     context.AddErrorDiag(new DiagMsg(DiagCode.RedundantChild, choice.ObjectInfo.DisplayName), choice);
                 }
             }
-            else if (!childStructInfo.IsOptional) {
-                context.AddErrorDiag(new DiagMsg(DiagCode.RequiredChildNotFound, childStructInfo.DisplayName), this);
+            else {
+                context.AddErrorDiag(new DiagMsg(DiagCode.ChoiceNotSet, childStructInfo.DisplayName), this);
             }
             return !dMarker.HasErrors;
         }

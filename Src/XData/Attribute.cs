@@ -62,7 +62,7 @@ namespace XData {
                 }
             }
             else if (!attributeInfo.IsNullable) {
-                context.AddErrorDiag(new DiagMsg(DiagCode.AttributeNotNullable, attributeInfo.DisplayName), this);
+                context.AddErrorDiag(new DiagMsg(DiagCode.AttributeValueNotSet, attributeInfo.DisplayName), this);
                 return false;
             }
             return true;
@@ -77,7 +77,7 @@ namespace XData {
                 }
             }
             else if (!attributeInfo.IsNullable) {
-                context.AddErrorDiag(new DiagMsg(DiagCode.AttributeNotNullable, attributeInfo.DisplayName), 
+                context.AddErrorDiag(new DiagMsg(DiagCode.AttributeValueNotSet, attributeInfo.DisplayName), 
                     attributeNode.NameNode.TextSpan);
                 return false;
             }
