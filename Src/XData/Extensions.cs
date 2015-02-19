@@ -39,48 +39,48 @@ namespace XData {
                 }
             }
         }
-        public static IEnumerable<T> SubElements<T>(this IEnumerable<XComplexType> source,
+        public static IEnumerable<T> ChildElements<T>(this IEnumerable<XComplexType> source,
             Func<T, bool> filter = null) where T : XElement {
             if (source == null) throw new ArgumentNullException("source");
             foreach (var i in source) {
-                foreach (var j in i.SubElements(filter)) {
+                foreach (var j in i.ChildElements(filter)) {
                     yield return j;
                 }
             }
         }
-        public static IEnumerable<T> SubElementTypes<T>(this IEnumerable<XComplexType> source,
+        public static IEnumerable<T> ChildElementTypes<T>(this IEnumerable<XComplexType> source,
             Func<XElement, bool> elementFilter = null, Func<T, bool> typeFilter = null) where T : XType {
             if (source == null) throw new ArgumentNullException("source");
             foreach (var i in source) {
-                foreach (var j in i.SubElementTypes(elementFilter, typeFilter)) {
+                foreach (var j in i.ChildElementTypes(elementFilter, typeFilter)) {
                     yield return j;
                 }
             }
         }
-        public static IEnumerable<T> SubAttributes<T>(this IEnumerable<XComplexType> source,
+        public static IEnumerable<T> ChildElementAttributes<T>(this IEnumerable<XComplexType> source,
             Func<XElement, bool> elementFilter = null, Func<T, bool> attributeFilter = null) where T : XAttribute {
             if (source == null) throw new ArgumentNullException("source");
             foreach (var i in source) {
-                foreach (var j in i.SubElementAttributes(elementFilter, attributeFilter)) {
+                foreach (var j in i.ChildElementAttributes(elementFilter, attributeFilter)) {
                     yield return j;
                 }
             }
         }
-        public static IEnumerable<T> SubElementAttributeTypes<T>(this IEnumerable<XComplexType> source,
+        public static IEnumerable<T> ChildElementAttributeTypes<T>(this IEnumerable<XComplexType> source,
             Func<XElement, bool> elementFilter = null, Func<XAttribute, bool> attributeFilter = null,
             Func<T, bool> typeFilter = null) where T : XSimpleType {
             if (source == null) throw new ArgumentNullException("source");
             foreach (var i in source) {
-                foreach (var j in i.SubElementAttributeTypes(elementFilter, attributeFilter, typeFilter)) {
+                foreach (var j in i.ChildElementAttributeTypes(elementFilter, attributeFilter, typeFilter)) {
                     yield return j;
                 }
             }
         }
-        public static IEnumerable<T> SubElementChildren<T>(this IEnumerable<XComplexType> source,
+        public static IEnumerable<T> ChildElementChildren<T>(this IEnumerable<XComplexType> source,
             Func<XElement, bool> elementFilter = null, Func<T, bool> childrenFilter = null) where T : XObject {
             if (source == null) throw new ArgumentNullException("source");
             foreach (var i in source) {
-                foreach (var j in i.SubElementChildren(elementFilter, childrenFilter)) {
+                foreach (var j in i.ChildElementChildren(elementFilter, childrenFilter)) {
                     yield return j;
                 }
             }
@@ -152,48 +152,48 @@ namespace XData {
                 }
             }
         }
-        public static IEnumerable<T> SubElements<T>(this IEnumerable<XElement> source,
+        public static IEnumerable<T> ChildElements<T>(this IEnumerable<XElement> source,
             Func<T, bool> filter = null) where T : XElement {
             if (source == null) throw new ArgumentNullException("source");
             foreach (var i in source) {
-                foreach (var j in i.SubElements(filter)) {
+                foreach (var j in i.ChildElements(filter)) {
                     yield return j;
                 }
             }
         }
-        public static IEnumerable<T> SubElementTypes<T>(this IEnumerable<XElement> source,
+        public static IEnumerable<T> ChildElementTypes<T>(this IEnumerable<XElement> source,
             Func<XElement, bool> elementFilter = null, Func<T, bool> typeFilter = null) where T : XType {
             if (source == null) throw new ArgumentNullException("source");
             foreach (var i in source) {
-                foreach (var j in i.SubElementTypes(elementFilter, typeFilter)) {
+                foreach (var j in i.ChildElementTypes(elementFilter, typeFilter)) {
                     yield return j;
                 }
             }
         }
-        public static IEnumerable<T> SubAttributes<T>(this IEnumerable<XElement> source,
+        public static IEnumerable<T> ChildElementAttributes<T>(this IEnumerable<XElement> source,
             Func<XElement, bool> elementFilter = null, Func<T, bool> attributeFilter = null) where T : XAttribute {
             if (source == null) throw new ArgumentNullException("source");
             foreach (var i in source) {
-                foreach (var j in i.SubElementAttributes(elementFilter, attributeFilter)) {
+                foreach (var j in i.ChildElementAttributes(elementFilter, attributeFilter)) {
                     yield return j;
                 }
             }
         }
-        public static IEnumerable<T> SubElementAttributeTypes<T>(this IEnumerable<XElement> source,
+        public static IEnumerable<T> ChildElementAttributeTypes<T>(this IEnumerable<XElement> source,
             Func<XElement, bool> elementFilter = null, Func<XAttribute, bool> attributeFilter = null,
             Func<T, bool> typeFilter = null) where T : XSimpleType {
             if (source == null) throw new ArgumentNullException("source");
             foreach (var i in source) {
-                foreach (var j in i.SubElementAttributeTypes(elementFilter, attributeFilter, typeFilter)) {
+                foreach (var j in i.ChildElementAttributeTypes(elementFilter, attributeFilter, typeFilter)) {
                     yield return j;
                 }
             }
         }
-        public static IEnumerable<T> SubElementChildren<T>(this IEnumerable<XElement> source,
+        public static IEnumerable<T> ChildElementChildren<T>(this IEnumerable<XElement> source,
             Func<XElement, bool> elementFilter = null, Func<T, bool> childrenFilter = null) where T : XObject {
             if (source == null) throw new ArgumentNullException("source");
             foreach (var i in source) {
-                foreach (var j in i.SubElementChildren(elementFilter, childrenFilter)) {
+                foreach (var j in i.ChildElementChildren(elementFilter, childrenFilter)) {
                     yield return j;
                 }
             }

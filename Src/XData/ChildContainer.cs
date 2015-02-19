@@ -29,7 +29,7 @@ namespace XData {
 
     public abstract class XChildContainer : XChild {
         #region LINQ
-        public IEnumerable<T> SubElements<T>(Func<T, bool> filter = null) where T : XElement {
+        public IEnumerable<T> ChildElements<T>(Func<T, bool> filter = null) where T : XElement {
             foreach (var child in InternalChildren) {
                 var element = child as T;
                 if (element != null) {
@@ -38,13 +38,13 @@ namespace XData {
                     }
                 }
                 else {
-                    foreach (var i in ((XChildContainer)child).SubElements(filter)) {
+                    foreach (var i in ((XChildContainer)child).ChildElements(filter)) {
                         yield return i;
                     }
                 }
             }
         }
-        public IEnumerable<T> SubElementTypes<T>(Func<XElement, bool> elementFilter = null,
+        public IEnumerable<T> ChildElementTypes<T>(Func<XElement, bool> elementFilter = null,
             Func<T, bool> typeFilter = null) where T : XType {
             foreach (var child in InternalChildren) {
                 var element = child as XElement;
@@ -59,13 +59,13 @@ namespace XData {
                     }
                 }
                 else {
-                    foreach (var i in ((XChildContainer)child).SubElementTypes(elementFilter, typeFilter)) {
+                    foreach (var i in ((XChildContainer)child).ChildElementTypes(elementFilter, typeFilter)) {
                         yield return i;
                     }
                 }
             }
         }
-        public IEnumerable<T> SubElementAttributes<T>(Func<XElement, bool> elementFilter = null,
+        public IEnumerable<T> ChildElementAttributes<T>(Func<XElement, bool> elementFilter = null,
             Func<T, bool> attributeFilter = null) where T : XAttribute {
             foreach (var child in InternalChildren) {
                 var element = child as XElement;
@@ -77,13 +77,13 @@ namespace XData {
                     }
                 }
                 else {
-                    foreach (var i in ((XChildContainer)child).SubElementAttributes(elementFilter, attributeFilter)) {
+                    foreach (var i in ((XChildContainer)child).ChildElementAttributes(elementFilter, attributeFilter)) {
                         yield return i;
                     }
                 }
             }
         }
-        public IEnumerable<T> SubElementAttributeTypes<T>(Func<XElement, bool> elementFilter = null,
+        public IEnumerable<T> ChildElementAttributeTypes<T>(Func<XElement, bool> elementFilter = null,
             Func<XAttribute, bool> attributeFilter = null, Func<T, bool> typeFilter = null) where T : XSimpleType {
             foreach (var child in InternalChildren) {
                 var element = child as XElement;
@@ -95,13 +95,13 @@ namespace XData {
                     }
                 }
                 else {
-                    foreach (var i in ((XChildContainer)child).SubElementAttributeTypes(elementFilter, attributeFilter, typeFilter)) {
+                    foreach (var i in ((XChildContainer)child).ChildElementAttributeTypes(elementFilter, attributeFilter, typeFilter)) {
                         yield return i;
                     }
                 }
             }
         }
-        public IEnumerable<T> SubElementChildren<T>(Func<XElement, bool> elementFilter = null,
+        public IEnumerable<T> ChildElementChildren<T>(Func<XElement, bool> elementFilter = null,
             Func<T, bool> childrenFilter = null) where T : XObject {
             foreach (var child in InternalChildren) {
                 var element = child as XElement;
@@ -116,7 +116,7 @@ namespace XData {
                     }
                 }
                 else {
-                    foreach (var i in ((XChildContainer)child).SubElementChildren(elementFilter, childrenFilter)) {
+                    foreach (var i in ((XChildContainer)child).ChildElementChildren(elementFilter, childrenFilter)) {
                         yield return i;
                     }
                 }

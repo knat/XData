@@ -29,6 +29,7 @@ namespace XData.Compiler {
         MaxLengthNotGreaterThanOrEqualToMinLength,
         MinLengthNotGreaterThanOrEqualToBaseMinLength,
         MaxLengthNotLessThanOrEqualToBaseMaxLength,
+        PrecisionCannotBeZero,
         ScaleNotLessThanOrEqualToPrecision,
         PrecisionNotLessThanOrEqualToBasePrecision,
         ScaleNotLessThanOrEqualToBaseScale,
@@ -70,6 +71,7 @@ namespace XData.Compiler {
         //
         DeletionNotAllowedInExtension,
         CannotChangeNonNullableToNullable,
+
         //child
         SubstitutedElementSealed,
         DuplicateMemberName,
@@ -149,6 +151,8 @@ namespace XData.Compiler {
                     return "Min length '{0}' not greater than or equal to base min length '{1}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.MaxLengthNotLessThanOrEqualToBaseMaxLength:
                     return "Max length '{0}' not less than or equal to base max length '{1}'.".InvFormat(_msgArgs);
+                case DiagCodeEx.PrecisionCannotBeZero:
+                    return "Precision cannot ze zero.";
                 case DiagCodeEx.ScaleNotLessThanOrEqualToPrecision:
                     return "Scale '{0}' not less than or equal to precision '{1}'.".InvFormat(_msgArgs);
                 case DiagCodeEx.PrecisionNotLessThanOrEqualToBasePrecision:
@@ -225,6 +229,7 @@ namespace XData.Compiler {
                     return "Deletion not allowed in extension.";
                 case DiagCodeEx.CannotChangeNonNullableToNullable:
                     return "Cannot change non-nullable to nullable.";
+
                 //child
                 case DiagCodeEx.SubstitutedElementSealed:
                     return "Substituted element '{0}' sealed.".InvFormat(_msgArgs);

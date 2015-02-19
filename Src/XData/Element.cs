@@ -56,42 +56,42 @@ namespace XData {
             }
             return Enumerable.Empty<T>();
         }
-        public IEnumerable<T> SubElements<T>(Func<T, bool> filter = null) where T : XElement {
+        public IEnumerable<T> ChildElements<T>(Func<T, bool> filter = null) where T : XElement {
             var complexChildren = Children as XChildCollection;
             if (complexChildren != null) {
-                return complexChildren.SubElements(filter);
+                return complexChildren.ChildElements(filter);
             }
             return Enumerable.Empty<T>();
         }
-        public IEnumerable<T> SubElementTypes<T>(Func<XElement, bool> elementFilter = null,
+        public IEnumerable<T> ChildElementTypes<T>(Func<XElement, bool> elementFilter = null,
             Func<T, bool> typeFilter = null) where T : XType {
             var complexChildren = Children as XChildCollection;
             if (complexChildren != null) {
-                return complexChildren.SubElementTypes(elementFilter, typeFilter);
+                return complexChildren.ChildElementTypes(elementFilter, typeFilter);
             }
             return Enumerable.Empty<T>();
         }
-        public IEnumerable<T> SubElementAttributes<T>(Func<XElement, bool> elementFilter = null,
+        public IEnumerable<T> ChildElementAttributes<T>(Func<XElement, bool> elementFilter = null,
             Func<T, bool> attributeFilter = null) where T : XAttribute {
             var complexChildren = Children as XChildCollection;
             if (complexChildren != null) {
-                return complexChildren.SubElementAttributes(elementFilter, attributeFilter);
+                return complexChildren.ChildElementAttributes(elementFilter, attributeFilter);
             }
             return Enumerable.Empty<T>();
         }
-        public IEnumerable<T> SubElementAttributeTypes<T>(Func<XElement, bool> elementFilter = null,
+        public IEnumerable<T> ChildElementAttributeTypes<T>(Func<XElement, bool> elementFilter = null,
             Func<XAttribute, bool> attributeFilter = null, Func<T, bool> typeFilter = null) where T : XSimpleType {
             var complexChildren = Children as XChildCollection;
             if (complexChildren != null) {
-                return complexChildren.SubElementAttributeTypes(elementFilter, attributeFilter, typeFilter);
+                return complexChildren.ChildElementAttributeTypes(elementFilter, attributeFilter, typeFilter);
             }
             return Enumerable.Empty<T>();
         }
-        public IEnumerable<T> SubElementChildren<T>(Func<XElement, bool> elementFilter = null,
+        public IEnumerable<T> ChildElementChildren<T>(Func<XElement, bool> elementFilter = null,
             Func<T, bool> childrenFilter = null) where T : XObject {
             var complexChildren = Children as XChildCollection;
             if (complexChildren != null) {
-                return complexChildren.SubElementChildren(elementFilter, childrenFilter);
+                return complexChildren.ChildElementChildren(elementFilter, childrenFilter);
             }
             return Enumerable.Empty<T>();
         }

@@ -46,7 +46,7 @@ namespace XData.IO.Text {
         Name,
         VerbatimName,// @name
         StringValue,
-        VerbatimStringValue,// @".."
+        VerbatimStringValue,// @"..."
         //CharValue,
         IntegerValue,// +-123
         DecimalValue,// +-123.45

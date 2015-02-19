@@ -452,6 +452,9 @@ namespace XData.Compiler {
         private bool Precision(out IntegerNode<byte> result) {
             if (Keyword(ParserConstants.PrecisionKeyword)) {
                 result = ByteValueExpected();
+                if (result.Value == 0) {
+                    ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.PrecisionCannotBeZero), result.TextSpan);
+                }
                 return true;
             }
             result = default(IntegerNode<byte>);
