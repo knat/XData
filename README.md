@@ -9,7 +9,8 @@ XData data is a text-based tree-like structure. An example:
 ```
 //single line comment
 /*delimited comment*/
-alias1:RootElement <alias1 = "http://example.com/project1" alias2 = "http://example.com/project2"> = (alias1:MyComplexType)
+alias1:RootElement <alias1 = "http://example.com/project1"
+    alias2 = "http://example.com/project2"> = (alias1:MyComplexType)
     [
         Attribute1 = (sys:Int64)42
         Attribute2 = #[true (sys:DateTimeOffset)"2015-01-24T15:32:43+07:00" 42.24E7 -.42]
@@ -149,16 +150,25 @@ parsing-unit:
 element
 ;
 element:
-qualifiable-name uri-aliasing-list? ('=' element-value)?
+qualifiable-name uri-aliasings? ('=' element-value)?
 ;
-qualifiable-name:
-(name-token ':')? name-token
-;
-uri-aliasing-list:
+uri-aliasings:
 '<' uri-aliasing* '>'
 ;
 uri-aliasing:
-name-token '=' string-value-token
+alias '=' uri-value
+;
+alias:
+name-token
+;
+uri-value:
+string-value-token
+;
+qualifiable-name:
+(alias ':')? local-name
+;
+local-name:
+name-token
 ;
 element-value:
 complex-value | simple-value
@@ -173,7 +183,7 @@ attributes:
 '[' attribute* ']'
 ;
 attribute:
-name-token ('=' attribute-value)?
+local-name ('=' attribute-value)?
 ;
 attribute-value:
 simple-value
@@ -191,7 +201,8 @@ simple-value:
 type-indicator? (atom-value | list-value)
 ;
 atom-value:
-string-value-token | integer-value-token | decimal-value-token | real-value-token | 'true' | 'false'
+string-value-token | integer-value-token | decimal-value-token | real-value-token
+    | 'true' | 'false'
 ;
 list-value:
 hash-open-bracket-token simple-value* ']'
@@ -253,7 +264,7 @@ Alias 'sys' is reserved for the system URI `http://xdata-io.org`. Use `sys` to r
 
 The XData data is tightly associated with the schema. In most cases, `type-indicator` is not required.
 
-An `attribute` is identified by its name. The name is NOT associated with a URI, that is, an `attribute` has a simple local name. In an `attributes`, every `attribute` must have a unique name.
+An `attribute` is identified by its `local-name`. In an `attributes`, every `attribute` must have a unique `local-name`.
 
 An `attribute` is a name-value pair, the value must be `simple-value`. An `attribute` may have no value:
 
@@ -331,7 +342,7 @@ Schema is the contract or specification of your data. An example:
 ```
 //FirstLook.xds
 alias "http://example.com/project1" as p1
-alias "http://example.com/project2" as p21
+alias "http://example.com/project2" as p2
 
 namespace p1
 {
@@ -347,7 +358,7 @@ namespace p2
 
 #### Lexical Grammar
 
-The schema lexical grammar is a superset of the data lexical grammar, that is, the following rules are added:
+The schema lexical grammar is a superset of the data lexical grammar. The following rules are added:
 
 ```
 dot-dot-token:
@@ -422,10 +433,12 @@ type-restriction:
 'restricts' qualifiable-name (attributes-children | facets)?
 ;
 facets:
-dollar-open-brace-token (length-range | precision | scale | value-range | enum | pattern | list-item-type)* '}'
+dollar-open-brace-token (length-range | precision | scale | value-range | enum |
+    pattern | list-item-type)* '}'
 ;
 length-range:
-'lengthrange' (integer-value-token dot-dot-token integer-value-token? | dot-dot-token integer-value-token)
+'lengthrange' (integer-value-token dot-dot-token integer-value-token? 
+    | dot-dot-token integer-value-token)
 ;
 precision:
 'precision' integer-value-token
@@ -443,7 +456,8 @@ upper-value:
 literal (']' | ')')
 ;
 literal:
-string-value-token | integer-value-token | decimal-value-token | real-value-token | 'true' | 'false'
+string-value-token | integer-value-token | decimal-value-token | real-value-token
+    | 'true' | 'false'
 ;
 enum:
 'enum' enum-item+
