@@ -12,25 +12,26 @@ XData data is a text-based tree-like structure. An example:
 alias1:RootElement <alias1 = "http://example.com/project1"
     alias2 = "http://example.com/project2"> = (alias1:MyComplexType)
     [
-        Attribute1 = (sys:Int64)42
-        Attribute2 = #[true (sys:DateTimeOffset)"2015-01-24T15:32:43+07:00" 42.24E7 -.42]
+        Attribute1 = (sys:Int64)-42
+        Attribute2 = (a1:MyListType)#[2 3 5 7 11]
         Attribute3
     ]
     {
         alias2:ChildElement1 =
             [
-                Attribute1 = (sys:Guid)"A0E10CD5-BE6C-4DEE-9A5E-F711CD9CB46B"
+                Attribute1 = true
+                Attribute2 = (sys:Guid)"A0E10CD5-BE6C-4DEE-9A5E-F711CD9CB46B"
             ]
             $ (sys:Binary)"MDEyMzQ1Njc4OQ=="
         ChildElement2 = 
         [
-            Attribute1 = (sys:TimeSpan)"..."
+            Attribute1 = (sys:DateTimeOffset)"2015-01-24T15:32:43+07:00"
         ]
         ChildElement3
         ChildElement4 <alias1 = "http://other.com"> = 
             {
                 alias1:ChildChildElement1 = -42
-                ChildChildElement2 = $ -42
+                ChildChildElement2 = $ (alias1:MyDouble)42.42
             }
     }
 ```
@@ -132,8 +133,8 @@ Token examples:
 | ----- | -------- |
 |`single-line-comment-token`|`//comment`|
 |`delimited-comment-token`|`/*comment*/`|
-|`normal-name-token`|`identifier1` `_id1` `标识符` `true`|
-|`verbatim-name-token`|`@identifier1` `@_id1` `@标识符` `@true`|
+|`normal-name-token`|`identifier1` `_id1` `标识符1` `true`|
+|`verbatim-name-token`|`@identifier1` `@_id1` `@标识符1` `@true`|
 |`normal-string-value-token`|`"abcd\r\nefg\t\u0041\u0042"`|
 |`verbatim-string-value-token`|`@"d:\dir1\file.txt,""\r\n"`|
 |`integer-value-token`|`42` `+042` `-42`|
@@ -156,16 +157,16 @@ uri-aliasings:
 '<' uri-aliasing* '>'
 ;
 uri-aliasing:
-alias '=' uri-value
+uri-alias '=' uri-value
 ;
-alias:
+uri-alias:
 name-token
 ;
 uri-value:
 string-value-token
 ;
 qualifiable-name:
-(alias ':')? local-name
+(uri-alias ':')? local-name
 ;
 local-name:
 name-token
@@ -251,7 +252,7 @@ Aliases are defined in an element and can be referenced by the self element and 
 a1:Element1 <a1 = "http://example.com"> = (a1:MyComplexType)
     {
         a1:Element2 = (sys:Int16)42
-        Element2 = $ (a1:MySimpleType)42
+        Element2 = $ (a1:MyInt32)42
         a1:Element3 <a1 = "http://other.com"> =
             {
                 a1:Element1 = ;
@@ -262,7 +263,7 @@ a1:Element1 <a1 = "http://example.com"> = (a1:MyComplexType)
 
 Alias 'sys' is reserved for the system URI `http://xdata-io.org`. Use `sys` to reference the predefined system types.
 
-The XData data is tightly associated with the schema. In most cases, `type-indicator` is not required.
+The XData data is tightly coupled with the schema. In most cases, `type-indicator` is not required.
 
 An `attribute` is identified by its `local-name`. In an `attributes`, every `attribute` must have a unique `local-name`.
 
@@ -552,6 +553,84 @@ occurrence:
 substitute:
 'substitutes' qualifiable-name
 ```
+
+A `compilation-unit` can contain zero or more `namespace`. A `namespace` is identified by a `uri`. If `namespace-member`s want to reference to `namespace-member`s in another `namespace`, `import` is required:
+
+```
+namespace "http://example.com/project1"
+{
+    //...
+}
+namespace "http://example.com/project2"
+{
+    import "http://example.com/project1" as p1
+    //...
+}
+namespace "http://example.com/project3"
+{
+    import "http://example.com/project1" as p1
+    import "http://example.com/project2" as p2
+    //...
+}
+```
+
+It is recommended that use `uri-aliasing` to reduce typing:
+
+```
+alias "http://example.com/project1" as p1
+alias "http://example.com/project2" as p2
+alias "http://example.com/project3" as p3
+
+namespace p1
+{
+    //...
+}
+namespace p2
+{
+    import p1 as p1
+    //...
+}
+namespace p3
+{
+    import p1 as p1
+    import p2 as p2
+    //...
+}
+```
+
+`uri-value` can be empty:
+
+```
+namespace ""
+{
+    //...
+}
+```
+
+`namespace-member` can be `type` or `global-element`, which are identified by a `local-name`. In a `namespace`, every member must has a unique `local-name`:
+
+```
+namespace p1
+{
+    type T1 ...
+    element G1 ...
+    element T1 ...//ERROR: duplicate member name 'T1'
+}
+namespace p1
+{
+    type T2 ...
+    element G1 ...//ERROR: duplicate member name 'G1'
+}
+```
+
+If multiple `namespace`s have a same `uri`, they are merged into a logical namespace by the schema compiler.
+
+
+
+
+
+
+
 
 
 
