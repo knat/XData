@@ -13,7 +13,7 @@ alias1:RootElement <alias1 = "http://example.com/project1"
     alias2 = "http://example.com/project2"> = (alias1:MyComplexType)
     [
         Attribute1 = (sys:Int64)-42
-        Attribute2 = (a1:MyListType)#[2 3 5 7 11]
+        Attribute2 = #[2 3 5 7 11]
         Attribute3
     ]
     {
@@ -133,10 +133,10 @@ Token examples:
 | ----- | -------- |
 |`single-line-comment-token`|`//comment`|
 |`delimited-comment-token`|`/*comment*/`|
-|`normal-name-token`|`identifier1` `_id1` `标识符1` `true`|
-|`verbatim-name-token`|`@identifier1` `@_id1` `@标识符1` `@true`|
+|`normal-name-token`|`name1` `_1` `名字1` `true`|
+|`verbatim-name-token`|`@name1` `@_1` `@名字1` `@true`|
 |`normal-string-value-token`|`"abcd\r\nefg\t\u0041\u0042"`|
-|`verbatim-string-value-token`|`@"d:\dir1\file.txt,""\r\n"`|
+|`verbatim-string-value-token`|`@"d:\dir\file.txt,""\r\n"`|
 |`integer-value-token`|`42` `+042` `-42`|
 |`decimal-value-token`|`42.0` `+.42` `-0.42`|
 |`real-value-token`|`42.42E7` `+42e-7` `-.42E+7`|
@@ -157,19 +157,10 @@ uri-aliasings:
 '<' uri-aliasing* '>'
 ;
 uri-aliasing:
-uri-alias '=' uri-value
-;
-uri-alias:
-name-token
-;
-uri-value:
-string-value-token
+name-token '=' string-value-token
 ;
 qualifiable-name:
-(uri-alias ':')? local-name
-;
-local-name:
-name-token
+(name-token ':')? name-token
 ;
 element-value:
 complex-value | simple-value
@@ -184,7 +175,7 @@ attributes:
 '[' attribute* ']'
 ;
 attribute:
-local-name ('=' attribute-value)?
+name-token ('=' attribute-value)?
 ;
 attribute-value:
 simple-value
@@ -210,41 +201,43 @@ hash-open-bracket-token simple-value* ']'
 ;
 ```
 
+A `parsing-unit` must have one and only one `element`.
+
 A `uri-aliasing` associates a URI with an alias:
 
 ```
-<a1 = "http://example.com/project1">
+<alias1 = "http://example.com/project1">
 ```
 
-A `qualifiable-name` combines a URI with a local name:
+A `qualifiable-name` combines a URI with a name:
 
 ```
-a1:LocalName
+alias1:Name1
 ```
 
-The URI is referenced via the alias.
+The URI is referenced by the alias.
 
 An empty URI:
 
 ```
-a1:LocalName <a1 = "">
+alias1:Name1 <alias1 = "">
 ```
 
 is equal to no URI:
 
 ```
-LocalName
+Name1
 ```
 
 Unlike XML, there is no default URI in XData.
 
-A URI and a local name forms a full name. If the URI is not empty, we call it qualified full name and can be expressed as `{URI}LocalName` in semantics:
+A URI and a name forms a full name. If the URI is not empty, we call it qualified full name and can be expressed as `{URI}Name` in semantics:
 
 ```
-{http://example.com/project1}LocalName
+{http://example.com/project1}Name1
 ```
 
-If the URI is empty or has no URI, we call it unqualified full name and can be expressed as `LocalName` in semantics.
+If the URI is empty or has no URI, we call it unqualified full name and can be expressed as `Name` in semantics.
 
 Aliases are defined in an element and can be referenced by the self element and descendant nodes, A descendant element can redefine a alias:
 
@@ -253,19 +246,19 @@ a1:Element1 <a1 = "http://example.com"> = (a1:MyComplexType)
     {
         a1:Element2 = (sys:Int16)42
         Element2 = $ (a1:MyInt32)42
-        a1:Element3 <a1 = "http://other.com"> =
+        a1:Element2 <a1 = "http://other.com"> =
             {
-                a1:Element1 = ;
-                a1:Element2
+                a1:Element1
+                a1:Element1
             }
     }
 ```
 
-Alias 'sys' is reserved for the system URI `http://xdata-io.org`. Use `sys` to reference the predefined system types.
+The reserved alias "sys" is used to reference the system URI "http://xdata-io.org", which contains predefined system types.
 
 The XData data is tightly coupled with the schema. In most cases, `type-indicator` is not required.
 
-An `attribute` is identified by its `local-name`. In an `attributes`, every `attribute` must have a unique `local-name`.
+An `attribute` is identified by its `name-token`. In an `attributes`, every `attribute` must have a unique `name-token`.
 
 An `attribute` is a name-value pair, the value must be `simple-value`. An `attribute` may have no value:
 
@@ -296,12 +289,18 @@ Element1 = 42
 ```
 Element1 =
     [//attributes
+        Attribute1
+        Attribute2
     ]
     $ 42//simple child
 Element2 =
     [//attributes
+        Attribute1
+        Attribute2
     ]
     {//complex children
+        ChildElement1
+        ChildElement1
     }
 ```
 
@@ -338,10 +337,9 @@ Please review the above grammars to comprehend the XData data.
 
 ### Schema
 
-Schema is the contract or specification of your data. An example:
+Schema is the specification or contract of your data. An example:
 
 ```
-//FirstLook.xds
 alias "http://example.com/project1" as p1
 alias "http://example.com/project2" as p2
 
@@ -404,16 +402,13 @@ namespace-alias:
 name-token
 ;
 qualifiable-name:
-(namespace-alias ':')? local-name
-;
-local-name:
-name-token
+(namespace-alias ':')? name-token
 ;
 namespace-member:
 type | global-element 
 ;
 type:
-'type' local-name type-annotations? type-body
+'type' name-token type-annotations? type-body
 ;
 type-annotations:
 '<' abstract-or-sealed? '>'
@@ -479,7 +474,7 @@ attributes:
 '[' attribute* ']'
 ;
 attribute:
-local-name attribute-annotations? 'as' qualifiable-name
+name-token attribute-annotations? 'as' qualifiable-name
 ;
 attribute-annotations:
 '<' (optional-or-delete | nullable)* '>'
@@ -506,7 +501,7 @@ member-child:
 member-element | member-child-sequence | member-child-choice
 ;
 local-element:
-local-name local-element-annotations? 'as' qualifiable-name
+name-token local-element-annotations? 'as' qualifiable-name
 ;
 local-element-annotations:
 '<' (nullable | member-name | occurrence-or-delete)* '>'
@@ -524,7 +519,7 @@ member-child-choice:
 question-open-brace-token member-child* '}' member-child-annotations?
 ;
 global-element:
-'element' local-name global-element-annotations? 'as' qualifiable-name
+'element' name-token global-element-annotations? 'as' qualifiable-name
 ;
 global-element-annotations:
 '<' (nullable | abstract-or-sealed | substitute)* '>'
@@ -554,7 +549,7 @@ substitute:
 'substitutes' qualifiable-name
 ```
 
-A `compilation-unit` can contain zero or more `namespace`. A `namespace` is identified by a `uri`. If `namespace-member`s want to reference to `namespace-member`s in another `namespace`, `import` is required:
+A `compilation-unit` can contain zero or more `namespace`. A `namespace` is identified by a `uri`. If multiple `namespace`s have a same URI, they are merged into a logical namespace by the schema compiler.
 
 ```
 namespace "http://example.com/project1"
@@ -563,23 +558,19 @@ namespace "http://example.com/project1"
 }
 namespace "http://example.com/project2"
 {
-    import "http://example.com/project1" as p1
     //...
 }
-namespace "http://example.com/project3"
+namespace "http://example.com/project2"
 {
-    import "http://example.com/project1" as p1
-    import "http://example.com/project2" as p2
     //...
 }
 ```
 
-It is recommended that use `uri-aliasing` to reduce typing:
+`uri-aliasing` can be used to reduce typing:
 
 ```
 alias "http://example.com/project1" as p1
 alias "http://example.com/project2" as p2
-alias "http://example.com/project3" as p3
 
 namespace p1
 {
@@ -587,18 +578,15 @@ namespace p1
 }
 namespace p2
 {
-    import p1 as p1
     //...
 }
-namespace p3
+namespace p2
 {
-    import p1 as p1
-    import p2 as p2
     //...
 }
 ```
 
-`uri-value` can be empty:
+`uri` can be empty:
 
 ```
 namespace ""
@@ -607,23 +595,272 @@ namespace ""
 }
 ```
 
-`namespace-member` can be `type` or `global-element`, which are identified by a `local-name`. In a `namespace`, every member must has a unique `local-name`:
+`namespace-member` can be `type` or `global-element`, which are identified by a `name-token`. In a logical namespace, every member must have a unique `name-token`:
 
 ```
-namespace p1
+namespace "urn:project1"
 {
     type T1 ...
-    element G1 ...
-    element T1 ...//ERROR: duplicate member name 'T1'
+    element E1 ...
+    element T1 ...//ERROR: duplicate namespace member 'T1'
 }
-namespace p1
+namespace "urn:project1"
 {
     type T2 ...
-    element G1 ...//ERROR: duplicate member name 'G1'
+    element E1 ...//ERROR: duplicate namespace member 'E1'
 }
 ```
 
-If multiple `namespace`s have a same `uri`, they are merged into a logical namespace by the schema compiler.
+If a `namespace-member`s want to reference a `namespace-member` in other `namespace`, `namespace-import` is required.
+
+```
+namespace "urn:project1"
+{
+    //...
+}
+namespace "urn:project2"
+{
+    import "urn:project1" as p1
+    //we can reference "urn:project1"'s members
+}
+```
+
+`uri-aliasing` can be used to reduce typing:
+
+```
+alias "urn:project1" as p1
+alias "urn:project2" as p2
+
+namespace p1
+{
+    //...
+}
+namespace p2
+{
+    import p1 as p1
+    //we can reference "urn:project1"'s members
+}
+```
+
+Use `qualifiable-name` to reference a `namespace-member`. If a `qualifiable-name` has no `namespace-alias`, we call it unqualified `qualifiable-name`, otherwise qualified `qualifiable-name`. To resolve an unqualified `qualifiable-name`, the schema compiler first searches the containing logical namespace, if finds one then uses it, otherwise searches all the imported namespaces, if finds one and only one then uses it, otherwise the unqualified `qualifiable-name` is ambiguous if finds more than one.
+
+```
+namespace "urn:project1"
+{
+    type T1 ...
+    type T2 ...
+    type T3 ...
+}
+namespace "urn:project2"
+{
+    type T3 ...
+}
+namespace "urn:project3"
+{
+    import "urn:project1" as p1
+    
+    type T1 restricts p1:T1//qualified qualifiable-name 'p1:T1' references {urn:project1}T1
+}
+namespace "urn:project3"
+{
+    import "urn:project1" as p1
+    import "urn:project2" as p2
+    
+    type TA restricts T1//unqualified qualifiable-name 'T1' references {urn:project3}T1
+    type TB restricts T2//unqualified qualifiable-name 'T2' references {urn:project1}T2
+    type TC restricts T3//ERROR: unqualified qualifiable-name 'T3' is ambiguous between {urn:project1}T3 and {urn:project2}T3
+}
+```
+
+There is a system namespace "http://xdata-io.org", which contains predefined system types. System namespace is implicitly imported into every user namespace. The reserved `namespace-alias` "sys" is used to reference the system namespace:
+
+```
+namespace "urn:project1"
+{
+    type Int32 restricts sys:Int32
+    type MyInt64 restricts Int64
+}
+```
+
+Below is the hierarchy of the predefined system types, "<...>" are abstract types, otherwise concrete types:
+
+```
+<ComplexType>
+<SimpleType>
+  |-<ListType> //e.g: #[2 3 5 7 11]
+  |-<AtomType>
+    |-String
+    |-IgnoreCaseString //e.g: "Tank" == "tank"
+    |-Decimal //fixed point number, 28-digit precision
+    |  |-Int64 //signed 64 bit integer
+    |  |  |-Int32
+    |  |     |-Int16
+    |  |        |-SByte //signed 8 bit integer
+    |  |-UInt64 //unsigned 64 bit integer
+    |     |-UInt32
+    |        |-UInt16
+    |           |-Byte //unsigned 8 bit integer
+    |-Double //double-precision floating-point number, can be "INF", "-INF" and "NaN"
+    |  |-Single //single-precision floating-point number, can be "INF", "-INF" and "NaN"
+    |-Boolean //true or false
+    |-Binary //Base64 encoded, e.g: "MDEyMzQ1Njc4OQ=="
+    |-Guid //e.g: "A0E10CD5-BE6C-4DEE-9A5E-F711CD9CB46B"
+    |-TimeSpan //e.g: "73.14:25:16.347" 73 days, 14 hours, 25 minutes and 16.347 seconds
+    |          // "-00:00:05" negative 5 seconds
+    |-DateTimeOffset //e.g: "2015-01-24T15:32:43.367+07:00" "2015-01-01T00:00:00+00:00"
+```
+
+That is, `AtomType` is a `SimpleType`, `Int32` is a `Decimal`, `SByte` is a `Decimal`, `SByte` is a `SimpleType`, etc.
+
+Use `type-restriction` to derive a new atom type from an existing concrete atom type(from `String` to `DateTimeOffset`):
+
+```
+namespace "urn:project1"
+{
+    type MyString restricts String
+    ${
+        //...
+    }
+    type MyString2 restricts MyString
+}
+```
+
+`facets`(`${ }`) defines rules that restrict the simple type:
+
+* `length-range`: Specify character count range of a `String` and `IgnoreCaseString`, byte count range of a `Binary`, item count range of a `ListType`. The left side of `..` is min length, the right side is max length.
+* `precision`: Specify total digit count of a `Decimal`.
+* `scale`: Specify fraction digit count of a `Decimal`.
+* `value-range`: For `String`, `IgnoreCaseString`, numeric types(from `Decimal` to `Single`), `TimeSpan` and `DateTimeOffset`. `[` or `]` means inclusion, `(` or `)` means exclusion.
+* `enum`: For concrete atom type(from `String` to `DateTimeOffset`). The type value must equal to one of the enum items.
+* `pattern`: For concrete atom type(from `String` to `DateTimeOffset`). The type value string must match the regular expression.
+
+Examples:
+
+```
+type Byte1to20 restricts Binary
+${
+    lengthrange 1..20 //1 <= byte count <= 20
+}
+type Money restricts Decimal
+${
+    precision 19
+    scale 2
+}
+type Year2010s restricts DateTimeOffset
+${
+    valuerange ["2010-01-01T00:00:00+00:00" .. "2020-01-01T00:00:00+00:00")
+}
+type Color restricts String
+${
+    enum "Red" "Green" "Blue"
+}
+type AccessFlags restricts Int32
+${
+    enum
+        0 as None//item names are used for programming 
+        1 as Read
+        2 as Write
+        4 as Execute
+        7 as All
+}
+type Email restricts String
+${
+    lengthrange ..40
+    pattern @"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}"
+}
+```
+
+Facets are heritable:
+
+```
+type T1 restricts String
+${
+    lengthrange ..20
+    pattern @"[a-h]{1,}"
+}
+type T2 restricts T1
+${
+    lengthrange 10..//max length is inherited. That is: 10 <= char count <= 20
+    //pattern is inherited
+}
+```
+
+Derived types can NARROW the base type's facets:
+
+```
+type Byte10to15 restricts Byte1to20
+${
+    lengthrange 10..15
+}
+type SmallMoney restricts Money
+${
+    precision 9
+}
+type T1 restricts Int32
+${
+    valuerange [100..1000)
+}
+type T2 restricts T1
+${
+    valuerange (100.. //that is: (100..1000)
+}
+type RedAndBlue restricts Color
+${
+    enum "Red" "Blue"
+}
+type T3 restricts String
+${
+    pattern @"[a-h]{1,4}"
+}
+type T4 restricts T3
+${
+    pattern @"[f-z]{2,}"//the type value string must match the base type's regular expression AND this regular expression
+}
+```
+
+Use `type-list` to create a new list type, which is derived from `ListType`. Item type must be simple type:
+
+```
+type Int32List lists Int32
+${
+    lengthrange 1.. //1 <= item count
+}
+```
+
+Use `type-restriction` to derive a new list type from an existing list type. The derived list type's item type must equal to or derive from the base type's item type:
+
+```
+type Int16List restricts Int32List
+${
+    lists Int16
+    lengthrange 10..
+}
+```
+
+Item type can be any simple types:
+
+```
+type SimpleTypeList lists SimpleType
+//valid data: #[1 true #["abc" 42.42] #[] -42]
+
+type AtomTypeList restricts SimpleTypeList
+${
+    lists AtomType
+}
+//valid data: #[1 true -42]
+
+type Int32List restricts AtomTypeList
+${
+    lists Int32
+}
+//valid data: #[1 -42]
+
+type ListList restricts SimpleTypeList
+${
+    lists ListType
+}
+//valid data: #[#["abc" 42.42] #[]]
+```
 
 
 
@@ -631,19 +868,6 @@ If multiple `namespace`s have a same `uri`, they are merged into a logical names
 
 
 
-
-
-
-
-=================
-
-
-If a `qualifiable-name` has no alias, or if the URI is an empty string, we call the full name unqualified full name, otherwise qualified full name.
-
-
-An element has a local name 
-
-A `parsing-unit` must have one and only one `element`.
 
 
 
