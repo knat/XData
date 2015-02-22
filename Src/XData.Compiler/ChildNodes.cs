@@ -187,7 +187,7 @@ namespace XData.Compiler {
                     }
                     var isDelete = child.IsDelete;
                     if (isDelete) {
-                        if (!restrictedChildSymbol.IsOptional) {
+                        if (!restrictedChildSymbol.IsOptional && !restrictedChildSymbol.IsChoiceMember) {
                             DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotDeleteRequiredMember, memberName),
                                 child.Occurrence.TextSpan);
                         }

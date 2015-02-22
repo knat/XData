@@ -548,6 +548,12 @@ namespace XData.Compiler {
                 return _atTopLevel.Value;
             }
         }
+        public bool IsChoiceMember {
+            get {
+                var cs = Parent as ChildStructSymbol;
+                return cs != null && cs.IsChoice;
+            }
+        }
         public virtual bool IsOptional {
             get {
                 return MinOccurrence == 0;

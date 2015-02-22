@@ -207,34 +207,41 @@ namespace XData {
         }
         public static readonly ComplexTypeInfo ThisInfo = new ComplexTypeInfo(typeof(XComplexType), true, TypeKind.ComplexType.ToFullName(), null, null, null);
         internal override sealed void SaveValue(SavingContext context) {
-            if (_attributes != null) {
-                context.AppendLine();
-                context.PushIndent();
-                _attributes.Save(context);
-                context.PopIndent();
-            }
-            var simpleChildInfo = ComplexTypeInfo.SimpleChild;
-            if (simpleChildInfo != null) {
-                var simpleChild = _children as XSimpleType;
-                if (simpleChild != null) {
-                    if (_attributes != null) {
-                        context.AppendLine();
-                        context.PushIndent();
-                    }
-                    context.Append("$ ");
-                    simpleChild.Save(context, simpleChildInfo);
-                    if (_attributes != null) {
-                        context.PopIndent();
-                    }
-                }
+            var attributes = _attributes;
+            var children = _children;
+            if (attributes == null && children == null) {
+                context.Append(';');
             }
             else {
-                var complexChildren = _children as XChildCollection;
-                if (complexChildren != null) {
+                if (attributes != null) {
                     context.AppendLine();
                     context.PushIndent();
-                    complexChildren.SaveAsRoot(context);
+                    attributes.Save(context);
                     context.PopIndent();
+                }
+                var simpleChildInfo = ComplexTypeInfo.SimpleChild;
+                if (simpleChildInfo != null) {
+                    var simpleChild = children as XSimpleType;
+                    if (simpleChild != null) {
+                        if (_attributes != null) {
+                            context.AppendLine();
+                            context.PushIndent();
+                        }
+                        context.Append("$ ");
+                        simpleChild.Save(context, simpleChildInfo);
+                        if (_attributes != null) {
+                            context.PopIndent();
+                        }
+                    }
+                }
+                else {
+                    var complexChildren = children as XChildCollection;
+                    if (complexChildren != null) {
+                        context.AppendLine();
+                        context.PushIndent();
+                        complexChildren.SaveAsRoot(context);
+                        context.PopIndent();
+                    }
                 }
             }
         }
