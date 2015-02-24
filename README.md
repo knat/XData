@@ -1,37 +1,38 @@
-﻿## XData
+﻿## XData: A Better XML For Programming
 
 XData is a universal solution for data exchange. It contains four parts: data, schema, data object model, and code generation.
 
 ### Data
 
-XData data is a text-based tree-like structure. An example:
+The XData data is a text-based tree-like structure. An example:
 
 ```
 //single line comment
 /*delimited comment*/
-alias1:RootElement <alias1 = "http://example.com/project1"
-    alias2 = "http://example.com/project2"> = (alias1:MyComplexType)
+a0:RootElement <a0 = "http://example.com/project2" a1 = "http://example.com/project1"> = (a0:RootElementType)
     [
-        Attribute1 = (sys:Int64)-42
+        Attribute1 = (sys:Double)-42.42
         Attribute2 = #[2 3 5 7 11]
-        Attribute3
+        Attribute3 = "tank@example.com"
     ]
     {
-        alias2:ChildElement1 =
+        ChildElement1 = 
             [
-                Attribute1 = true
-                Attribute2 = (sys:Guid)"A0E10CD5-BE6C-4DEE-9A5E-F711CD9CB46B"
+                Attribute1 = "2015-02-24T11:55:03.4678254+00:00"
+                Attribute2 = "ffe66c34-0bdf-4653-87d0-0a866275aae7"
             ]
-            $ (sys:Binary)"MDEyMzQ1Njc4OQ=="
-        ChildElement2 = 
-        [
-            Attribute1 = (sys:DateTimeOffset)"2015-01-24T15:32:43+07:00"
-        ]
-        ChildElement3
-        ChildElement4 <alias1 = "http://other.com"> = 
+            $ (a1:Binary4to20)"AAECAw=="
+        ChildElement1 = 
+            [
+                Attribute1 = "2015-02-24T04:19:03.4698255+00:00"
+                Attribute2
+            ]
+            $ (a1:Binary4to20)"AQECAw=="
+        ChildElement2
+        ChildElement3 = 
             {
-                alias1:ChildChildElement1 = -42
-                ChildChildElement2 = $ (alias1:MyDouble)42.42
+                ChildChildElement1 = "Red"
+                a1:GlobalElement2 = 42
             }
     }
 ```
@@ -201,7 +202,9 @@ hash-open-bracket-token simple-value* ']'
 ;
 ```
 
-A `parsing-unit` must have one and only one `element`.
+#### Explanation
+
+A `parsing-unit` must contain one and only one `element`.
 
 A `uri-aliasing` associates a URI with an alias:
 
@@ -209,7 +212,7 @@ A `uri-aliasing` associates a URI with an alias:
 <alias1 = "http://example.com/project1">
 ```
 
-The first `name-token` of the `qualifiable-name` is used to reference a URI alias:
+The first `name-token` of the `qualifiable-name` references a URI alias:
 
 ```
 alias1:Name1
@@ -217,7 +220,7 @@ alias1:Name1
 
 If the first `name-token` of the `qualifiable-name` is absent, it references the null URI.
 
-Empty URI equals to null URI.
+Empty URI equals to null URI:
 
 ```
 alias1:Element1 <alias1 = ""> //empty URI
@@ -231,20 +234,23 @@ Element1 //null URI
 
 Unlike XML, there is no default URI in XData.
 
-A URI and a name forms a full name. If the URI is not null or empty, we call it qualified full name and can be expressed as `{URI}Name` in semantics:
+A URI and a name forms a full name. If the URI is not null or empty, the full name is qualified and can be expressed as `{URI}Name` in semantics:
 
 ```
 {http://example.com/project1}Name1
 ```
 
-Otherwise it is a unqualified full name.
+Otherwise unqualified.
 
-Aliases are defined in an element and can be referenced by the self element and descendant nodes, A descendant element can redefine a alias:
+URI aliases are defined in an element and can be referenced by self and/or descendant nodes. A descendant element may redefine the alias:
 
 ```
 a1:Element1 <a1 = "http://example.com"> = (a1:MyComplexType)
+    [
+        Attribute1 = (sys:Int32)42
+    ]
     {
-        a1:Element2 = (sys:Int16)42
+        a1:Element2 = 42
         Element2 = $ (a1:MyInt32)42
         a1:Element2 <a1 = "http://other.com"> =
             {
@@ -254,37 +260,37 @@ a1:Element1 <a1 = "http://example.com"> = (a1:MyComplexType)
     }
 ```
 
+An element may be qualified(has non-empty URI). An attribute is always unqualified.
+
 The reserved alias "sys" is used to reference the system URI "http://xdata-io.org", which contains predefined system types.
 
 The data is tightly coupled with the schema. In most cases, `type-indicator` is not required.
 
-An `attribute` is identified by its `name-token`. In an `attributes`, every `attribute` must have a unique `name-token`.
+An attribute is identified by its name. In an `attributes`, every attribute must have a unique name.
 
-An `attribute` is a name-value pair, the value must be `simple-value`. An `attribute` may have no value:
+An attribute is a name-value pair, the value must be `simple-value`. An attribute may have no value:
 
 ```
 [
-    Attribute1 = ...//has value
-    Attribute2//no value
+    Attribute1 = ... //has value
+    Attribute2 //no value
 ]
 ```
 
-An `element` is identified by its `qualifiable-name`, that is, an `element` is identified by a full name.
-
-An `element` is a name-value pair. An `element` may have no value:
+An element is identified by its full name. An element is a name-value pair. An element may have no value:
 
 ```
-Element1 = ...//has value
-Element2//no value
+Element1 = ... //has value
+Element2 //no value
 ```
 
-`element-value` may be `simple-value`:
+`element-value` can be `simple-value`:
 
 ```
 Element1 = 42
 ```
 
-`element-value` may be `complex-value`, that is, the element has attributes and/or children. `children` may be `simple-child` or `complex-children`:
+`element-value` can be `complex-value`, that is, the element has attributes and/or children. `children` can be `simple-child` or `complex-children`:
 
 ```
 Element1 =
@@ -293,6 +299,7 @@ Element1 =
         Attribute2
     ]
     $ 42//simple child
+
 Element2 =
     [//attributes
         Attribute1
@@ -307,15 +314,15 @@ Element2 =
 Consider the following code:
 
 ```
-Element1 = 42//simple value
-Element2 = $ 42//simple child complex value
-Element3 = ;//empty complex value
+Element1 = 42 //simple value
+Element2 = $ 42 //simple child complex value
+Element3 = ; //empty complex value
 ```
 
-`simple-value` maybe `atom-value` or `list-value`:
+`simple-value` can be `atom-value` or `list-value`:
 
 ```
-42 //atom value
+(sys:Int32)42 //atom value
 42.42 //atom value
 true //atom value
 @"c:\file.txt" //atom value
@@ -346,13 +353,85 @@ alias "http://example.com/project2" as p2
 
 namespace p1
 {
+    type PositiveInt32 restricts sys:Int32
+    ${
+        valuerange [1..
+    }
 
+    type Year2015 restricts DateTimeOffset
+    ${
+        valuerange ["2015-01-01T00:00:00+00:00" .. "2016-01-01T00:00:00+00:00")
+    }
+
+    type Binary1to20 restricts Binary
+    ${
+        lengthrange 1..20
+    }
+
+    type Email restricts String
+    ${
+        lengthrange ..40
+        pattern @"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}"
+    }
+
+    type Color restricts String
+    ${
+        enum
+            "Red" as Red
+            "Green" as Green
+            "Blue" as Blue
+    }
+
+    element GlobalElement1<abstract nullable> as SimpleType
+
+    element GlobalElement2<substitutes GlobalElement1> as Int32
+    
+    element GlobalElement5<abstract> as ComplexType    
 }
 
 namespace p2
 {
     import p1 as p1
+    
+    type PositiveInt32 restricts p1:PositiveInt32
 
+    type PositiveInt32List lists PositiveInt32
+    ${
+        lengthrange ..10
+    }
+
+    type ChildElement1Type
+    [
+        Attribute1 as Year2015
+        Attribute2<nullable> as Guid
+    ]
+        $ Binary1to20
+
+    type ChildElement3Type
+    {
+        ChildChildElement1 as Color
+        &GlobalElement1
+    }
+
+    type AbstractRootElementType<abstract>
+    [
+        Attribute1<nullable> as AtomType
+        Attribute2<?> as PositiveInt32List
+    ]
+    #{
+        ChildElement1<* membername ChildElement1List> as ChildElement1Type
+        ChildElement2<nullable> as Int32
+    }
+
+    type RootElementType extends AbstractRootElementType
+    [
+        Attribute3 as Email
+    ]
+    #{
+        ChildElement3<+ membername ChildElement3List> as ChildElement3Type
+    }
+
+    element RootElement<substitutes GlobalElement5> as AbstractRootElementType
 }
 ```
 
@@ -523,7 +602,7 @@ global-element:
 'element' name-token global-element-annotations? 'as' qualifiable-name
 ;
 global-element-annotations:
-'<' (abstract-or-sealed | substitute | nullable)* '>'
+'<' (abstract-or-sealed | nullable | substitution)* '>'
 ;
 abstract-or-sealed:
 'abstract' | 'sealed'
@@ -546,11 +625,13 @@ occurrence:
 | '*'
 | '+'
 ;
-substitute:
+substitution:
 'substitutes' qualifiable-name
 ```
 
-A `compilation-unit` can contain zero or more `namespace`. A `namespace` is identified by a `uri`. If multiple `namespace`s have a same URI, they are merged into a logical namespace by the schema compiler.
+#### Explanation
+
+A `compilation-unit` contains zero or more `namespace`. A `namespace` is identified by a `uri`. If multiple namespaces have a same URI, they are merged into a logical namespace by the schema compiler.
 
 ```
 namespace "http://example.com/project1"
@@ -587,7 +668,7 @@ namespace p2
 }
 ```
 
-`uri` can be empty:
+URI can be empty:
 
 ```
 namespace ""
@@ -596,7 +677,7 @@ namespace ""
 }
 ```
 
-`namespace-member` can be `type` or `global-element`, which are identified by a `name-token`. In a logical namespace, every member must have a unique `name-token`:
+`namespace-member` can be `type` or `global-element`, which are identified by a `name-token`. In a logical namespace, every member must have a unique name:
 
 ```
 namespace "urn:project1"
@@ -612,7 +693,7 @@ namespace "urn:project1"
 }
 ```
 
-If a `namespace-member`s want to reference a `namespace-member` in other `namespace`, `namespace-import` is required.
+If namespace members want to reference other namespace's members, `namespace-import` is required:
 
 ```
 namespace "urn:project1"
@@ -622,7 +703,7 @@ namespace "urn:project1"
 namespace "urn:project2"
 {
     import "urn:project1" as p1
-    //we can reference "urn:project1"'s members
+    //"urn:project1"'s members can be referenced
 }
 ```
 
@@ -639,11 +720,11 @@ namespace p1
 namespace p2
 {
     import p1 as p1
-    //we can reference "urn:project1"'s members
+    //"urn:project1"'s members can be referenced
 }
 ```
 
-Use `qualifiable-name` to reference a `namespace-member`. If a `qualifiable-name` has no `namespace-alias`, we call it unqualified `qualifiable-name`, otherwise qualified `qualifiable-name`. To resolve an unqualified `qualifiable-name`, the schema compiler first searches the containing logical namespace, if finds one then uses it, otherwise searches all the imported namespaces, if finds one and only one then uses it, otherwise the unqualified `qualifiable-name` is ambiguous if finds more than one.
+Use `qualifiable-name` to reference a namespace member. If a qualifiable name has no `namespace-alias`, it is an unqualified qualifiable name, otherwise qualified qualifiable name. To resolve an unqualified qualifiable name, the schema compiler first searches the containing logical namespace, if finds one then resolution succeeds, otherwise searches all the imported namespaces, if finds one and only one then resolution succeeds, otherwise the unqualified qualifiable name is ambiguous if finds more than one:
 
 ```
 namespace "urn:project1"
@@ -660,16 +741,16 @@ namespace "urn:project3"
 {
     import "urn:project1" as p1
     
-    type T1 restricts p1:T1//qualified qualifiable-name 'p1:T1' references {urn:project1}T1
+    type T1 restricts p1:T1 //qualified qualifiable name 'p1:T1' references {urn:project1}T1
 }
 namespace "urn:project3"
 {
     import "urn:project1" as p1
     import "urn:project2" as p2
     
-    type TA restricts T1//unqualified qualifiable-name 'T1' references {urn:project3}T1
-    type TB restricts T2//unqualified qualifiable-name 'T2' references {urn:project1}T2
-    type TC restricts T3//ERROR: unqualified qualifiable-name 'T3' is ambiguous between {urn:project1}T3 and {urn:project2}T3
+    type TA restricts T1 //unqualified qualifiable name 'T1' references {urn:project3}T1
+    type TB restricts T2 //unqualified qualifiable name 'T2' references {urn:project1}T2
+    type TC restricts T3 //ERROR: unqualified qualifiable name 'T3' is ambiguous between {urn:project1}T3 and {urn:project2}T3
 }
 ```
 
@@ -693,83 +774,101 @@ Below is the hierarchy of the predefined system types, "<...>" are abstract type
     |-String
     |-IgnoreCaseString //e.g: "Tank" == "tank"
     |-Decimal //128 bit fixed point number, 28 digit precision
-    |  |-Int64 //signed 64 bit integer
+    |  |-Int64 //64 bit signed integer
     |  |  |-Int32
     |  |     |-Int16
-    |  |        |-SByte //signed 8 bit integer
-    |  |-UInt64 //unsigned 64 bit integer
+    |  |        |-SByte //8 bit signed integer
+    |  |-UInt64 //64 bit unsigned integer
     |     |-UInt32
     |        |-UInt16
-    |           |-Byte //unsigned 8 bit integer
+    |           |-Byte //8 bit unsigned integer
     |-Double //64 bit double precision floating point number, can be "INF", "-INF" and "NaN"
     |  |-Single //32 bit single precision floating point number, can be "INF", "-INF" and "NaN"
     |-Boolean //true or false
-    |-Binary //Base64 encoded, e.g: "MDEyMzQ1Njc4OQ=="
+    |-Binary //Base64 encoded, e.g: "AAECAw=="
     |-Guid //e.g: "A0E10CD5-BE6C-4DEE-9A5E-F711CD9CB46B"
     |-TimeSpan //e.g: "73.14:08:16.367" 73 days, 14 hours, 8 minutes and 16.367 seconds
     |          // "-00:00:05" negative 5 seconds
     |-DateTimeOffset //e.g: "2015-01-24T15:32:03.367+07:00" "2015-01-01T00:00:00+00:00"
 ```
 
-That is, `AtomType` is a `SimpleType`, `Int32` is a `Decimal`, `SByte` is a `Decimal`, `SByte` is a `SimpleType`, etc.
+XData is totally object-oriented. For example, `AtomType` is a `SimpleType`, `Int32` is a `Decimal`, `SByte` is a `Decimal`, `SByte` is a `SimpleType`, etc.
 
 Use `type-restriction` to derive a new atom type from an existing atom type:
 
 ```
-type MyString restricts String
-${
-    //...
-}
-type MyString2 restricts MyString
+    type Binary1to20 restricts sys:Binary
+    ${
+        lengthrange 1..20
+    }
+    
+    type Binary4to20 restricts Binary1to20
+    ${
+        lengthrange 4..
+    }
 ```
 
-`facets`(`${ }`) defines rules that restrict the simple type value:
+`facets` defines rules that restrict the simple type value:
 
-* `length-range`: Specify character count range of a `String` and `IgnoreCaseString`, byte count range of a `Binary`, item count range of a `ListType`. The left side of `..` is min length, the right side is max length.
-* `precision`: Specify total digit count of a `Decimal`.
-* `scale`: Specify fraction digit count of a `Decimal`.
-* `value-range`: For `String`, `IgnoreCaseString`, numeric types(from `Decimal` to `Single`), `TimeSpan` and `DateTimeOffset`. The type value must be between the value range. `[` or `]` means inclusion, `(` or `)` means exclusion.
-* `enum`: For concrete atom type(from `String` to `DateTimeOffset`). The type value must equal to one of the enum values.
-* `pattern`: For concrete atom type(from `String` to `DateTimeOffset`). The type value string must match the regular expression.
+* `length-range`: Specify character count range of `String` and `IgnoreCaseString`, byte count range of `Binary`, item count range of `ListType`. The left side of `..` is min length, the right side is max length.
+* `precision`: Specify total digit count of `Decimal`.
+* `scale`: Specify fraction digit count of `Decimal`.
+* `value-range`: For `String`, `IgnoreCaseString`, numeric types(from `Decimal` to `Single`), `TimeSpan` and `DateTimeOffset`. The type value must be between the value range. `[` and `]` means inclusion, `(` and `)` means exclusion.
+* `enum`: For `String` to `DateTimeOffset`. The type value must equal to one of the enum values.
+* `pattern`: For `String` to `DateTimeOffset`. The type value string must match the regular expression.
 
 Examples:
 
 ```
-type Byte1to20 restricts Binary
-${
-    lengthrange 1..20 //1 <= byte count <= 20
-}
-type Char restricts String
-${
-    lengthrange 1..1
-}
-type Money restricts Decimal
-${
-    precision 19
-    scale 2
-}
-type Year2015 restricts DateTimeOffset
-${
-    valuerange ["2015-01-01T00:00:00+00:00" .. "2016-01-01T00:00:00+00:00")
-}
-type Color restricts String
-${
-    enum "Red" "Green" "Blue"
-}
-type AccessFlags restricts Int32
-${
-    enum
-        0 as None//item names are for programming 
-        1 as Read
-        2 as Write
-        4 as Execute
-        7 as All
-}
-type Email restricts String
-${
-    lengthrange ..40
-    pattern @"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}"
-}
+    type Binary1to20 restricts sys:Binary
+    ${
+        lengthrange 1..20 //1 <= byte count <= 20
+    }
+    
+    type Char restricts sys:String
+    ${
+        lengthrange 1..1
+    }
+    
+    type Money restricts Decimal
+    ${
+        precision 20
+        scale 2
+    }
+    
+    type NonNegativeInt32 restricts Int32
+    ${
+        valuerange [0..
+    }
+
+    type Year2015 restricts DateTimeOffset
+    ${
+        valuerange ["2015-01-01T00:00:00+00:00" .. "2016-01-01T00:00:00+00:00")
+    }
+    
+    type Color restricts String
+    ${
+        enum
+            "Red" as Red //item names are for programming 
+            "Green" as Green
+            "Blue" as Blue
+    }
+    
+    type AccessFlags restricts Int32
+    ${
+        enum
+            0 as None
+            1 as Read
+            2 as Write
+            4 as Execute
+            7 as All
+    }
+    
+    type Email restricts String
+    ${
+        lengthrange ..40 //char count <= 40
+        pattern @"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}"
+    }
 ```
 
 Facets are heritable:
@@ -787,63 +886,62 @@ ${
 }
 ```
 
-Derived types can NARROW the base type's facets:
+Derived types can narrow the base type's facets:
 
 ```
-type Byte10to20 restricts Byte1to20
-${
-    lengthrange 10..
-}
-type SmallMoney restricts Money
-${
-    precision 9
-}
-type T1 restricts Int32
-${
-    valuerange [100..1000)
-}
-type T2 restricts T1
-${
-    valuerange (100.. //that is: (100..1000)
-}
-type RedAndBlue restricts Color
-${
-    enum "Red" "Blue"
-}
-type T3 restricts String
-${
-    pattern @"[a-h]{1,4}"
-}
-type T4 restricts T3
-${
-    pattern @"[f-z]{2,}"//the type value string must match the base type's regular expression AND this regular expression
-}
+    type Binary4to20 restricts Binary1to20
+    ${
+        lengthrange 4..
+    }
+
+    type SmallMoney restricts Money
+    ${
+        precision 10
+    }
+
+    type PositiveInt32 restricts NonNegativeInt32
+    ${
+        valuerange (0..
+    }
+    
+    type RedAndBlue restricts Color
+    ${
+        enum "Red" "Blue"
+    }
+    
+    type T3 restricts String
+    ${
+        pattern @"[a-h]{1,4}"
+    }
+    
+    type T4 restricts T3
+    ${
+        pattern @"[f-z]{2,}"//the type value string must match the base type's regular expression and this regular expression
+    }
 ```
 
 Use `type-list` to create a new list type, which derives from `sys:ListType`. Item type must reference a simple type:
 
 ```
-type Int32List lists Int32
-${
-    lengthrange 1.. //1 <= item count
-}
+    type Int32List lists Int32
+    ${
+        lengthrange 1.. //1 <= item count
+    }
 ```
 
 Use `type-restriction` to derive a new list type from an existing list type. The derived list type's item type must equal to or derive from the base type's item type:
 
 ```
-type Int32List2 restricts Int32List
-${
-    lengthrange 10..20 //10 <= item count <= 20
-}
+    type Int32List2 restricts Int32List
+    ${
+        lengthrange 10..20 //10 <= item count <= 20
+    }
 
-type MyInt16 restricts Int16
-
-type MyInt16List restricts Int32List
-${
-    lists MyInt16
-    lengthrange 10..
-}
+    type PositiveInt32List restricts Int32List
+    ${
+        lists PositiveInt32
+        lengthrange ..20
+    }
 ```
 
 Item type can reference any simple types:
@@ -874,326 +972,292 @@ ${
 Use `type-directness` to create a new complex type, which derives from `sys:ComplexType`:
 
 ```
-type AttributesOnlyComplexType
-[//attribute set
-    Attribute1 as Int32
-    Attribute2 as SimpleType
-]
+    type AttributesOnlyComplexType
+    [ //attribute set
+        Attribute1 as Int32
+        Attribute2 as SimpleType
+    ]
 
-type SimpleChildComplexType
-[
-    Attribute1 as Int32
-    Attribute2 as AtomType
-]
-    $ SimpleType
+    type SimpleChildComplexType
+    [
+        Attribute1 as Int32
+        Attribute2 as AtomType
+    ]
+        $ SimpleType //simple child
 
-type SimpleChildOnlyComplexType
-    $ Int32
+    type SimpleChildOnlyComplexType
+        $ Int32
 
-type EmptyComplexType
-    ;
+    type EmptyComplexType
+        ;
 
-type ElementSetComplexChildrenComplexType
-[
-    Attribute1 as Int32
-    Attribute2 as ListType
-]
-{//element set
-    Element1 as AttributesOnlyComplexType
-    Element2 as SimpleChildComplexType
-}
+    type ElementSetComplexChildrenComplexType
+    [
+        Attribute1 as Int32
+        Attribute2 as ListType
+    ]
+    { //element set
+        Element1 as AttributesOnlyComplexType
+        Element2 as SimpleChildComplexType
+        Element3 as ComplexType
+    }
 
-type ChildSequenceComplexChildrenComplexType
-#{//child sequence
-    Element1<+> as ElementSetComplexChildrenComplexType
-    ?{//child choice
-        Element2 as EmptyComplexType
-        #{//child sequence
-            Element3 as SimpleTypeList
-            Element4 as Boolean
-        }
-    }<*>
-}
+    type ChildSequenceComplexChildrenComplexType
+    [
+        Attribute1 as Int32
+        Attribute2 as Email
+    ]
+    #{ //child sequence
+        Element1<+> as ElementSetComplexChildrenComplexType
+        ?{ //member child choice
+            Element2 as EmptyComplexType
+            #{ //member child sequence
+                Element3 as SimpleTypeList
+                Element4 as Boolean
+            }<2..>
+        }<*>
+    }
 ```
 
-A `simple-child` must reference a simple type.
+`simple-child` must reference a simple type.
 
-Use `type-extension` or `type-restriction` to derive a new complex type from an existing complex type. If base complex type has no children, `simple-child` can be added:
+Use `type-extension` or `type-restriction` to derive a new complex type from an existing complex type.
 
-```
-type T1 extends AttributesOnlyComplexType
-    //attribute set is inherited
-    $ ListType
-
-type T2 extends EmptyComplexType
-    $ Int32
-```
-
-`simple-child` can be restricted, that is, the derived type's `simple-child` must equal to or derive from the base type's `simple-child`:
+If the base complex type has no children, simple child can be added:
 
 ```
-type T3 restricts SimpleChildComplexType
-    //attribute set is inherited
-    $ AtomType
-type T4 restricts T3
-    //attribute set is inherited
-    $ String
+    type SimpleChildAdded extends AttributesOnlyComplexType
+        //attribute set is inherited
+        $ AtomType
+
+    type SimpleChildAdded2 extends EmptyComplexType
+        $ Int32
 ```
 
-An `attribute` is identified by its `name-token`. In an `attribute-set`, every attribute must have a unique `name-token`. `attribute`s must reference simple types. `attribute`s can be annotated with `?`(optional) and/or `nullable`:
+Simple child can be restricted, the derived type's simple child must equal to or derive from the base type's simple child:
+
+```
+    type SimpleChildRestricted restricts SimpleChildAdded
+        //attribute set is inherited
+        $ Decimal
+
+    type SimpleChildRestricted2 restricts SimpleChildRestricted
+        $ Int64
+```
+
+An `attribute` is identified by its name. In an `attribute-set`, every attribute must have a unique name. Attribute must reference a simple type. Attribute can be `?`(optional) and/or `nullable`:
 
 ```
 //schema
-[
-    Attribute1 as Int32 //default is required and non-nullable
-    Attribute2<?> as Int32 //optional
-    Attribute3<nullable> as Int32
-    Attribute4<? nullable> as Int32
-]
+    type AttributeSet
+    [
+        Attribute1 as SimpleType //default is required and non-nullable
+        Attribute2<?> as Int32 //optional
+        Attribute3<nullable> as Int32
+        Attribute4<? nullable> as Int32
+    ]
 
 //data
 [ //attribute set is unordered
     Attribute2 = 42
-    Attribute1 = 42
-    Attribute3 //because it is nullable, it may have no value
+    Attribute1 = (sys:Int32)42
+    Attribute3 //because Attribute3 is nullable, it may have no value
 ] //because Attribute4 is optional
 ```
 
-`attribute-set` can be extended:
+Attribute set can be extended:
 
 ```
-type T1
-[
-    Attribute1 as Int32
-]
+    type AttributeSetExtended extends AttributeSet
+    [
+        //base attributes are inherited
+        Attribute5 as Int32
+    ]
+```
 
-type T2 extends T1
-[
-    //Attribute1 is inherited
-    Attribute2 as Int32
-]
-/* The result of T2's attribute set is:
-[
-    Attribute1 as Int32
-    Attribute2 as Int32
-]
+Attribute set can be restricted. Nullable attribute can be changed to non-nullable, optional can be changed to required or deleted, restricting attribute's type must equal to or derive from the restricted attribute's type:
+
+```
+    type AttributeSetRestricted restricts AttributeSet
+    [
+        Attribute3 as Int16 //nullable to non-nullable, type is restricted
+        Attribute2<x> as Int32 //optional attribute can be deleted
+        Attribute4<nullable> as Int32 //optional to required
+    ]//other attributes are inherited
+/* The result of AttributeSetRestricted's attribute set is:
+    [
+        Attribute1 as SimpleType
+        Attribute3 as Int16
+        Attribute4<nullable> as Int32
+        Attribute5 as Int32
+    ]
 */
 ```
 
-`attribute-set` can be restricted:
-
-```
-type T1
-[
-    Attribute1 as Int32
-    Attribute2<?> as Int32
-    Attribute3<nullable> as Int32
-    Attribute4<? nullable> as Int32
-]
-
-type T2 restricts T1
-[
-    //Attribute1 is inherited
-    Attribute3 as Int16 //nullable to non-nullable, type is restricted
-    Attribute2<x> as Int32 //optional attribute can be deleted
-    Attribute4<nullable> as Int32 //optional to required
-]
-/* The result of T2's attribute set is:
-[
-    Attribute1 as Int32
-    Attribute3 as Int16
-    Attribute4<nullable> as Int32
-]
-*/
-```
-
-A type can be annotated with `abstract`:
+Type can be `abstract`:
 
 ```
 //schema
-namespace "urn:project1"
+namespace "http://example.com/project1"
 {
-    type MyComplexTypeBase<abstract>
+    type AbstractType<abstract>
     [
         Attribute1 as AtomType
-        Attribute2 as Double
+        Attribute2<? nullable> as PositiveInt32
+        Attribute3 as Email
     ]
-        $ Double
+        $ Int32List
     
-    type MyComplexType extends MyComplexTypeBase
+    type ConcreteType extends AbstractType
         //attribute set and simple child are inherited
-    
-    element GlobalElement as MyComplexTypeBase
+
+    type ConcreteType2 restricts AbstractType
+        //attribute set and simple child are inherited
+
+    element AbstractTypeGlobalElement as AbstractType        
 }
 
 //data
-a1:GlobalElement<a1 = "urn:project1"> = (a1:MyComplexType) //type-indicator is required
-                                            // because a1:MyComplexTypeBase is abstract
+a0:AbstractTypeGlobalElement<a0 = "http://example.com/project1"> =
+    (a0:ConcreteType) //type indicator is required because a0:AbstractType is abstract
 [
     Attribute2 = 42
-    Attribute1 = (sys:Int16)42 //type-indicator is required because sys:AtomType is abstract
+    Attribute1 = (sys:Double)-42.42 //type indicator is required because sys:AtomType is abstract
+    Attribute3 = "tank@example.com"    
 ]
-    $ (sys:Single)42 //type-indicator may be used
+    $ (a0:PositiveInt32List)#[2 3 5 7 11] //type indicator may be used
 ```
 
-`type`s can be annotated with `sealed`:
+Type can be `sealed`:
 
 ```
-type T1<sealed> ...
-type T2 extends T1 //ERROR: base type 'T1' is sealed
-type T3 restricts T1 //ERROR: base type 'T1' is sealed
+type SealedType<sealed> ;
+type T1 extends SealedType //ERROR: base type 'SealedType' is sealed
+type T2 restricts SealedType //ERROR: base type 'SealedType' is sealed
 ```
 
-Like attributes, elements can be annotated with `nullable`. Elements can reference simple or complex types.
+Element includes `global-element` and `local-element`. Element can be `nullable`. Element can reference simple or complex type.
 
-`global-element`s are directly defined in `namespace`s. `global-element`s can be `abstract` and/or substituted:
+Global element is directly defined in a namespace. Global element can be `abstract`/`sealed` and/or `substitutes` another global element:
 
 ```
-namespace "urn:project1"
+namespace "http://example.com/project1"
 {
-    element GlobalElement1<nullable> as SimpleType
-    element GlobalElement2<substitutes GlobalElement1 abstract> as Int32 //nullable to non-nullable, type is restricted
-    element GlobalElement3<substitutes GlobalElement2> as Int32
+    element GlobalElement1<abstract nullable> as SimpleType
 
-    element GlobalElement4<abstract nullable> as ComplexType
-    element GlobalElement5<substitutes GlobalElement4> as MyComplexTypeBase //nullable to non-nullable, type is restricted
-    element GlobalElement6<substitutes GlobalElement4 nullable> as MyComplexType //type is restricted
-}
+    element GlobalElement2<substitutes GlobalElement1> as Int32 //nullable to non-nullable, type is restricted
 
-`global-element`s can be annotated with `sealed`:
+    element GlobalElement3<abstract substitutes GlobalElement2> as Int16
 
-```
-element GE1<sealed> ...
-element GE2<substitutes GE1> ... //ERROR: base element 'GE1' is sealed
-```
+    element GlobalElement4<sealed substitutes GlobalElement2> as Int32
 
-`member-child` includes `local-element`, `global-element-ref`, `member-child-sequence` and `member-child-choice`. In a child container(`element-set`, `child-sequence`, `member-child-sequence` and `member-child-choice`), every `member-child` must have a unique member name. If a `member-child` is annotated with a `member-name`, then use it, otherwise, the member name for `local-element` is its `token-name`, `global-element-ref` is the global element's `token-name`, `member-child-sequence` is "Seq", `member-child-choice` is "Choice":
-
-```
-type T1
-#{//child-sequence
-    LocalElement as Int32 //member name: LocalElement
-    &GlobalElement1 //global-element-ref. member name: GlobalElement1
-    #{
-    }//member-child-sequence. member name: Seq
-    ?{
-    }//member-child-choice. member name: Choice
-    LocalElement<membername LocalElement2> as Int32 //member-name annotation required
-    &GlobalElement1<membername GlobalElement1_2> //member-name annotation required
-    #{
-    }<membername Seq2>//member-name annotation required
-    ?{
-    }<membername Choice2>//member-name annotation required
+    element GlobalElement5<abstract> as ComplexType
 }
 ```
 
-`member-child` can be annotated with `occurrence`. The left side of `..` is min occurrence, the right side is max occurrence. If max occurrence is absent, it is infinite. The default value is 1..1.
+Nullable can be changed to non-nullable, substituting element's type must equal to or derive from the substituted element's type.
+
+Sealed global element cannot be substituted:
 
 ```
-type T1
-#{
-    LocalElement<3..10> as Int32
-    &GlobalElement1<2..> //2..infinite
+element GE1<substitutes GlobalElement4> ... //ERROR: 'GlobalElement4' is sealed
+```
+
+`member-child` includes `local-element`, `global-element-ref`, `member-child-sequence` and `member-child-choice`. In a child container(`element-set`, `child-sequence`, `member-child-sequence` and `member-child-choice`), every member child must have a unique member name. If a member child has the `member-name` annotation, then use it, otherwise, the member name for local element is its name, global element ref is the global element's name, member child sequence is "Seq", member child choice is "Choice":
+
+```
+    type UniqueMemberNameRequired
+    #{ //child sequence
+        LocalElement as Int32 //member name: LocalElement
+        &GlobalElement1 //global element ref. member name: GlobalElement1
+        #{
+        } //member child sequence. member name: Seq
+        ?{
+        } //member child choice. member name: Choice
+        LocalElement<membername LocalElement2> as Int32 //member-name annotation required
+        &GlobalElement1<membername GlobalElement1_2> //member-name annotation required
+        #{
+        }<membername Seq2>//member-name annotation required
+        ?{
+        }<membername Choice2>//member-name annotation required
+    }
+```
+
+Member child can be annotated with `occurrence`. The left side of `..` is min occurrence, the right side is max occurrence. If max occurrence is absent, it is infinite. The default value is 1..1.
+
+```
+    type Occurrence
     #{
-    }<?> //0..1
-    ?{
-    }<*> //0..infinite
-    E2<+> as Int32 //1..infinite
-    E3 as Int32 //1..1
-}
+        E1<3..10> as Int32
+        &GlobalElement1<2..> //2..infinite
+        #{
+        }<?> //0..1
+        ?{
+        }<*> //0..infinite
+        E2<+> as Int32 //1..infinite
+        E3 as Int32 //1..1
+    }
 ```
 
-If the min occurrence is zero, the `member-child` is optional.
+If the min occurrence is zero, the member child is optional.
 
-An element is identified by its full name. For a local element, the full name's URI is always null(unqualified full name). For a global element, the full name's URI is the containing namespace's URI. A global element ref is just a pointer to the global element.
+An element is identified by its full name. For local element, the full name always has null URI(unqualified full name). For global element, the full name's URI is the containing namespace's URI. Global element ref is just a pointer to the global element.
 
-`element-set`'s member must be `local-element`s or `global-element-ref`s. The max occurrence must be one. Every member must have a unique full name. The `element-set` is unordered.
+Element set's member must be local element or global element ref. The max occurrence must be one. Every member element must have a unique full name. Element set is unordered.
 
 ```
 //schema
-namespace "urn:project1"
+namespace "http://example.com/project1"
 {
-    element GE1<abstract> as Int32
-    element GE2<substitutes GE1> as Int32
-    element GE3<substitutes GE2> as Int32
-
-    type T1
-    {//element-set
+    type ElementSet
+    {
         E1 as Int32
         E2<?> as Int32
-        E3<?> as Int32
-        &GE1
+        E3<? nullable> as Int32
+        &GlobalElement1
     }
-    
-    element Root as T1
+
+    element ElementSetGlobalElement as ElementSet
 }
 
 //data
-a1:Root <a1 = "urn:project1"> =
+a0:ElementSetGlobalElement <a0 = "http://example.com/project1"> =
 {//element set is unordered
-    E2 = 42 //local element full name's URI is always null
-    a1:GE3 = 42 //because a1:GE1 can be substituted by a1:GE2 or a1:GE3
-    E1 = 42
-}//because E3 is optional
+    E3 //because E3 is nullable, it may have no value
+    E1 = 123 //local element always has null URI
+    a0:GlobalElement2 = 40 //because a0:GlobalElement1 can be substituted by a0:GlobalElement2
+}//because E2 is optional
 ```
 
-`element-set` can be extended:
+Element set can be extended:
 
 ```
-type T1
-{
-    E1 as Int32
-}
-
-type T2 extends T1
-{
-    //E1 is inherited
-    E2 as Int32
-}
-
-/* The result of T2's element set is:
-{
-    E1 as Int32
-    E2 as Int32
-}
-*/
-```
-
-`element-set` can be restricted:
-
-```
-namespace "urn:project1"
-{
-    element GE1 as Int32
-    element GE2<substitutes GE1> as Int32
-    element GE3<substitutes GE2> as Int32
-
-    type T1
+    type ElementSetExtended extends ElementSet
     {
-        E1 as Int32
-        E2<?> as Int32
-        E3<nullable> as Int32
-        &GE1<?>
+        E4 as Int32
     }
+```
 
-    type T2 restricts T1
+Element set can be restricted. Nullable element can be changed to non-nullable, optional can be changed to required or deleted, restricting element's type must equal to or derive from the restricted element's type, global element ref can reference a substituting global element:
+
+```
+    type ElementSetRestricted restricts ElementSetExtended
     {
-        //E1 is inherited
         E3 as Int16 //nullable to non-nullable, type is restricted
         E2<x> as Int32 //optional member can be deleted
-        &GE2<membername GE1> //optional to required, global element ref is restricted
-    }
-    /* The result of T2's element set is:
+        &GlobalElement2<membername GlobalElement1> //ref is restricted
+    }//other members are inherited
+/* The result of ElementSetRestricted's element set is:
     {
         E1 as Int32
         E3 as Int16
-        &GE2<membername GE1>
+        &GlobalElement2<membername GlobalElement1>
+        E4 as Int32        
     }
-    */
-}
+*/
 ```
 
-`child-sequence` can contain structural children:
+Child sequence can contain structural children:
 
 ```
 //schema
@@ -1316,5 +1380,543 @@ type T2 restricts T1
 
 Please review the above to comprehend the schema and the data.
 
-###Data Object Model
+### Data Object Model(DOM)
+
+Data object model is a class library used to manipulate(create, modify, save, load, validate, etc) data. Currently there is only .NET implementation, but other implementations(Java, C++, etc) are definitely possible and welcomed.
+
+Below is the hierarchy of the DOM classes, "<...>" are abstract classes, otherwise concrete classes. All the classes are defined in namespace `XData`:
+
+```
+<XObject>
+  |-<XType>
+  |  |-<XComplexType>
+  |  |-<XSimpleType>
+  |     |-<XListType>
+  |     |  |-<XListType<T>>
+  |     |-<XAtomType>
+  |        |-<XStringBase>
+  |        |  |-XString
+  |        |  |-XIgnoreCaseString
+  |        |-XDecimal
+  |        |  |-XInt64
+  |        |  |  |-XInt32
+  |        |  |     |-XInt16
+  |        |  |        |-XSByte
+  |        |  |-XUInt64
+  |        |     |-XUInt32
+  |        |        |-XUInt16
+  |        |           |-XByte
+  |        |-XDouble
+  |        |  |-XSingle
+  |        |-XBoolean
+  |        |-XBinary
+  |        |-XGuid
+  |        |-XTimeSpan
+  |        |-XDateTimeOffset
+  |-<XAttribute>
+  |-<XAttributeSet>
+  |-<XChild>
+     |-<XElement>
+     |  |-<XEntityElement>
+     |  |  |-<XLocalElement>
+     |  |  |-<XGlobalElement>
+     |  |-<XGlobalElementRef>
+     |-<XChildContainer>
+        |-<XChildCollection>
+        |  |-<XChildSet> 
+        |  |-<XChildSequence>
+        |-<XChildChoice>
+        |-<XChildList>
+           |-<XChildList<T>>
+```
+
+Below are some code excerpts:
+
+```C#
+namespace XData {
+    public abstract class XObject {
+        public XObject Parent { get; }
+        public bool TryValidate(DiagContext context);
+        //...
+    }
+    public abstract class XType : XObject { ... }
+    public class XSimpleType : XType, IEquatable<SimpleType> {
+        public static bool operator ==(XSimpleType left, XSimpleType right);
+        public static bool operator !=(XSimpleType left, XSimpleType right);
+        //...
+    }
+    public abstract class XAtomicType : XSimpleType {
+        public static bool operator <(XAtomType x, XAtomType y);
+        public static bool operator <=(XAtomType x, XAtomType y);
+        public static bool operator >(XAtomType x, XAtomType y);
+        public static bool operator >=(XAtomType x, XAtomType y);
+        //...
+    }
+    public abstract class XStringBase : XAtomType {
+        public static implicit operator string (XStringBase obj);
+        public string Value { get; set; }
+        //...
+    }
+    public class XString : XStringBase {
+        public XString();
+        public XString(string value);
+        public static implicit operator XString(string value);
+        //...
+    }
+    public class XDecimal : XAtomicType {
+        public XDecimal() { }
+        public XDecimal(decimal value);
+        public static implicit operator XDecimal(decimal value);
+        public static implicit operator decimal (XDecimal obj);
+        public decimal Value { get; set; }
+        //...
+    }
+    public class XInt64 : XDecimal {
+        public XInt64() { }
+        public XInt64(long value);
+        public static implicit operator XInt64(long value);
+        public static implicit operator long (XInt64 obj);
+        new public long Value { get; set; }
+        //...
+    }
+    public class XInt32 : XInt64 {
+        public XInt32() { }
+        public XInt32(int value);
+        public static implicit operator XInt32(int value);
+        public static implicit operator int (XInt32 obj);
+        new public int Value { get; set; }
+        //...
+    }
+    public class XBoolean : XAtomicType {
+        public XBoolean() { }
+        public XBoolean(bool value);
+        public static implicit operator XBoolean(bool value);
+        public static implicit operator bool (XBoolean obj);
+        public bool Value { get; set; }
+        //...
+    }
+    public class XBinary : XAtomicType {
+        public XBinary();
+        public XBinary(byte[] value);
+        public static implicit operator XBinary(byte[] value);
+        public static implicit operator byte[] (XBinary obj);
+        public byte[] Value { get; set; }
+        //...
+    }
+    public class XDateTimeOffset : XAtomicType {
+        public XDateTimeOffset() { }
+        public XDateTimeOffset(DateTimeOffset value);
+        public static implicit operator XDateTimeOffset(DateTimeOffset value);
+        public static implicit operator DateTimeOffset(XDateTimeOffset obj);
+        public DateTimeOffset Value { get; set; }
+        //...
+    }
+    public abstract class XListType : XSimpleType { ... }
+    public abstract class XListType<T> : XListType, IList<T>, IReadOnlyList<T> where T : XSimpleType { ... }
+}
+```
+
+Below is the code testing the concrete atom type DOM classes:
+
+```C#
+using System;
+using XData;
+
+class Program {
+    static void Main() {
+        XString xstr = "abc";
+        string str = xstr;
+        Console.WriteLine(str); //abc
+        xstr = null;
+        str = xstr;
+        Console.WriteLine(str.Length == 0); //True
+        //
+        XInt32 xint32 = 42;
+        int @int = xint32;
+        Console.WriteLine(@int); //42
+        xint32 = null;
+        @int = xint32;
+        Console.WriteLine(@int == default(int)); //True
+        //
+        XBinary xbin = new byte[] { 1, 2, 3 };
+        byte[] bytes = xbin;
+        Console.WriteLine("{0} {1} {2}", bytes[0], bytes[1], bytes[2]); //1 2 3
+        xbin = null;
+        bytes = xbin;
+        Console.WriteLine(bytes.Length == 0); //True
+        //
+        XDateTimeOffset xdto = DateTimeOffset.UtcNow;
+        DateTimeOffset dto = xdto;
+        Console.WriteLine(dto); //2015/2/22 13:02:32 +00:00
+        xdto = null;
+        dto = xdto;
+        Console.WriteLine(dto == default(DateTimeOffset)); //True
+    }
+}
+```
+
+Other DOM classes:
+
+```C#
+namespace XData {
+    public abstract class XComplexType : XType {
+        public XAttributeSet Attributes { get; set; }
+        public XObject Children { get; set; } //can be XSimpleType or XChildSet or XChildSequence   
+        //...
+        linq...
+    }
+    public abstract class XAttribute : XObject {
+        public string Name { get; }
+        public XSimpleType Type { get; set; }
+        //...
+    }
+    public abstract class XAttributeSet : XObject, ICollection<XAttribute>, IReadOnlyCollection<XAttribute> {
+        //...
+    }
+    public abstract class XChild : XObject { ... }
+    public abstract class XElement : XChild {
+        public abstract FullName FullName { get; }
+        public abstract XType Type { get; set; }
+        //...
+    }
+    public struct FullName : IEquatable<FullName> {
+        public FullName(string uri, string name);
+        public readonly string Uri;
+        public readonly string Name;
+        //...
+    }
+    public abstract class XEntityElement : XElement { ... }
+    public abstract class XLocalElement : XEntityElement { }
+    public abstract class XGlobalElement : XEntityElement {
+        public void Save(StringBuilder stringBuilder, string indentString = "\t", string newLineString = "\n");
+        public void Save(TextWriter writer, string indentString = "\t", string newLineString = "\n");
+        //...
+    }
+    public abstract class XGlobalElementRef : XElement {
+        public XGlobalElement GlobalElement { get; set; }    
+        //...
+    }
+    public abstract class XChildContainer : XChild { ... }
+    public abstract class XChildCollection : XChildContainer, ICollection<XChild>, IReadOnlyCollection<XChild> {
+        //...
+    }
+    public abstract class XChildSet : XChildCollection { ... }
+    public abstract class XChildSequence : XChildCollection { ... }
+    public abstract class XChildChoice : XChildContainer { ... }
+    public abstract class XChildList : XChildContainer { ... }
+    public abstract class XChildList<T> : XChildList, IList<T>, IReadOnlyList<T> where T : XChild { ... }
+   
+}
+```
+
+You cannot directly use the DOM library, because the classes are almost abstract.
+
+### Code Generation
+
+The schema compiler has two duties: first it check the schema is correct in grammar and in semantics; second it generates the concrete code(currently C# code) based on the abstract DOM library.
+
+#### Get your hands dirty
+
+1. [Visual Studio 2013](http://www.visualstudio.com/downloads/download-visual-studio-vs) is required;
+2. Download and install [the latest XData VSIX package](https://github.com/knat/XData/releases);
+3. Open VS 2013, create or open a C# project, add the XData DOM library(it's a portable class library) NuGet package to the project:
+
+```
+
+```
+
+4. Unload and open the .csproj file, insert the following code at the end of the file:
+
+```xml
+<!--Begin XData-->
+<Import Project="$([System.IO.Directory]::GetFiles($([System.IO.Path]::Combine($([System.Environment]::GetFolderPath(SpecialFolder.LocalApplicationData)), `Microsoft\VisualStudio\12.0\Extensions`)), `XData.targets`, System.IO.SearchOption.AllDirectories))" />
+<!--End XData-->
+```
+
+![](EditCSProj.png)
+
+5. Reload the project, Add New Item -> Visual C# Items -> XData -> Create a new XData Schema file, ...:
+
+
+6. Create a new XData Indicator file, copy the following code into the file(the indicator file is used to indicate the code should generate in which C# namespace):
+
+
+7. When the project is about to build, the schema compiler will first check the schema's correctness, then generate and save C# code into `__XDataGenerated.cs`, open and view it:
+
+For atom type restriction, a new class derives from the base class. If an enum item has the name, a E_<Name> static field is generated.
+
+```
+namespace Example.Project1
+{
+    public partial class Binary1to20 : global::XData.XBinary
+    {
+        public static implicit operator global::Example.Project1.Binary1to20(byte[] value);
+        //...
+    }
+    public partial class AccessFlags : global::XData.XInt32
+    {
+        public static implicit operator global::Example.Project1.AccessFlags(int value);
+        public static readonly int E_None = 0;
+        public static readonly int E_Read = 1;
+        public static readonly int E_Write = 2;
+        public static readonly int E_Execute = 4;
+        public static readonly int E_All = 7;
+        //...
+    }
+}
+```
+
+For list type, a new class derives from XData.ListType<T>:
+
+```
+    public partial class Int32List : global::XData.XListType<global::XData.XInt32>
+    {
+        //...
+    }
+```
+
+use it:
+
+```
+    static void UseListType() {
+        var list = new Int32List { 1, 2, 3 };
+        foreach (var item in list) {
+            Console.WriteLine(item);
+        }
+    }
+```
+
+For list type restriction, a new class derives from the base class.
+
+```
+    public partial class PositiveInt32List : global::Example.Project1.Int32List, global::System.Collections.Generic.IList<global::Example.Project1.PositiveInt32>, global::System.Collections.Generic.IReadOnlyList<global::Example.Project1.PositiveInt32>
+    {
+        //...
+    }
+```
+
+For type directness, a new class derives from XData.ComplexType. For attribute set: 
+
+```
+    public partial class AttributeSet : global::XData.XComplexType
+    {
+        public global::Example.Project1.AttributeSet.CLS_Attributes.CLS_Attribute1 A_Attribute1 { get; set; }
+        public global::XData.XSimpleType AT_Attribute1 { get; set; }
+        public global::Example.Project1.AttributeSet.CLS_Attributes.CLS_Attribute2 A_Attribute2 { get; set; }
+        public global::XData.XInt32 AT_Attribute2 { get; set; }
+        //...
+    }
+```
+
+"A" means "Attribute", "AT" means "Attribute's Type".
+
+use it:
+
+```C#
+    static void UseAttributeSet() {
+        var type = new AttributeSet {
+            AT_Attribute1 = (XDateTimeOffset)DateTimeOffset.UtcNow,
+            AT_Attribute2 = 42,
+            AT_Attribute3 = null
+        };
+        Console.WriteLine(type.AT_Attribute1);
+        type.A_Attribute2 = null;
+        Console.WriteLine("hasAttribute2: " + (type.A_Attribute2 != null));
+    }
+```
+
+For simple child:
+
+```
+    public partial class SimpleChildOnlyComplexType : global::XData.XComplexType
+    {
+        new public global::XData.XInt32 Children { get; set; }
+        //...
+    }
+
+```
+
+Use it:
+
+```
+    static void UseSimpleChild() {
+        var type = new SimpleChildOnlyComplexType {
+            Children = (PositiveInt32)42
+        };
+        Console.WriteLine(type.Children);
+        type.Children = null;
+    }
+```
+
+If a type or global element is `abstract`, the generated class is abstract too.
+
+For global element:
+
+```
+    public partial class AbstractTypeGlobalElement : global::XData.XGlobalElement
+    {
+        new public global::Example.Project1.AbstractType Type { get; set; }
+        public static bool TryLoadAndValidate(string filePath, global::System.IO.TextReader reader, global::XData.DiagContext context, out global::Example.Project1.AbstractTypeGlobalElement result);
+        //...
+    }
+
+```
+
+Use it:
+
+```C#
+    static void UseGlobalElement() {
+        var atge = new AbstractTypeGlobalElement {
+            Type = new ConcreteType {
+                AT_Attribute1 = (XDateTimeOffset)DateTimeOffset.UtcNow,
+                AT_Attribute2 = 42,
+                Children = "tank@example.com"
+            }
+        };
+        var ctx = new DiagContext();
+#if DEBUG
+        if (!atge.TryValidate(ctx)) {//if validate failed, this means the program has bugs
+            Dump(ctx);
+            Debug.Assert(false);
+        }
+#endif
+        Save(atge, "test.txt");
+        ctx.Reset();
+        AbstractTypeGlobalElement atge2;
+        using (var reader = new StreamReader("test.txt")) {
+            if (!AbstractTypeGlobalElement.TryLoadAndValidate("test.txt", reader, ctx, out atge2)) {
+                Dump(ctx);
+                Debug.Assert(false);
+            }
+        }
+        Save(atge2, "test2.txt");
+    }
+    static void Dump(DiagContext ctx) {
+        foreach (var diag in ctx) {
+            Console.WriteLine(diag.ToString());
+        }
+    }
+    static void Save(XGlobalElement element, string path) {
+        using (var writer = new StreamWriter(path)) {
+            element.Save(writer, "\t", "\r\n");
+        }
+    }
+```
+
+Put a breakpoint at line "using (var reader = ", open test.txt, change "tank@example.com" to "tankexample.com" and save, `TryLoadAndValidate` will fail:
+
+```
+Error -979: Literal 'tankexample.com' not match with pattern '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}'.
+    test.txt: (6,4)-(6,21)
+```
+
+Even if an global element is abstract, `TryLoadAndValidate` static method is still generated, the substituting global element is derived from the substituted element:
+
+```C#
+    public abstract partial class GlobalElement1 : global::XData.XGlobalElement
+    {
+        new public global::XData.XSimpleType Type { get; set; }
+        public static bool TryLoadAndValidate(string filePath, global::System.IO.TextReader reader, global::XData.DiagContext context, out global::Example.Project1.GlobalElement1 result);
+        //...
+    }
+    public partial class GlobalElement2 : global::Example.Project1.GlobalElement1
+    {
+        new public global::XData.XInt32 Type { get; set; }
+        public static bool TryLoadAndValidate(string filePath, global::System.IO.TextReader reader, global::XData.DiagContext context, out global::Example.Project1.GlobalElement2 result);
+        //...
+    }
+```
+
+Use it:
+
+```C#
+    static void GlobalElementSubstitution() {
+        var ge2 = new GlobalElement2 {
+            Type = 42
+        };
+        Save(ge2, "test3.txt");
+        GlobalElement1 ge1;
+        var ctx = new DiagContext();
+        using (var reader = new StreamReader("test3.txt")) {
+            if (!GlobalElement1.TryLoadAndValidate("test3.txt", reader, ctx, out ge1)) {
+                Dump(ctx);
+                Debug.Assert(false);
+            }
+        }
+        Console.WriteLine(ge1.GetType());//Example.Project1.GlobalElement2
+    }
+```
+
+For local element and global element ref, ...:
+
+```C#
+    public partial class ElementSet : global::XData.XComplexType
+    {
+        public global::Example.Project1.ElementSet.CLS_Children.CLS_E1 C_E1 { get; set; }
+        public global::XData.XInt32 CT_E1 { get; set; }
+        public global::Example.Project1.ElementSet.CLS_Children.CLS_GlobalElement1 C_GlobalElement1 { get; set; }
+        public global::Example.Project1.ElementSet.CLS_Children.CLS_GlobalElement1 EnsureC_GlobalElement1(bool @try = false);
+        //...
+            public partial class CLS_GlobalElement1 : global::XData.XGlobalElementRef
+            {
+                new public global::Example.Project1.GlobalElement1 GlobalElement { get; set; }
+                //...
+            }
+        //...
+    }
+```
+
+"C" means "Child", "CT" means "Child element's Type".
+
+Use it:
+
+```C#
+    static void ElementSet() {
+        var es = new ElementSet {
+            CT_E1 = 123,
+            CT_E3 = null
+        };
+        var geRef = es.EnsureC_GlobalElement1();
+        var ge2 = new GlobalElement2 { Type = 42 };
+        geRef.GlobalElement = ge2;
+        var esge = new ElementSetGlobalElement { Type = es };
+        Save(esge, "ElementSet.txt");
+        ge2.Type = 40;
+        Save(esge, "ElementSet2.txt");
+    }
+```
+
+This means the global element ref is just a pointer to the global element.
+
+child sequence,...:
+
+```C#
+    public partial class ChildSequence : global::XData.XComplexType
+    {
+        public global::Example.Project1.ChildSequence.CLS_Children.CLS_E1 C_E1 { get; set; }
+        public global::Example.Project1.ChildSequence.CLS_Children.CLS_E1 EnsureC_E1(bool @try = false);        
+        //...
+            public partial class CLS_E1 : global::XData.XChildList<global::Example.Project1.ChildSequence.CLS_Children.CLSITEM_E1>
+            {
+                public global::Example.Project1.ChildSequence.CLS_Children.CLSITEM_E1 CreateItem();
+                public global::Example.Project1.ChildSequence.CLS_Children.CLSITEM_E1 CreateAndAddItem();
+                //...
+            }
+        //...
+        public global::Example.Project1.ChildSequence.CLS_Children.CLS_Seq C_Seq { get; set; }
+        public global::Example.Project1.ChildSequence.CLS_Children.CLS_Seq EnsureC_Seq(bool @try = false);
+        
+        
+                
+```
+
+
+8. We can use the generated code:
+
+
+
+
+
+
+
 

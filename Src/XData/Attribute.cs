@@ -48,8 +48,8 @@ namespace XData {
             if (_type != null) {
                 context.StringBuilder.Append(" = ");
                 _type.Save(context, AttributeInfo.Type);
-                context.AppendLine();
             }
+            context.AppendLine();
         }
         internal override sealed bool TryValidateCore(DiagContext context) {
             var attributeInfo = AttributeInfo;

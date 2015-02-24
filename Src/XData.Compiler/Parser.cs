@@ -74,7 +74,7 @@ namespace XData.Compiler {
             _nullableGetter = Nullable;
             _optionalOrDeleteGetter = OptionalOrDelete;
             _memberNameGetter = MemberName;
-            _substituteGetter = Substitute;
+            _substitutionGetter = Substitution;
             _occurrenceGetter = Occurrence;
         }
         private delegate bool NodeGetterWithParent<T>(Node parent, out T node);
@@ -90,7 +90,7 @@ namespace XData.Compiler {
         private readonly NodeGetter<TextSpan> _nullableGetter;
         private readonly NodeGetter<OptionalOrDeleteNode> _optionalOrDeleteGetter;
         private readonly NodeGetter<NameNode> _memberNameGetter;
-        private readonly NodeGetter<QualifiableNameNode> _substituteGetter;
+        private readonly NodeGetter<QualifiableNameNode> _substitutionGetter;
         private readonly NodeGetter<OccurrenceNode> _occurrenceGetter;
         private bool CompilationUnit(string filePath, TextReader reader, DiagContext context,
             out CompilationUnitNode result) {
@@ -642,7 +642,7 @@ namespace XData.Compiler {
             if (Keyword(ParserConstants.ElementKeyword)) {
                 var obj = new GlobalElementNode(parent);
                 obj.NameNode = NameExpected();
-                Unordered(_abstractOrSealedGetter, _nullableGetter, _substituteGetter,
+                Unordered(_abstractOrSealedGetter, _nullableGetter, _substitutionGetter,
                     out obj.AbstractOrSealed, out obj.Nullable, out obj.SubstitutedGlobalElementQName,
                     "Abstract, sealed, nullable, substitutes or > expected.");
                 KeywordExpected(ParserConstants.AsKeyword);
@@ -789,7 +789,7 @@ namespace XData.Compiler {
             result = default(NameNode);
             return false;
         }
-        private bool Substitute(out QualifiableNameNode result) {
+        private bool Substitution(out QualifiableNameNode result) {
             if (Keyword(ParserConstants.SubstitutesKeyword)) {
                 result = QualifiableNameExpected();
                 return true;

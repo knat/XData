@@ -243,8 +243,8 @@ namespace XData {
             if (_type != null) {
                 context.StringBuilder.Append(" = ");
                 _type.Save(context, ElementInfo.Type);
-                context.AppendLine();
             }
+            context.AppendLine();
         }
         internal override bool TryValidateCore(DiagContext context) {
             var elementInfo = ElementInfo;
