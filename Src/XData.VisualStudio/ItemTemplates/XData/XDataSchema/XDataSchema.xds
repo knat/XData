@@ -5,10 +5,345 @@ alias "http://example.com/project2" as p2
 
 namespace p1
 {
+    type Binary1to20 restricts sys:Binary
+    ${
+        lengthrange 1..20
+    }
+    
+    type Binary4to20 restricts Binary1to20
+    ${
+        lengthrange 4..
+    }
+
+    type Char restricts sys:String
+    ${
+        lengthrange 1..1
+    }
+    
+    type Money restricts Decimal
+    ${
+        precision 20
+        scale 2
+    }
+    
+    type SmallMoney restricts Money
+    ${
+        precision 10
+    }
+
+    type NonNegativeInt32 restricts Int32
+    ${
+        valuerange [0..
+    }
+    
+    type PositiveInt32 restricts NonNegativeInt32
+    ${
+        valuerange (0..
+    }
+
+    type Year2015 restricts DateTimeOffset
+    ${
+        valuerange ["2015-01-01T00:00:00+00:00" .. "2016-01-01T00:00:00+00:00")
+    }
+    
+    type Color restricts String
+    ${
+        enum
+            "Red" as Red
+            "Green" as Green
+            "Blue" as Blue
+    }
+    
+    type RedAndBlue restricts Color
+    ${
+        enum "Red" "Blue"
+    }
+    
+    type AccessFlags restricts Int32
+    ${
+        enum
+            0 as None
+            1 as Read
+            2 as Write
+            4 as Execute
+            7 as All
+    }
+    
+    type Email restricts String
+    ${
+        lengthrange ..40
+        pattern @"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}"
+    }
+
+    type Int32List lists Int32
+    ${
+        lengthrange 1..
+    }
+    
+    type Int32List2 restricts Int32List
+    ${
+        lengthrange 10..20
+    }
+
+    type PositiveInt32List restricts Int32List
+    ${
+        lists PositiveInt32
+        lengthrange ..20
+    }
+
+    type SimpleTypeList lists SimpleType
+
+    type AtomTypeList restricts SimpleTypeList
+    ${
+        lists AtomType
+    }
+
+    type Int16List restricts AtomTypeList
+    ${
+        lists Int16
+    }
+
+    type ListList restricts SimpleTypeList
+    ${
+        lists ListType
+    }
+
+    type AttributesOnlyComplexType
+    [
+        Attribute1 as Int32
+        Attribute2 as SimpleType
+    ]
+
+    type SimpleChildComplexType
+    [
+        Attribute1 as Int32
+        Attribute2 as AtomType
+    ]
+        $ SimpleType
+
+    type SimpleChildOnlyComplexType
+        $ Int32
+
+    type EmptyComplexType
+        ;
+
+    type ElementSetComplexChildrenComplexType
+    [
+        Attribute1 as Int32
+        Attribute2 as ListType
+    ]
+    {
+        Element1 as AttributesOnlyComplexType
+        Element2 as SimpleChildComplexType
+        Element3 as ComplexType
+    }
+
+    type ChildSequenceComplexChildrenComplexType
+    [
+        Attribute1 as Int32
+        Attribute2 as Email
+    ]
+    #{
+        Element1<+> as ElementSetComplexChildrenComplexType
+        ?{
+            Element2 as EmptyComplexType
+            #{
+                Element3 as SimpleTypeList
+                Element4 as Boolean
+            }<2..>
+        }<*>
+    }
+
+    type SimpleChildAdded extends AttributesOnlyComplexType
+        $ AtomType
+
+    type SimpleChildAdded2 extends EmptyComplexType
+        $ Int32
+
+    type SimpleChildRestricted restricts SimpleChildAdded
+        $ Decimal
+
+    type SimpleChildRestricted2 restricts SimpleChildRestricted
+        $ Int64
+
+    type AttributeSet
+    [
+        Attribute1 as SimpleType
+        Attribute2<?> as Int32
+        Attribute3<nullable> as Int32
+        Attribute4<? nullable> as Int32
+    ]
+
+    type AttributeSetExtended extends AttributeSet
+    [
+        Attribute5 as Int32
+    ]
+
+    type AttributeSetRestricted restricts AttributeSet
+    [
+        Attribute3 as Int16
+        Attribute2<x> as Int32
+        Attribute4<nullable> as Int32
+    ]
+
+    type AbstractType<abstract>
+    [
+        Attribute1 as AtomType
+        Attribute2<? nullable> as PositiveInt32
+        Attribute3 as Email
+    ]
+        $ Int32List
+    
+    type ConcreteType extends AbstractType
+
+    type ConcreteType2 restricts AbstractType
+    
+    element AbstractTypeGlobalElement as AbstractType
+
+    type SealedType<sealed> ;
+
+    element GlobalElement1<abstract nullable> as SimpleType
+
+    element GlobalElement2<substitutes GlobalElement1> as Int32
+
+    element GlobalElement3<abstract substitutes GlobalElement2> as Int16
+
+    element GlobalElement4<sealed substitutes GlobalElement2> as Int32
+
+    element GlobalElement5<abstract> as ComplexType
+
+    type UniqueMemberNameRequired
+    #{
+        LocalElement as Int32
+        &GlobalElement1
+        #{
+        }
+        ?{
+        }
+        LocalElement<membername LocalElement2> as Int32
+        &GlobalElement1<membername GlobalElement1_2>
+        #{
+        }<membername Seq2>
+        ?{
+        }<membername Choice2>
+    }
+
+    type Occurrence
+    #{
+        E1<3..10> as Int32
+        &GlobalElement1<2..>
+        #{
+        }<?>
+        ?{
+        }<*>
+        E2<+> as Int32
+        E3 as Int32
+    }
+
+    type ElementSet
+    {
+        E1 as TimeSpan
+        E2<?> as Int32
+        E3<? nullable> as Int32
+        &GlobalElement1
+    }
+
+    element ElementSetGlobalElement as ElementSet
+
+    type ElementSetExtended extends ElementSet
+    {
+        E4 as Int32
+    }
+
+    type ElementSetRestricted restricts ElementSetExtended
+    {
+        E3 as Int16
+        E2<x> as Int32
+        &GlobalElement2<membername GlobalElement1>
+    }
+
+    type ChildSequence
+    #{
+        E1<0..10 membername E1List> as Int32
+        #{
+            E2 as Int32
+            E3 as Int32
+        }<* membername SeqList>
+        ?{
+            E4 as Int32
+            #{
+                E5 as Int32
+                E6 as Int32
+            }<2.. membername SeqList>
+            E7 as Int32
+        }<* membername ChoiceList>
+        &GlobalElement1<+ membername GlobalElement1List>
+    }
+
+    element ChildSequenceGlobalElement as ChildSequence
+
+    type ChildSequenceExtended extends ChildSequence
+    #{
+        E8 as Int32
+    }
+
+    type ChildSequenceRestricted restricts ChildSequenceExtended
+    #{
+        E1<2..5 membername E1List> as Int16
+        #{
+        }<x membername SeqList>
+        ?{
+            E4 as Int32
+            #{
+            }<3.. membername SeqList>
+            E7<x> as Int32
+        }<membername ChoiceList>
+    }
 
 }
 
 namespace p2
 {
+    import p1 as p1
+    
+    type PositiveInt32 restricts p1:PositiveInt32
+
+    type PositiveInt32List lists PositiveInt32
+    ${
+        lengthrange ..10
+    }
+
+    type ChildElement1Type
+    [
+        Attribute1 as Year2015
+        Attribute2<nullable> as Guid
+    ]
+        $ Binary1to20
+
+    type ChildElement3Type
+    {
+        ChildChildElement1 as Color
+        &GlobalElement1
+    }
+
+    type AbstractRootElementType<abstract>
+    [
+        Attribute1<nullable> as AtomType
+        Attribute2<?> as PositiveInt32List
+    ]
+    #{
+        ChildElement1<* membername ChildElement1List> as ChildElement1Type
+        ChildElement2<nullable> as Int32
+    }
+
+    type RootElementType extends AbstractRootElementType
+    [
+        Attribute3 as Email
+    ]
+    #{
+        ChildElement3<+ membername ChildElement3List> as ChildElement3Type
+    }
+
+    element RootElement<substitutes GlobalElement5> as AbstractRootElementType
 
 }

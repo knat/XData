@@ -9,8 +9,7 @@ The XData data is a text-based tree-like structure. An example:
 ```
 //single line comment
 /*delimited comment*/
-a0:RootElement <a0 = "http://example.com/project2" a1 = "http://example.com/project1"> =
-    (a0:RootElementType)
+a0:RootElement <a0 = "http://example.com/project2" a1 = "http://example.com/project1"> = (a0:RootElementType)
     [
         Attribute1 = (sys:Double)-42.42
         Attribute2 = #[2 3 5 7 11]
@@ -295,18 +294,18 @@ Element1 = 42
 
 ```
 Element1 =
-    [//attributes
+    [ //attributes
         Attribute1
         Attribute2
     ]
-    $ 42//simple child
+    $ 42 //simple child
 
 Element2 =
-    [//attributes
+    [
         Attribute1
         Attribute2
     ]
-    {//complex children
+    { //complex children
         ChildElement1
         ChildElement1
     }
@@ -1156,7 +1155,7 @@ namespace "http://example.com/project1"
 }
 ```
 
-Nullable can be changed to non-nullable, substituting element's type must equal to or derive from the substituted element's type.
+Nullable global element can be substituted as non-nullable, substituting element's type must equal to or derive from the substituted element's type.
 
 Sealed global element cannot be substituted:
 
@@ -1295,6 +1294,8 @@ a0:ChildSequenceGlobalElement <a0 = "http://example.com/project1"> =
     E5 = 42
     E6 = 42
     E7 = 42
+    E4 = 42
+    E4 = 42
     a0:GlobalElement2 = 42
     a0:GlobalElement4 = 42
 }
@@ -1610,7 +1611,7 @@ namespace "http://example.com/project2" = Example.Project2
 
 7) After build the project, __XDataGenerated.cs will contain the generated code, open and view it.
 
-For atom types, a new class derives from the base class. If an enum item has the name, a E_<Name> static field is generated.
+For atom types, a new class derives from the base class. If an enum item has the name, a E_ItemName static field is generated.
 
 ```C#
 //Auto-generated, DO NOT EDIT.
@@ -1665,7 +1666,7 @@ Use it:
 
 For complex types, a new class derives from XData.XComplexType or the base class. For attributes, the following code is generated: 
 
-```
+```C#
     public partial class AttributeSet : global::XData.XComplexType
     {
         public global::Example.Project1.AttributeSet.CLS_Attributes.CLS_Attribute1 A_Attribute1 { get; set; }
@@ -1719,7 +1720,7 @@ Use it:
 
 If a type or global element is abstract, the generated class is abstract too:
 
-```
+```C#
     public abstract partial class AbstractType : global::XData.XComplexType
     {
         //...
@@ -1978,14 +1979,16 @@ Use it:
 Because every generated class is partial, you can add your code to the generated classes:
 
 ```C#
-//your.cs
+//my.cs
 namespace Example.Project1 {
     partial class AbstractType {
         protected abstract void MyMethod();
     }
     partial class ConcreteType {
         public ConcreteType() { }//Public parameterless constructor required for concrete classes
-        public ConcreteType(int para1, string para2) { }
+        public ConcreteType(int para1, string para2) {
+            //...
+        }
         protected override void MyMethod() {
             //...
         }
@@ -2001,18 +2004,16 @@ namespace Example.Project1 {
 }
 ```
 
-Suppose there are two C# class library projects: Project1 and Project2. Project1 contains schema project1.xds, which contains namespace "http://example.com/project1", and the code is generated in C# namespace "Example.Project1". Project2 contains schema project2.xds, which contains namespace "http://example.com/project2", which references "http://example.com/project1", so you add project1.xds(may be a link) to Project2. If you want to reuse Project1's generated code, you can use `&` in Project2's XData Indicator file:
+Suppose there are two C# class library projects: Project1 and Project2. Project1 is a class library, it contains schema project1.xds, which defines namespace "http://example.com/project1", and the code is generated in C# namespace "Example.Project1". Project2 contains schema project2.xds, it defines namespace "http://example.com/project2" which references "http://example.com/project1", so you should add project1.xds to Project2. If you want to reuse Project1's generated code, Project2's XData Indicator file can be written as:
 
 ```
 namespace "http://example.com/project1" & Example.Project1 //ref instead of generation
 namespace "http://example.com/project2" = Example.Project2
 ```
 
-Please view the generated and the demo code to learn more.
-
 ### Thoughts
 
-JSON is dynamically typed, so there is "my object <= serializer => JSON". Dynamical things may be simple at first, but soon get into a mess(it's just my feelings:).
+JSON is dynamically typed, so there is "my objects <= serializer => JSON".
 
 XData is statically typed, so there is schema. Schema is the specification/contract of your data. You should publish the schema within your SDK, so your clients can generate their code(C#, Java, C++, etc) from your schema.
 
@@ -2022,7 +2023,4 @@ XData is the evolution of XML/XML Schema.
 
 Thank you for your tolerance of my poor English.
 
-### Questions or suggestions are welcomed
-
-### Contributions are warmly welcomed
-
+### Questions, suggestions or contributions are welcomed

@@ -2,3 +2,312 @@
 
 namespace "http://example.com/project1" = Example.Project1
 namespace "http://example.com/project2" = Example.Project2
+
+//Assume you've created an XData Schema file and an XData Indicator file(this file) without any modification.
+//After build the project, __XDataGenerated.cs will contain the generated code.
+//Below is the code demonstrating how to use the generated code.
+//Copy it to a C# file and run.
+
+/*
+
+using System;
+using System.Diagnostics;
+using System.IO;
+using XData;
+using Example.Project1;
+using Example.Project2;
+
+static class UseXData {
+    static void Main() {
+        UseAtomTypes();
+        UseListType();
+        UseAttributeSet();
+        UseSimpleChild();
+        UseGlobalElement();
+        UseGlobalElementSubstitution();
+        UseElementSet();
+        UseChildSequence();
+        UseRootElement();
+    }
+    static void UseAtomTypes() {
+        Console.WriteLine("===UseAtomTypes()===");
+        XString xstr = "abc";
+        XString xstr2 = "abc";
+        Console.WriteLine(xstr == xstr2); //True
+        xstr = null;
+        string str = xstr;
+        Console.WriteLine(str.Length == 0); //True
+        //
+        XInt32 xint32 = 42;
+        XInt32 xint32_2 = 43;
+        Console.WriteLine(xint32 != xint32_2); //True
+        Console.WriteLine(xint32 < xint32_2); //True
+        xint32 = null;
+        int @int = xint32;
+        Console.WriteLine(@int == default(int)); //True
+        //
+        XBinary xbin = new byte[] { 1, 2, 3, 4 };
+        Console.WriteLine(xbin); //AQIDBA==
+        XBinary xbin2 = new byte[] { 1, 2, 3, 4 };
+        Console.WriteLine(xbin == xbin2); //True
+        xbin = null;
+        byte[] bytes = xbin;
+        Console.WriteLine(bytes.Length == 0); //True
+        //
+        XDateTimeOffset xdto = DateTimeOffset.UtcNow;
+        Console.WriteLine(xdto); //2015-02-24T02:53:21.7204801+00:00
+        XDateTimeOffset xdto2 = DateTimeOffset.UtcNow - TimeSpan.FromSeconds(5);
+        Console.WriteLine(xdto != xdto2); //True
+        Console.WriteLine(xdto > xdto2); //True
+        xdto = null;
+        DateTimeOffset dto = xdto;
+        Console.WriteLine(dto == default(DateTimeOffset)); //True
+    }
+    static void UseListType() {
+        Console.WriteLine("===UseListType()===");
+        var list = new Example.Project1.PositiveInt32List { 1, 2, 3 };
+        var list2 = new Example.Project1.PositiveInt32List { 1, 2, 3 };
+        Console.WriteLine(list == list2); //True
+        foreach (var item in list) {
+            Console.WriteLine(item);
+        }
+    }
+    static void UseAttributeSet() {
+        Console.WriteLine("===UseAttributeSet()===");
+        var type = new AttributeSet {
+            AT_Attribute1 = (XDateTimeOffset)DateTimeOffset.UtcNow,
+            AT_Attribute2 = 42,
+            AT_Attribute3 = null
+        };
+        Console.WriteLine(type.AT_Attribute1);
+        type.A_Attribute2 = null;
+        Console.WriteLine("hasAttribute2: {0}", type.A_Attribute2 != null);
+    }
+    static void UseSimpleChild() {
+        Console.WriteLine("===UseSimpleChild()===");
+        var type = new SimpleChildOnlyComplexType {
+            Children = (Example.Project1.PositiveInt32)42
+        };
+        Console.WriteLine(type.Children);
+        type.Children = null;
+    }
+    static void UseGlobalElement() {
+        Console.WriteLine("===UseGlobalElement()===");
+        var atge = new AbstractTypeGlobalElement {
+            Type = new ConcreteType {
+                AT_Attribute1 = (XDouble)(-42.42),
+                AT_Attribute2 = null,
+                AT_Attribute3 = "tank@example.com",
+                Children = new Example.Project1.PositiveInt32List { 2, 3, 5, 7, 11 }
+            }
+        };
+        var ctx = new DiagContext();
+        Validate(atge, ctx);
+        Save(atge, "GlobalElement.txt");
+        //
+        ctx.Reset();
+        AbstractTypeGlobalElement atgeLoad;
+        using (var reader = new StreamReader("GlobalElement.txt")) {
+            if (!AbstractTypeGlobalElement.TryLoadAndValidate("GlobalElement.txt", reader, ctx, out atgeLoad)) {
+                DumpAndAssert(ctx);
+            }
+        }
+        Dump(atgeLoad.Type);
+    }
+    static void Dump(AbstractType at) {
+        Console.WriteLine("Attribute1 = {0}", at.AT_Attribute1);
+        if (at.A_Attribute2 != null) {
+            Console.WriteLine("Attribute2 = {0}", at.AT_Attribute2);
+        }
+        Console.WriteLine("Attribute3 = {0}", at.AT_Attribute3);
+        Console.WriteLine("Children = {0}", at.Children);
+    }
+    [Conditional("DEBUG")]
+    static void Validate(XObject obj, DiagContext ctx) {
+        if (!obj.TryValidate(ctx)) {
+            //if validation fails, this means the program has bugs
+            DumpAndAssert(ctx);
+        }
+    }
+    static void DumpAndAssert(DiagContext ctx) {
+        foreach (var diag in ctx) {
+            Console.WriteLine(diag.ToString());
+        }
+        Debug.Assert(false);
+    }
+    static void Save(XGlobalElement element, string path) {
+        using (var writer = new StreamWriter(path)) {
+            element.Save(writer, "    ", "\r\n");
+        }
+    }
+    static void UseGlobalElementSubstitution() {
+        Console.WriteLine("===UseGlobalElementSubstitution()===");
+        var ge2 = new GlobalElement2 {
+            Type = 42
+        };
+        Save(ge2, "GlobalElementSubstitution.txt");
+        //
+        GlobalElement1 ge1Load;
+        var ctx = new DiagContext();
+        using (var reader = new StreamReader("GlobalElementSubstitution.txt")) {
+            if (!GlobalElement1.TryLoadAndValidate("GlobalElementSubstitution.txt", reader, ctx, out ge1Load)) {
+                DumpAndAssert(ctx);
+            }
+        }
+        Console.WriteLine(ge1Load.GetType()); //Example.Project1.GlobalElement2
+    }
+    static void UseElementSet() {
+        Console.WriteLine("===UseElementSet()===");
+        var ge2 = new GlobalElement2 { Type = 42 };
+        var esge = new ElementSetGlobalElement {
+            Type = new ElementSet {
+                CT_E1 = DateTimeOffset.Now.TimeOfDay,
+                CT_E3 = null,
+                C_GlobalElement1 = new ElementSet.CLS_Children.CLS_GlobalElement1 {
+                    GlobalElement = ge2
+                }
+            }
+        };
+        Save(esge, "ElementSet.txt");
+        ge2.Type = 40;
+        Save(esge, "ElementSet2.txt");
+        //
+        ElementSetGlobalElement esgeLoad;
+        var ctx = new DiagContext();
+        using (var reader = new StreamReader("ElementSet2.txt")) {
+            if (!ElementSetGlobalElement.TryLoadAndValidate("ElementSet2.txt", reader, ctx, out esgeLoad)) {
+                DumpAndAssert(ctx);
+            }
+        }
+        Dump(esgeLoad.Type);
+    }
+    static void Dump(ElementSet es) {
+        Console.WriteLine("E1 = {0}", es.CT_E1);
+        if (es.C_E2 != null) {
+            Console.WriteLine("E2 = {0}", es.CT_E2);
+        }
+        if (es.C_E3 != null) {
+            Console.WriteLine("E3 = {0}", es.CT_E3);
+        }
+        var ge1Ref = es.C_GlobalElement1;
+        Console.WriteLine("&GlobalElement1({0}) = {1}", ge1Ref.GlobalElement.GetType(), ge1Ref.GlobalElement.Type);
+    }
+    static void UseChildSequence() {
+        Console.WriteLine("===UseChildSequence()===");
+        var cs = new ChildSequence();
+        var e1List = cs.EnsureC_E1List();
+        for (var i = 0; i < 3; i++) {
+            e1List.CreateAndAddItem().Type = i;
+        }
+        var seqList = cs.EnsureC_SeqList();
+        for (var i = 0; i < 2; i++) {
+            var seq = seqList.CreateAndAddItem();
+            seq.CT_E2 = 42;
+            seq.CT_E3 = 43;
+        }
+        var choiceList = cs.EnsureC_ChoiceList();
+        for (var i = 0; i < 3; i++) {
+            var choice = choiceList.CreateAndAddItem();
+            if (i == 0) {
+                choice.CT_E4 = 44;
+            }
+            else if (i == 1) {
+                var seqlist = choice.EnsureC_SeqList();
+                for (var j = 0; j < 2; j++) {
+                    var seq = seqlist.CreateAndAddItem();
+                    seq.CT_E5 = 45;
+                    seq.CT_E6 = 46;
+                }
+            }
+            else {
+                choice.CT_E7 = 47;
+            }
+        }
+        cs.EnsureC_GlobalElement1List().CreateAndAddItem().GlobalElement = new GlobalElement2 { Type = 48 };
+        var csge = new ChildSequenceGlobalElement { Type = cs };
+        var ctx = new DiagContext();
+        Validate(csge, ctx);
+        Save(csge, "ChildSequence.txt");
+        //
+        ctx.Reset();
+        ChildSequenceGlobalElement csgeLoad;
+        using (var reader = new StreamReader("ChildSequence.txt")) {
+            if (!ChildSequenceGlobalElement.TryLoadAndValidate("ChildSequence.txt", reader, ctx, out csgeLoad)) {
+                DumpAndAssert(ctx);
+            }
+        }
+        Dump(csgeLoad.Type);
+    }
+    static void Dump(ChildSequence cs) {
+        var e1List = cs.C_E1List;
+        if (e1List != null) {
+            foreach (var e1 in e1List) {
+                Console.WriteLine("E1 = {0}", e1.Type);
+            }
+        }
+        var seqList = cs.C_SeqList;
+        if (seqList != null) {
+            foreach (var seq in seqList) {
+                Console.WriteLine("E2 = {0}", seq.CT_E2);
+                Console.WriteLine("E3 = {0}", seq.CT_E3);
+            }
+        }
+        var choiceList = cs.C_ChoiceList;
+        if (choiceList != null) {
+            foreach (var choice in choiceList) {
+                if (choice.C_E4 != null) {
+                    Console.WriteLine("E4 = {0}", choice.CT_E4);
+                }
+                else if (choice.C_SeqList != null) {
+                    foreach (var seq in choice.C_SeqList) {
+                        Console.WriteLine("E5 = {0}", seq.CT_E5);
+                        Console.WriteLine("E6 = {0}", seq.CT_E6);
+                    }
+                }
+                else {
+                    Console.WriteLine("E7 = {0}", choice.CT_E7);
+                }
+            }
+        }
+        foreach (var ge1Ref in cs.C_GlobalElement1List) {
+            Console.WriteLine("&GlobalElement1({0}) = {1}", ge1Ref.GlobalElement.GetType(), ge1Ref.GlobalElement.Type);
+        }
+    }
+    static void UseRootElement() {
+        Console.WriteLine("===UseRootElement()===");
+        var reType = new RootElementType {
+            AT_Attribute1 = (XDouble)(-42.42),
+            AT_Attribute2 = new Example.Project2.PositiveInt32List { 2, 3, 5, 7, 11 },
+            AT_Attribute3 = "tank@example.com",
+            CT_ChildElement2 = null
+        };
+        var childElement1List = reType.EnsureC_ChildElement1List();
+        for (var i = 0; i < 2; i++) {
+            childElement1List.CreateAndAddItem().Type = new ChildElement1Type {
+                AT_Attribute1 = DateTimeOffset.UtcNow - TimeSpan.FromMinutes(i * 456),
+                AT_Attribute2 = i % 2 == 0 ? (XGuid)Guid.NewGuid() : null,
+                Children = (Binary4to20)new byte[] { (byte)i, 1, 2, 3, }
+            };
+        }
+        reType.EnsureC_ChildElement3List().CreateAndAddItem().Type = new ChildElement3Type {
+            CT_ChildChildElement1 = Color.E_Red,
+            C_GlobalElement1 = new ChildElement3Type.CLS_Children.CLS_GlobalElement1 {
+                GlobalElement = new GlobalElement2 { Type = 42 }
+            }
+        };
+        var re = new RootElement { Type = reType };
+        var ctx = new DiagContext();
+        Validate(re, ctx);
+        Save(re, "RootElement.txt");
+        //
+        ctx.Reset();
+        RootElement reLoad;
+        using (var reader = new StreamReader("RootElement.txt")) {
+            if (!RootElement.TryLoadAndValidate("RootElement.txt", reader, ctx, out reLoad)) {
+                DumpAndAssert(ctx);
+            }
+        }
+    }
+
+}
+*/
