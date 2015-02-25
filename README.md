@@ -9,7 +9,8 @@ The XData data is a text-based tree-like structure. An example:
 ```
 //single line comment
 /*delimited comment*/
-a0:RootElement <a0 = "http://example.com/project2" a1 = "http://example.com/project1"> = (a0:RootElementType)
+a0:RootElement <a0 = "http://example.com/project2" a1 = "http://example.com/project1"> =
+    (a0:RootElementType)
     [
         Attribute1 = (sys:Double)-42.42
         Attribute2 = #[2 3 5 7 11]
@@ -204,9 +205,9 @@ hash-open-bracket-token simple-value* ']'
 
 #### Explanation
 
-A `parsing-unit` must contain one and only one `element`.
+A `parsing-unit` must contain one and only one root `element`.
 
-A `uri-aliasing` associates a URI with an alias:
+`uri-aliasing` associates a URI with an alias:
 
 ```
 <alias1 = "http://example.com/project1">
@@ -345,7 +346,7 @@ Please review the above to comprehend the data.
 
 ### Schema
 
-Schema is the specification or contract of your data. An example:
+Schema is the specification/contract of your data. An example:
 
 ```
 alias "http://example.com/project1" as p1
@@ -792,7 +793,7 @@ Below is the hierarchy of the predefined system types, "<...>" are abstract type
     |-DateTimeOffset //e.g: "2015-01-24T15:32:03.367+07:00" "2015-01-01T00:00:00+00:00"
 ```
 
-XData is totally object-oriented. For example, `AtomType` is a `SimpleType`, `Int32` is a `Decimal`, `SByte` is a `Decimal`, `SByte` is a `SimpleType`, etc.
+XData is totally object oriented. For example, `AtomType` is a `SimpleType`, `Int32` is a `Decimal`, `SByte` is a `Decimal`, `SByte` is a `SimpleType`, etc.
 
 Use `type-restriction` to derive a new atom type from an existing atom type:
 
@@ -1211,7 +1212,7 @@ namespace "http://example.com/project1"
 {
     type ElementSet
     {
-        E1 as Int32
+        E1 as TimeSpan
         E2<?> as Int32
         E3<? nullable> as Int32
         &GlobalElement1
@@ -1223,9 +1224,9 @@ namespace "http://example.com/project1"
 //data
 a0:ElementSetGlobalElement <a0 = "http://example.com/project1"> =
 {//element set is unordered
-    E3 //because E3 is nullable, it may have no value
-    E1 = 123 //local element always has null URI
     a0:GlobalElement2 = 40 //because a0:GlobalElement1 can be substituted by a0:GlobalElement2
+    E1 = "00:00:05" //local element always has null URI
+    E3 //because E3 is nullable, it may have no value
 }//because E2 is optional
 ```
 
@@ -1249,7 +1250,7 @@ Element set can be restricted. Nullable element can be changed to non-nullable, 
     }//other members are inherited
 /* The result of ElementSetRestricted's element set is:
     {
-        E1 as Int32
+        E1 as TimeSpan
         E3 as Int16
         &GlobalElement2<membername GlobalElement1>
         E4 as Int32        
@@ -1261,120 +1262,83 @@ Child sequence can contain structural children:
 
 ```
 //schema
-namespace "urn:project1"
+namespace "http://example.com/project1"
 {
-    element GE1 as Int32
-    element GE2<substitutes GE1> as Int32
-    element GE3<substitutes GE2> as Int32
-
-    type T1
-    #{//child-sequence
-        E1<*> as Int32
-        ?{//member-child-choice
+    type ChildSequence
+    #{
+        E1<0..10 membername E1List> as Int32
+        #{
             E2 as Int32
-            #{//member-child-sequence
-                E3 as Int32
-                E4 as Int32
-            }<2..>
-        }<*>
-        &GE1<+>
+            E3 as Int32
+        }<* membername SeqList>
+        ?{
+            E4 as Int32
+            #{
+                E5 as Int32
+                E6 as Int32
+            }<2.. membername SeqList>
+            E7 as Int32
+        }<* membername ChoiceList>
+        &GlobalElement1<+ membername GlobalElement1List>
     }
 
-    element Root as T1
+    element ChildSequenceGlobalElement as ChildSequence
 }
 
 //data
-a1:Root <a1 = "urn:project1"> =
+a0:ChildSequenceGlobalElement <a0 = "http://example.com/project1"> =
 {
     E1 = 42
     E1 = 42
-    E2 = 42
-    E2 = 42
-    E3 = 42
-    E4 = 42
-    E3 = 42
-    E4 = 42
-    E2 = 42
-    a1:GE2 = 42
-    a1:GE1 = 42
-    a1:GE3 = 42
+    E5 = 42
+    E6 = 42
+    E5 = 42
+    E6 = 42
+    E7 = 42
+    a0:GlobalElement2 = 42
+    a0:GlobalElement4 = 42
 }
 ```
 
 The schema is "structural", but the data is "flat". The data loader(validator) is a LL(1) parser, it parses element data list into schema structures. An element data is recognized by its full name.
 
-`child-sequence` can be extended:
+Child sequence can be extended:
 
 ```
-type T1
-#{
-    E1<*> as Int32
-}
-
-type T2 extends T1
-#{
-    //E1<*> is inherited
-    E2<+> as Int32
-}
-
-/* The result of T2's child-sequence is:
-#{
-    E1<*> as Int32
-    E2<+> as Int32
-}
-*/
-```
-
-`child-sequence` can be restricted:
-
-```
-type T1
-#{
-    E1 as Int32
-    E2<2..10> as Int32
+    type ChildSequenceExtended extends ChildSequence
     #{
-        E3 as Int32
-        E4<nullable> as Int32
-        #{
-            E5 as Int32
-            E6 as Int32
-        }<*>
-    }<*>
-    ?{
-        E7 as Int32
-        E8 as Int32
-        E9 as Int32
-    }
-}
-
-type T2 restricts T1
-#{
-    //E1 is inherited
-    E2<3..7> as Int16 //occurrence is restricted, type is restricted
-    #{
-        //E3 is inherited
-        E4 as Int32 //nullable to non-nullable
-        #{
-        }<x> //optional member can be deleted
-    }<+> //occurrence is restricted
-    ?{
-        //E7 and E8 are inherited
-        E9<x> as Int32 //a choice member can be deleted even if it is required
-    }
-}
-/* The result of T2's child-sequence is:
-#{
-    E1 as Int32
-    E2<3..7> as Int16
-    #{
-        E3 as Int32
-        E4 as Int32
-    }<+>
-    ?{
-        E7 as Int32
         E8 as Int32
     }
-}
+```
+
+Child sequence can be restricted:
+
+```
+    type ChildSequenceRestricted restricts ChildSequenceExtended
+    #{
+        E1<2..5 membername E1List> as Int16 //occurrence is restricted, type is restricted
+        #{
+        }<x membername SeqList> //optional member can be deleted
+        ?{
+            E4 as Int32
+            #{
+            }<3.. membername SeqList> //occurrence is restricted
+            E7<x> as Int32 //choice member can be deleted even if it is required
+        }<membername ChoiceList> //occurrence is restricted
+    }//other members are inherited
+/* The result of ChildSequenceRestricted's child sequence is:
+    #{
+        E1<2..5 membername E1List> as Int16
+        ?{
+            E4 as Int32
+            #{
+                E5 as Int32
+                E6 as Int32
+            }<3.. membername SeqList>
+        }<membername ChoiceList>
+        &GlobalElement1<+ membername GlobalElement1List>
+        E8 as Int32
+    }
 */
 ```
 
@@ -1430,7 +1394,7 @@ Below is the hierarchy of the DOM classes, "<...>" are abstract classes, otherwi
            |-<XChildList<T>>
 ```
 
-Below are some code excerpts:
+Below is the code excerpt:
 
 ```C#
 namespace XData {
@@ -1516,43 +1480,43 @@ namespace XData {
 }
 ```
 
-Below is the code testing the concrete atom type DOM classes:
+Atom type classes are just wrappers to the CLR primitive types. Below is the code using them:
 
 ```C#
-using System;
-using XData;
-
-class Program {
-    static void Main() {
+    static void UseAtomTypes() {
+        Console.WriteLine("===UseAtomTypes()===");
         XString xstr = "abc";
-        string str = xstr;
-        Console.WriteLine(str); //abc
+        XString xstr2 = "abc";
+        Console.WriteLine(xstr == xstr2); //True
         xstr = null;
-        str = xstr;
+        string str = xstr;
         Console.WriteLine(str.Length == 0); //True
         //
         XInt32 xint32 = 42;
-        int @int = xint32;
-        Console.WriteLine(@int); //42
+        XInt32 xint32_2 = 43;
+        Console.WriteLine(xint32 != xint32_2); //True
+        Console.WriteLine(xint32 < xint32_2); //True
         xint32 = null;
-        @int = xint32;
+        int @int = xint32;
         Console.WriteLine(@int == default(int)); //True
         //
-        XBinary xbin = new byte[] { 1, 2, 3 };
-        byte[] bytes = xbin;
-        Console.WriteLine("{0} {1} {2}", bytes[0], bytes[1], bytes[2]); //1 2 3
+        XBinary xbin = new byte[] { 1, 2, 3, 4 };
+        Console.WriteLine(xbin); //AQIDBA==
+        XBinary xbin2 = new byte[] { 1, 2, 3, 4 };
+        Console.WriteLine(xbin == xbin2); //True
         xbin = null;
-        bytes = xbin;
+        byte[] bytes = xbin;
         Console.WriteLine(bytes.Length == 0); //True
         //
         XDateTimeOffset xdto = DateTimeOffset.UtcNow;
-        DateTimeOffset dto = xdto;
-        Console.WriteLine(dto); //2015/2/22 13:02:32 +00:00
+        Console.WriteLine(xdto); //2015-02-24T02:53:21.7204801+00:00
+        XDateTimeOffset xdto2 = DateTimeOffset.UtcNow - TimeSpan.FromSeconds(5);
+        Console.WriteLine(xdto != xdto2); //True
+        Console.WriteLine(xdto > xdto2); //True
         xdto = null;
-        dto = xdto;
+        DateTimeOffset dto = xdto;
         Console.WriteLine(dto == default(DateTimeOffset)); //True
     }
-}
 ```
 
 Other DOM classes:
@@ -1561,9 +1525,8 @@ Other DOM classes:
 namespace XData {
     public abstract class XComplexType : XType {
         public XAttributeSet Attributes { get; set; }
-        public XObject Children { get; set; } //can be XSimpleType or XChildSet or XChildSequence   
+        public XObject Children { get; set; } //can be XSimpleType, XChildSet or XChildSequence   
         //...
-        linq...
     }
     public abstract class XAttribute : XObject {
         public string Name { get; }
@@ -1600,12 +1563,11 @@ namespace XData {
     public abstract class XChildCollection : XChildContainer, ICollection<XChild>, IReadOnlyCollection<XChild> {
         //...
     }
-    public abstract class XChildSet : XChildCollection { ... }
+    public abstract class XChildSet : XChildCollection { ... } //actually, it is XElementSet
     public abstract class XChildSequence : XChildCollection { ... }
     public abstract class XChildChoice : XChildContainer { ... }
     public abstract class XChildList : XChildContainer { ... }
     public abstract class XChildList<T> : XChildList, IList<T>, IReadOnlyList<T> where T : XChild { ... }
-   
 }
 ```
 
@@ -1613,19 +1575,15 @@ You cannot directly use the DOM library, because the classes are almost abstract
 
 ### Code Generation
 
-The schema compiler has two duties: first it check the schema is correct in grammar and in semantics; second it generates the concrete code(currently C# code) based on the abstract DOM library.
+The schema compiler has two duties: first it checks the schema is correct in grammar and in semantics; second it generates the concrete code(currently C# code) from the schema, which is based on the abstract DOM library.
 
-#### Get your hands dirty
+#### Get your hands dirty!
 
-1. [Visual Studio 2013](http://www.visualstudio.com/downloads/download-visual-studio-vs) is required;
-2. Download and install [the latest XData VSIX package](https://github.com/knat/XData/releases);
-3. Open VS 2013, create or open a C# project, add the XData DOM library(it's a portable class library) NuGet package to the project:
+1) [Visual Studio 2013](http://www.visualstudio.com/downloads/download-visual-studio-vs) is required.
 
-```
+2) Download and install the latest [XData VSIX package](https://github.com/knat/XData/releases).
 
-```
-
-4. Unload and open the .csproj file, insert the following code at the end of the file:
+3) Open VS 2013, create or open a C# project, unload and open the .csproj file, insert the following code at the end of the file:
 
 ```xml
 <!--Begin XData-->
@@ -1633,19 +1591,29 @@ The schema compiler has two duties: first it check the schema is correct in gram
 <!--End XData-->
 ```
 
-![](EditCSProj.png)
+![](Docs/EditCSProj.png)
 
-5. Reload the project, Add New Item -> Visual C# Items -> XData -> Create a new XData Schema file, ...:
-
-
-6. Create a new XData Indicator file, copy the following code into the file(the indicator file is used to indicate the code should generate in which C# namespace):
-
-
-7. When the project is about to build, the schema compiler will first check the schema's correctness, then generate and save C# code into `__XDataGenerated.cs`, open and view it:
-
-For atom type restriction, a new class derives from the base class. If an enum item has the name, a E_<Name> static field is generated.
+4) Reload the project, add the [XData DOM portable library NuGet package](https://www.nuget.org/packages/XDataDOM) to the project:
 
 ```
+PM> Install-Package XDataDOM -Pre
+```
+
+5) Open "Add New Item" dialog -> Visual C# Items -> XData -> Create a new XData Schema file, which contains all the demo schema in this article.
+
+6) Create a new XData Indicator file. The indicator file indicates the code should be generated in which C# namespaces:
+
+```
+namespace "http://example.com/project1" = Example.Project1 //C# namespace
+namespace "http://example.com/project2" = Example.Project2
+```
+
+7) After build the project, __XDataGenerated.cs will contain the generated code, open and view it.
+
+For atom types, a new class derives from the base class. If an enum item has the name, a E_<Name> static field is generated.
+
+```C#
+//Auto-generated, DO NOT EDIT.
 namespace Example.Project1
 {
     public partial class Binary1to20 : global::XData.XBinary
@@ -1653,49 +1621,49 @@ namespace Example.Project1
         public static implicit operator global::Example.Project1.Binary1to20(byte[] value);
         //...
     }
-    public partial class AccessFlags : global::XData.XInt32
+    public partial class Binary4to20 : global::Example.Project1.Binary1to20
     {
-        public static implicit operator global::Example.Project1.AccessFlags(int value);
-        public static readonly int E_None = 0;
-        public static readonly int E_Read = 1;
-        public static readonly int E_Write = 2;
-        public static readonly int E_Execute = 4;
-        public static readonly int E_All = 7;
+        public static implicit operator global::Example.Project1.Binary4to20(byte[] value);
         //...
     }
-}
+    public partial class Color : global::XData.XString
+    {
+        public static implicit operator global::Example.Project1.Color(string value);
+        public static readonly string E_Red = "Red";
+        public static readonly string E_Green = "Green";
+        public static readonly string E_Blue = "Blue";
+        //...
+    }
 ```
 
-For list type, a new class derives from XData.ListType<T>:
+For list types, a new class derives from XData.XListType<T> or the base class:
 
-```
+```C#
     public partial class Int32List : global::XData.XListType<global::XData.XInt32>
     {
         //...
     }
-```
-
-use it:
-
-```
-    static void UseListType() {
-        var list = new Int32List { 1, 2, 3 };
-        foreach (var item in list) {
-            Console.WriteLine(item);
-        }
-    }
-```
-
-For list type restriction, a new class derives from the base class.
-
-```
     public partial class PositiveInt32List : global::Example.Project1.Int32List, global::System.Collections.Generic.IList<global::Example.Project1.PositiveInt32>, global::System.Collections.Generic.IReadOnlyList<global::Example.Project1.PositiveInt32>
     {
         //...
     }
 ```
 
-For type directness, a new class derives from XData.ComplexType. For attribute set: 
+Use it:
+
+```C#
+    static void UseListType() {
+        Console.WriteLine("===UseListType()===");
+        var list = new Example.Project1.PositiveInt32List { 1, 2, 3 };
+        var list2 = new Example.Project1.PositiveInt32List { 1, 2, 3 };
+        Console.WriteLine(list == list2); //True
+        foreach (var item in list) {
+            Console.WriteLine(item);
+        }
+    }
+```
+
+For complex types, a new class derives from XData.XComplexType or the base class. For attributes, the following code is generated: 
 
 ```
     public partial class AttributeSet : global::XData.XComplexType
@@ -1710,10 +1678,11 @@ For type directness, a new class derives from XData.ComplexType. For attribute s
 
 "A" means "Attribute", "AT" means "Attribute's Type".
 
-use it:
+Use it:
 
 ```C#
     static void UseAttributeSet() {
+        Console.WriteLine("===UseAttributeSet()===");
         var type = new AttributeSet {
             AT_Attribute1 = (XDateTimeOffset)DateTimeOffset.UtcNow,
             AT_Attribute2 = 42,
@@ -1721,93 +1690,116 @@ use it:
         };
         Console.WriteLine(type.AT_Attribute1);
         type.A_Attribute2 = null;
-        Console.WriteLine("hasAttribute2: " + (type.A_Attribute2 != null));
+        Console.WriteLine("hasAttribute2: {0}", type.A_Attribute2 != null);
     }
 ```
 
-For simple child:
+For simple child, the following code is generated: 
 
-```
+```C#
     public partial class SimpleChildOnlyComplexType : global::XData.XComplexType
     {
         new public global::XData.XInt32 Children { get; set; }
         //...
     }
-
 ```
 
 Use it:
 
-```
+```C#
     static void UseSimpleChild() {
+        Console.WriteLine("===UseSimpleChild()===");
         var type = new SimpleChildOnlyComplexType {
-            Children = (PositiveInt32)42
+            Children = (Example.Project1.PositiveInt32)42
         };
         Console.WriteLine(type.Children);
         type.Children = null;
     }
 ```
 
-If a type or global element is `abstract`, the generated class is abstract too.
-
-For global element:
+If a type or global element is abstract, the generated class is abstract too:
 
 ```
+    public abstract partial class AbstractType : global::XData.XComplexType
+    {
+        //...
+    }
+    public partial class ConcreteType : global::Example.Project1.AbstractType
+    {
+        //...
+    }
+```
+
+For global element, a new class derives from XData.XGlobalElement or the base class:
+
+```C#
     public partial class AbstractTypeGlobalElement : global::XData.XGlobalElement
     {
         new public global::Example.Project1.AbstractType Type { get; set; }
         public static bool TryLoadAndValidate(string filePath, global::System.IO.TextReader reader, global::XData.DiagContext context, out global::Example.Project1.AbstractTypeGlobalElement result);
         //...
     }
-
 ```
 
 Use it:
 
 ```C#
     static void UseGlobalElement() {
+        Console.WriteLine("===UseGlobalElement()===");
         var atge = new AbstractTypeGlobalElement {
             Type = new ConcreteType {
-                AT_Attribute1 = (XDateTimeOffset)DateTimeOffset.UtcNow,
-                AT_Attribute2 = 42,
-                Children = "tank@example.com"
+                AT_Attribute1 = (XDouble)(-42.42),
+                AT_Attribute2 = null,
+                AT_Attribute3 = "tank@example.com",
+                Children = new Example.Project1.PositiveInt32List { 2, 3, 5, 7, 11 }
             }
         };
         var ctx = new DiagContext();
-#if DEBUG
-        if (!atge.TryValidate(ctx)) {//if validate failed, this means the program has bugs
-            Dump(ctx);
-            Debug.Assert(false);
-        }
-#endif
-        Save(atge, "test.txt");
+        Validate(atge, ctx);
+        Save(atge, "GlobalElement.txt");
+        //
         ctx.Reset();
-        AbstractTypeGlobalElement atge2;
-        using (var reader = new StreamReader("test.txt")) {
-            if (!AbstractTypeGlobalElement.TryLoadAndValidate("test.txt", reader, ctx, out atge2)) {
-                Dump(ctx);
-                Debug.Assert(false);
+        AbstractTypeGlobalElement atgeLoad;
+        using (var reader = new StreamReader("GlobalElement.txt")) {
+            if (!AbstractTypeGlobalElement.TryLoadAndValidate("GlobalElement.txt", reader, ctx, out atgeLoad)) {
+                DumpAndAssert(ctx);
             }
         }
-        Save(atge2, "test2.txt");
+        Dump(atgeLoad.Type);
     }
-    static void Dump(DiagContext ctx) {
+    static void Dump(AbstractType at) {
+        Console.WriteLine("Attribute1 = {0}", at.AT_Attribute1);
+        if (at.A_Attribute2 != null) {
+            Console.WriteLine("Attribute2 = {0}", at.AT_Attribute2);
+        }
+        Console.WriteLine("Attribute3 = {0}", at.AT_Attribute3);
+        Console.WriteLine("Children = {0}", at.Children);
+    }
+    [Conditional("DEBUG")]
+    static void Validate(XObject obj, DiagContext ctx) {
+        if (!obj.TryValidate(ctx)) {
+            //if validation fails, this means the program has bugs
+            DumpAndAssert(ctx);
+        }
+    }
+    static void DumpAndAssert(DiagContext ctx) {
         foreach (var diag in ctx) {
             Console.WriteLine(diag.ToString());
         }
+        Debug.Assert(false);
     }
     static void Save(XGlobalElement element, string path) {
         using (var writer = new StreamWriter(path)) {
-            element.Save(writer, "\t", "\r\n");
+            element.Save(writer, "    ", "\r\n");
         }
     }
 ```
 
-Put a breakpoint at line "using (var reader = ", open test.txt, change "tank@example.com" to "tankexample.com" and save, `TryLoadAndValidate` will fail:
+Put a breakpoint at line `ctx.Reset();`, when the program hits the breakpoint, open GlobalElement.txt, change "tank@example.com" to "tankexample.com" and save(you can invalid any thing you want), `TryLoadAndValidate` will fail:
 
 ```
 Error -979: Literal 'tankexample.com' not match with pattern '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}'.
-    test.txt: (6,4)-(6,21)
+    GlobalElement.txt: (5,22)-(5,39)
 ```
 
 Even if an global element is abstract, `TryLoadAndValidate` static method is still generated, the substituting global element is derived from the substituted element:
@@ -1830,32 +1822,34 @@ Even if an global element is abstract, `TryLoadAndValidate` static method is sti
 Use it:
 
 ```C#
-    static void GlobalElementSubstitution() {
+    static void UseGlobalElementSubstitution() {
+        Console.WriteLine("===UseGlobalElementSubstitution()===");
         var ge2 = new GlobalElement2 {
             Type = 42
         };
-        Save(ge2, "test3.txt");
-        GlobalElement1 ge1;
+        Save(ge2, "GlobalElementSubstitution.txt");
+        //
+        GlobalElement1 ge1Load;
         var ctx = new DiagContext();
-        using (var reader = new StreamReader("test3.txt")) {
-            if (!GlobalElement1.TryLoadAndValidate("test3.txt", reader, ctx, out ge1)) {
-                Dump(ctx);
-                Debug.Assert(false);
+        using (var reader = new StreamReader("GlobalElementSubstitution.txt")) {
+            if (!GlobalElement1.TryLoadAndValidate("GlobalElementSubstitution.txt", reader, ctx, out ge1Load)) {
+                DumpAndAssert(ctx);
             }
         }
-        Console.WriteLine(ge1.GetType());//Example.Project1.GlobalElement2
+        Console.WriteLine(ge1Load.GetType()); //Example.Project1.GlobalElement2
     }
 ```
 
-For local element and global element ref, ...:
+For element set, the following code is generated:
 
 ```C#
     public partial class ElementSet : global::XData.XComplexType
     {
         public global::Example.Project1.ElementSet.CLS_Children.CLS_E1 C_E1 { get; set; }
-        public global::XData.XInt32 CT_E1 { get; set; }
+        public global::XData.XTimeSpan CT_E1 { get; set; }
+        public global::Example.Project1.ElementSet.CLS_Children.CLS_E2 C_E2 { get; set; }
+        public global::XData.XInt32 CT_E2 { get; set; }
         public global::Example.Project1.ElementSet.CLS_Children.CLS_GlobalElement1 C_GlobalElement1 { get; set; }
-        public global::Example.Project1.ElementSet.CLS_Children.CLS_GlobalElement1 EnsureC_GlobalElement1(bool @try = false);
         //...
             public partial class CLS_GlobalElement1 : global::XData.XGlobalElementRef
             {
@@ -1871,52 +1865,164 @@ For local element and global element ref, ...:
 Use it:
 
 ```C#
-    static void ElementSet() {
-        var es = new ElementSet {
-            CT_E1 = 123,
-            CT_E3 = null
-        };
-        var geRef = es.EnsureC_GlobalElement1();
+    static void UseElementSet() {
+        Console.WriteLine("===UseElementSet()===");
         var ge2 = new GlobalElement2 { Type = 42 };
-        geRef.GlobalElement = ge2;
-        var esge = new ElementSetGlobalElement { Type = es };
+        var esge = new ElementSetGlobalElement {
+            Type = new ElementSet {
+                CT_E1 = DateTimeOffset.Now.TimeOfDay,
+                CT_E3 = null,
+                C_GlobalElement1 = new ElementSet.CLS_Children.CLS_GlobalElement1 {
+                    GlobalElement = ge2
+                }
+            }
+        };
         Save(esge, "ElementSet.txt");
         ge2.Type = 40;
         Save(esge, "ElementSet2.txt");
+        //
+        ElementSetGlobalElement esgeLoad;
+        var ctx = new DiagContext();
+        using (var reader = new StreamReader("ElementSet2.txt")) {
+            if (!ElementSetGlobalElement.TryLoadAndValidate("ElementSet2.txt", reader, ctx, out esgeLoad)) {
+                DumpAndAssert(ctx);
+            }
+        }
+        Dump(esgeLoad.Type);
+    }
+    static void Dump(ElementSet es) {
+        Console.WriteLine("E1 = {0}", es.CT_E1);
+        if (es.C_E2 != null) {
+            Console.WriteLine("E2 = {0}", es.CT_E2);
+        }
+        if (es.C_E3 != null) {
+            Console.WriteLine("E3 = {0}", es.CT_E3);
+        }
+        var ge1Ref = es.C_GlobalElement1;
+        Console.WriteLine("&GlobalElement1({0}) = {1}", ge1Ref.GlobalElement.GetType(), ge1Ref.GlobalElement.Type);
     }
 ```
 
-This means the global element ref is just a pointer to the global element.
+Global element ref is just a pointer to the global element.
 
-child sequence,...:
+For child sequence, if the member's max occurrence is greater than one, a child list is generated for it: 
 
 ```C#
     public partial class ChildSequence : global::XData.XComplexType
     {
-        public global::Example.Project1.ChildSequence.CLS_Children.CLS_E1 C_E1 { get; set; }
-        public global::Example.Project1.ChildSequence.CLS_Children.CLS_E1 EnsureC_E1(bool @try = false);        
+        public global::Example.Project1.ChildSequence.CLS_Children.CLS_E1List C_E1List { get; set; }
+        public global::Example.Project1.ChildSequence.CLS_Children.CLS_E1List EnsureC_E1List(bool @try = false);
         //...
-            public partial class CLS_E1 : global::XData.XChildList<global::Example.Project1.ChildSequence.CLS_Children.CLSITEM_E1>
+            public partial class CLS_E1List : global::XData.XChildList<global::Example.Project1.ChildSequence.CLS_Children.CLSITEM_E1List>
             {
-                public global::Example.Project1.ChildSequence.CLS_Children.CLSITEM_E1 CreateItem();
-                public global::Example.Project1.ChildSequence.CLS_Children.CLSITEM_E1 CreateAndAddItem();
+                public global::Example.Project1.ChildSequence.CLS_Children.CLSITEM_E1List CreateItem();
+                public global::Example.Project1.ChildSequence.CLS_Children.CLSITEM_E1List CreateAndAddItem();
                 //...
             }
         //...
-        public global::Example.Project1.ChildSequence.CLS_Children.CLS_Seq C_Seq { get; set; }
-        public global::Example.Project1.ChildSequence.CLS_Children.CLS_Seq EnsureC_Seq(bool @try = false);
-        
-        
-                
+    //...
+    }
 ```
 
+Use it:
 
-8. We can use the generated code:
+```C#
+    static void UseChildSequence() {
+        Console.WriteLine("===UseChildSequence()===");
+        var cs = new ChildSequence();
+        var e1List = cs.EnsureC_E1List();
+        for (var i = 0; i < 3; i++) {
+            e1List.CreateAndAddItem().Type = i;
+        }
+        var seqList = cs.EnsureC_SeqList();
+        for (var i = 0; i < 2; i++) {
+            var seq = seqList.CreateAndAddItem();
+            seq.CT_E2 = 42;
+            seq.CT_E3 = 43;
+        }
+        var choiceList = cs.EnsureC_ChoiceList();
+        for (var i = 0; i < 3; i++) {
+            var choice = choiceList.CreateAndAddItem();
+            if (i == 0) {
+                choice.CT_E4 = 44;
+            }
+            else if (i == 1) {
+                var seqlist = choice.EnsureC_SeqList();
+                for (var j = 0; j < 2; j++) {
+                    var seq = seqlist.CreateAndAddItem();
+                    seq.CT_E5 = 45;
+                    seq.CT_E6 = 46;
+                }
+            }
+            else {
+                choice.CT_E7 = 47;
+            }
+        }
+        cs.EnsureC_GlobalElement1List().CreateAndAddItem().GlobalElement = new GlobalElement2 { Type = 48 };
+        var csge = new ChildSequenceGlobalElement { Type = cs };
+        var ctx = new DiagContext();
+        Validate(csge, ctx);
+        Save(csge, "ChildSequence.txt");
+        //
+        ctx.Reset();
+        ChildSequenceGlobalElement csgeLoad;
+        using (var reader = new StreamReader("ChildSequence.txt")) {
+            if (!ChildSequenceGlobalElement.TryLoadAndValidate("ChildSequence.txt", reader, ctx, out csgeLoad)) {
+                DumpAndAssert(ctx);
+            }
+        }
+        Dump(csgeLoad.Type);
+    }
+```
 
+Because every generated class is partial, you can add your code to the generated classes:
 
+```C#
+//your.cs
+namespace Example.Project1 {
+    partial class AbstractType {
+        protected abstract void MyMethod();
+    }
+    partial class ConcreteType {
+        public ConcreteType() { }//Public parameterless constructor required for concrete classes
+        public ConcreteType(int para1, string para2) { }
+        protected override void MyMethod() {
+            //...
+        }
+    }
+    partial class ConcreteType2 {
+        protected override void MyMethod() {
+            //...
+        }
+    }
+    partial class GlobalElement1 {
+        //...
+    }
+}
+```
 
+Suppose there are two C# class library projects: Project1 and Project2. Project1 contains schema project1.xds, which contains namespace "http://example.com/project1", and the code is generated in C# namespace "Example.Project1". Project2 contains schema project2.xds, which contains namespace "http://example.com/project2", which references "http://example.com/project1", so you add project1.xds(may be a link) to Project2. If you want to reuse Project1's generated code, you can use `&` in Project2's XData Indicator file:
 
+```
+namespace "http://example.com/project1" & Example.Project1 //ref instead of generation
+namespace "http://example.com/project2" = Example.Project2
+```
 
+Please view the generated and the demo code to learn more.
 
+### Thoughts
 
+JSON is dynamically typed, so there is "my object <= serializer => JSON". Dynamical things may be simple at first, but soon get into a mess(it's just my feelings:).
+
+XData is statically typed, so there is schema. Schema is the specification/contract of your data. You should publish the schema within your SDK, so your clients can generate their code(C#, Java, C++, etc) from your schema.
+
+XData is totally object oriented.
+
+XData is the evolution of XML/XML Schema.
+
+Thank you for your tolerance of my poor English.
+
+### Questions or suggestions are welcomed
+
+### Contributions are warmly welcomed
 
