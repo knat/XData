@@ -353,12 +353,17 @@ alias "http://example.com/project2" as p2
 
 namespace p1
 {
-    type PositiveInt32 restricts sys:Int32
+    type NonNegativeInt32 restricts sys:Int32
     ${
-        valuerange [1..
+        valuerange [0..
+    }
+    
+    type PositiveInt32 restricts NonNegativeInt32
+    ${
+        valuerange (0..
     }
 
-    type Year2015 restricts DateTimeOffset
+    type Year2015 restricts sys:DateTimeOffset
     ${
         valuerange ["2015-01-01T00:00:00+00:00" .. "2016-01-01T00:00:00+00:00")
     }
@@ -415,7 +420,7 @@ namespace p2
 
     type AbstractRootElementType<abstract>
     [
-        Attribute1<nullable> as AtomType
+        Attribute1<nullable> as sys:AtomType
         Attribute2<?> as PositiveInt32List
     ]
     #{
