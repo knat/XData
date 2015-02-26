@@ -1,6 +1,8 @@
-﻿## XData: A Better XML For Programming
+﻿## XData: Schematized Data Exchange Solution
 
-XData is a universal solution for data exchange. It contains four parts: data, schema, data object model, and code generation.
+The world needs to exchange data. Data needs to have a specification. Schema is the specification of the data. We the programmers need to program everything. XData is a programming-friendly solution for schematized data. This is the reason XData come to birth.
+
+XData contains four parts: data, schema, data object model, and code generation.
 
 ### Data
 

@@ -3,7 +3,7 @@
     <Metadata>
         <Identity Id="XData.2d4aaa2e-c72a-4273-aceb-ec64fb5acc2d" Version="0.6.0" Language="en-US" Publisher="谭克(Tank)" />
         <DisplayName>XData</DisplayName>
-        <Description xml:space="preserve">XData is a universal solution for data exchange.</Description>
+        <Description xml:space="preserve">Schematized data exchange solution</Description>
         <MoreInfo>https://github.com/knat/XData</MoreInfo>
         <License>License.txt</License>
     </Metadata>
