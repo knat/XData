@@ -2004,7 +2004,7 @@ namespace Example.Project1 {
 }
 ```
 
-Suppose there are two C# class library projects: Project1 and Project2. Project1 is a class library, it contains schema project1.xds, which defines namespace "http://example.com/project1", and the code is generated in C# namespace "Example.Project1". Project2 contains schema project2.xds, it defines namespace "http://example.com/project2" which references "http://example.com/project1", so you should add project1.xds to Project2. If you want to reuse Project1's generated code, Project2's XData Indicator file can be written as:
+Suppose there are two C# projects: Project1 and Project2. Project1 is a class library, it contains schema project1.xds, which defines namespace "http://example.com/project1", and the code is generated in C# namespace "Example.Project1". Project2 contains schema project2.xds, it defines namespace "http://example.com/project2" which references "http://example.com/project1", so you should add project1.xds to Project2. If you want to reuse Project1's generated code, Project2's XData Indicator file can be written as:
 
 ```
 namespace "http://example.com/project1" & Example.Project1 //ref instead of generation
