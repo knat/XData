@@ -1,6 +1,6 @@
 ﻿## XData: Schematized Data Exchange Solution
 
-The world needs to exchange data. Data needs to have a specification. Schema is the specification of the data. We the programmers need to program everything. XData is a programming-friendly solution for schematized data. This is the reason XData come to birth.
+The world needs to exchange data. Data needs to have a specification. Schema is the specification of the data. We the programmers need to program everything. XData is a programming-friendly solution for schematized data. This is the reason XData comes to birth.
 
 XData contains four parts: data, schema, data object model, and code generation.
 
