@@ -1,1 +1,1 @@
-﻿//Build the project to view the generated code.
+﻿//(re)build the project to view the generated code.

@@ -4,7 +4,7 @@ namespace "http://example.com/project1" = Example.Project1
 namespace "http://example.com/project2" = Example.Project2
 
 //Assume you've created an XData Schema file and an XData Indicator file(this file) without any modification.
-//After build the project, __XDataGenerated.cs will contain the generated code.
+//After (re)build the project, __XDataGenerated.cs will contain the generated code.
 //Below is the code demonstrating how to use the generated code.
 //Copy it to a C# file and run.
 

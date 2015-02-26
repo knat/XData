@@ -1577,7 +1577,7 @@ namespace XData {
 }
 ```
 
-You cannot directly use the DOM library, because the classes are almost abstract.
+You cannot directly use the DOM library, because most classes are abstract.
 
 ### Code Generation
 
@@ -1589,7 +1589,7 @@ The schema compiler has two duties: first it checks the schema is correct in gra
 
 2) Download and install the latest [XData VSIX package](https://github.com/knat/XData/releases).
 
-3) Open VS 2013, create or open a C# project, unload and open the .csproj file, insert the following code at the end of the file:
+3) Open VS 2013, create or open a C# project, unload and edit the .csproj file, insert the following code at the end of the file:
 
 ```xml
 <!--Begin XData-->
@@ -1605,7 +1605,7 @@ The schema compiler has two duties: first it checks the schema is correct in gra
 PM> Install-Package XDataDOM -Pre
 ```
 
-5) Open "Add New Item" dialog -> Visual C# Items -> XData -> Create a new XData Schema file, which contains all the demo schema in this article.
+5) Open "Add New Item" dialog box -> Visual C# Items -> XData -> Create a new XData Schema file, which contains all the demo schema in this article.
 
 6) Create a new XData Indicator file. The indicator file indicates the code should be generated in which C# namespaces:
 
@@ -1614,7 +1614,7 @@ namespace "http://example.com/project1" = Example.Project1 //C# namespace
 namespace "http://example.com/project2" = Example.Project2
 ```
 
-7) After build the project, __XDataGenerated.cs will contain the generated code, open and view it.
+7) After (re)build the project, __XDataGenerated.cs will contain the generated code, open and view it.
 
 For atom types, a new class derives from the base class. If an enum item has the name, a E_ItemName static field is generated.
 
