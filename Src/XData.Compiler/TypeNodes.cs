@@ -155,7 +155,7 @@ namespace XData.Compiler {
                         DiagContextEx.ErrorDiagAndThrow(new DiagMsgEx(DiagCodeEx.CannotExtendSimpleChildWithComplexChildren),
                             AttributesChildren.ComplexChildren.OpenBraceTextSpan);
                     }
-                    complexTypeSymbol.Children = AttributesChildren.ComplexChildren.CreateSymbol(complexTypeSymbol, 
+                    complexTypeSymbol.Children = AttributesChildren.ComplexChildren.CreateSymbol(complexTypeSymbol,
                         baseComplexTypeSymbol.ComplexChildren, true);
                 }
                 else if (AttributesChildren.SimpleChild != null) {
@@ -220,8 +220,9 @@ namespace XData.Compiler {
                     return listTypeSymbol;
                 }
                 else {
+                    var baseAtomTypeSymbol = (AtomTypeSymbol)baseSimpleTypeSymbol;
                     var atomTypeSymbol = new AtomTypeSymbol(parent, csName, isAbstract, isSealed, fullName, typeKind, baseSimpleTypeSymbol,
-                       ((AtomTypeSymbol)baseSimpleTypeSymbol).ValueCSFullName);
+                       baseAtomTypeSymbol.ValueCSFullName, baseAtomTypeSymbol.CanBeConst);
                     atomTypeSymbol.Facets = Facets == null ? baseSimpleTypeSymbol.Facets :
                         Facets.CreateSymbol(atomTypeSymbol, typeKind, baseSimpleTypeSymbol.Facets);
                     return atomTypeSymbol;
@@ -243,7 +244,7 @@ namespace XData.Compiler {
                 };
                 if (AttributesChildren != null) {
                     if (AttributesChildren.Attributes != null) {
-                        complexTypeSymbol.Attributes = AttributesChildren.Attributes.CreateSymbol(complexTypeSymbol, 
+                        complexTypeSymbol.Attributes = AttributesChildren.Attributes.CreateSymbol(complexTypeSymbol,
                             baseComplexTypeSymbol.Attributes, false);
                     }
                     if (AttributesChildren.ComplexChildren != null) {

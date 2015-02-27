@@ -36,7 +36,8 @@ namespace XData {
         protected XListType() {
             _itemList = new List<T>();
         }
-        protected XListType(IEnumerable<T> items) : this() {
+        protected XListType(IEnumerable<T> items)
+            : this() {
             AddRange(items);
         }
         private List<T> _itemList;
@@ -122,12 +123,17 @@ namespace XData {
         public void Add(T item) {
             _itemList.Add(SetParentTo(item, false));
         }
-        public void AddRange(IEnumerable<T> items) {
+        public XListType<T> AddEx(T item) {
+            Add(item);
+            return this;
+        }
+        public XListType<T> AddRange(IEnumerable<T> items) {
             if (items != null) {
                 foreach (var item in items) {
                     Add(item);
                 }
             }
+            return this;
         }
         public void Insert(int index, T item) {
             _itemList.Insert(index, SetParentTo(item, false));

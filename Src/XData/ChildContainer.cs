@@ -874,6 +874,22 @@ namespace XData {
             Add(item);
             return item;
         }
+        protected void Add<U>(Action<U> itemSetter) where U : T {
+            if (itemSetter == null) throw new ArgumentNullException("itemSetter");
+            var item = CreateItem<U>();
+            itemSetter(item);
+            Add(item);
+        }
+        protected void AddRange<U, TItemValue>(IEnumerable<TItemValue> itemValues, Action<U, TItemValue> itemSetter) where U : T {
+            if (itemValues != null) {
+                if (itemSetter == null) throw new ArgumentNullException("itemSetter");
+                foreach (var itemValue in itemValues) {
+                    var item = CreateItem<U>();
+                    itemSetter(item, itemValue);
+                    Add(item);
+                }
+            }
+        }
         internal override sealed IEnumerable<XChild> InternalChildren {
             get {
                 return _list;

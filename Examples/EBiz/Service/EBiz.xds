@@ -1,0 +1,243 @@
+﻿//EBiz.xds
+
+namespace "http://example.com/common"
+{
+    type String10 restricts String
+    ${
+        lengthrange 1..10
+    }
+    
+    type String20 restricts String
+    ${
+        lengthrange 1..20
+    }
+
+    type String40 restricts String
+    ${
+        lengthrange 1..40
+    }
+
+    type NonNegativeInt32 restricts sys:Int32
+    ${
+        valuerange [0..
+    }
+    
+    type PositiveInt32 restricts NonNegativeInt32
+    ${
+        valuerange (0..
+    }
+
+    type PositiveInt32List lists PositiveInt32
+
+    type Phone
+    [
+        Kind as PhoneKind
+    ]
+        $ String20
+
+    type PhoneKind restricts String
+    ${
+        enum
+            "Unknown" as Unknown
+            "Work" as Work
+            "Home" as Home
+    }
+
+    type NormalAddress
+    [
+        Country as String20
+        State<?> as String20
+        City as String20
+        Address as String40
+        ZipCode as String10
+    ]
+
+    type SpatialAddress
+    [
+        Longitude as SpatialNumber
+        Latitude as SpatialNumber
+    ]
+
+    type SpatialNumber restricts Decimal
+    ${
+        precision 8
+        scale 5
+    }
+
+    type Email restricts String
+    ${
+        lengthrange ..40
+        pattern @"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}"
+    }
+
+    type Money
+    [
+        Kind as MoneyKind
+    ]
+        $ MoneyValue
+
+    type MoneyKind restricts String
+    ${
+        enum
+            "USD" as USD
+            "EUR" as EUR
+            "CNY" as CNY
+    }
+
+    type MoneyValue restricts Decimal
+    ${
+        precision 10
+        scale 2
+        valuerange [0..
+    }
+
+    type Image
+    [
+        Mime as String20
+    ]
+        $ ImageValue
+
+    type ImageValue restricts Binary
+    ${
+        lengthrange ..100000
+    }
+
+    type Reputation restricts String
+    ${
+        enum
+            "None" as None
+            "Bronze" as Bronze
+            "Silver" as Silver
+            "Gold" as Gold
+            "Diamond" as Diamond
+            "Bad" as Bad
+    }
+
+    type Gender restricts String
+    ${
+        enum
+            "Man" as Man
+            "Woman" as Woman
+            "Junior" as Junior
+    }
+
+    type ShoeSize
+    [
+        Unit as ShoeUnit
+    ]
+        $ ShoeSizeValue
+
+    type ShoeUnit restricts String
+    ${
+        enum
+            "CM" as CM
+            "EU" as EU
+            "UK" as UK
+            "US" as US
+    }
+
+    type ShoeSizeValue restricts Decimal
+    ${
+        precision 3
+        scale 1
+    }
+
+}
+
+namespace "http://example.com/ebiz"
+{
+    import "http://example.com/common" as com
+
+    type Contact<abstract>
+    [
+        Id as PositiveInt32
+        Name as String10
+        Email as Email
+        RegDate as DateTimeOffset
+    ]
+    #{
+        Phone<1..5 membername PhoneList> as Phone
+        ?{
+            NormalAddress as NormalAddress
+            SpatialAddress as SpatialAddress
+        }<membername Address>
+    }
+
+    type Customer extends Contact
+    [
+        Reputation as Reputation
+    ]
+    #{
+        Order<* membername OrderList> as Order 
+    }
+
+    type Supplier extends Contact
+    [
+        BankAccount as String40
+        ProductIdList<?> as PositiveInt32List
+    ]
+
+    type Order
+    [
+        Id as PositiveInt32
+        OrderDate as DateTimeOffset
+        Urgent<?> as Boolean
+    ]
+    #{
+        TotalPrice as Money
+        OrderDetail<+ membername OrderDetailList> as OrderDetail
+    }
+
+    type OrderDetail
+    [
+        ProductId as PositiveInt32
+        Quantity as PositiveInt32
+    ]
+    #{
+        UnitPrice as Money
+    }
+
+    type Product<abstract>
+    [
+        Id as PositiveInt32
+        Name as String20
+        StockQuantity as NonNegativeInt32
+    ]
+    #{
+        Price as Money
+        Image<?> as Image
+    }
+
+    type SportEquipment extends Product
+    [
+        Applicability<?> as String20
+    ]
+
+    type Shoe extends Product
+    [
+        Gender as Gender
+    ]
+    #{
+        Size as ShoeSize
+    }
+
+}
+
+namespace "http://example.com/webapi"
+{
+    import "http://example.com/ebiz" as ebiz
+
+    type ContactListType
+    #{
+        Contact<+ membername ContactList> as Contact
+    }
+
+    element ContactList<nullable> as ContactListType
+
+    type ProductListType
+    #{
+        Product<+ membername ProductList> as Product
+    }
+
+    element ProductList<nullable> as ProductListType
+}

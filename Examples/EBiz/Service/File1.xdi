@@ -1,0 +1,6 @@
+﻿
+namespace "http://example.com/common" = Service.Common
+namespace "http://example.com/ebiz" = Service.EBiz
+namespace "http://example.com/webapi" = Service.WebApi
+
+

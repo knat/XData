@@ -1583,7 +1583,7 @@ You cannot directly use the DOM library, because most classes are abstract.
 
 ### Code Generation
 
-The schema compiler has two duties: first it checks the schema is correct in grammar and in semantics; second it generates the concrete code(currently C# code) from the schema, which is based on the abstract DOM library.
+The schema compiler has two duties: first it checks the schema is correct in syntax and in semantics; second it generates the concrete code(currently C# code) from the schema, which is based on the abstract DOM library.
 
 #### Get your hands dirty!
 

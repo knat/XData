@@ -74,7 +74,6 @@ namespace XData.Compiler {
                     GlobalObjectList.Select(i => i.ThisInfoExpr)));
             }
         }
-
         //
         public static readonly NamespaceSymbol System;
         public static readonly SimpleTypeSymbol SystemSimpleType;
@@ -86,25 +85,25 @@ namespace XData.Compiler {
             SystemSimpleType = new SimpleTypeSymbol(System, TypeKind.SimpleType.ToClassName(), true, false, null, null,
                 TypeKind.SimpleType.ToFullName(), TypeKind.SimpleType, null);
             SystemAtomType = new AtomTypeSymbol(System, TypeKind.AtomType.ToClassName(), true, false, TypeKind.AtomType.ToFullName(),
-                TypeKind.AtomType, SystemSimpleType, null);
-            CreateAndAdd(SystemAtomType, TypeKind.String, CS.StringType);
-            CreateAndAdd(SystemAtomType, TypeKind.IgnoreCaseString, CS.StringType);
-            var Decimal = CreateAndAdd(SystemAtomType, TypeKind.Decimal, CS.DecimalType);
-            var Int64 = CreateAndAdd(Decimal, TypeKind.Int64, CS.LongType);
-            var Int32 = CreateAndAdd(Int64, TypeKind.Int32, CS.IntType);
-            var Int16 = CreateAndAdd(Int32, TypeKind.Int16, CS.ShortType);
-            CreateAndAdd(Int16, TypeKind.SByte, CS.SByteType);
-            var UInt64 = CreateAndAdd(Decimal, TypeKind.UInt64, CS.ULongType);
-            var UInt32 = CreateAndAdd(UInt64, TypeKind.UInt32, CS.UIntType);
-            var UInt16 = CreateAndAdd(UInt32, TypeKind.UInt16, CS.UShortType);
-            CreateAndAdd(UInt16, TypeKind.Byte, CS.ByteType);
-            var Double = CreateAndAdd(SystemAtomType, TypeKind.Double, CS.DoubleType);
-            CreateAndAdd(Double, TypeKind.Single, CS.FloatType);
-            CreateAndAdd(SystemAtomType, TypeKind.Boolean, CS.BoolType);
-            CreateAndAdd(SystemAtomType, TypeKind.Binary, CS.ByteArrayType);
-            CreateAndAdd(SystemAtomType, TypeKind.Guid, CS.GuidName);
-            CreateAndAdd(SystemAtomType, TypeKind.TimeSpan, CS.TimeSpanName);
-            CreateAndAdd(SystemAtomType, TypeKind.DateTimeOffset, CS.DateTimeOffsetName);
+                TypeKind.AtomType, SystemSimpleType, null, true);
+            CreateAndAdd(SystemAtomType, TypeKind.String, CS.StringType, true);
+            CreateAndAdd(SystemAtomType, TypeKind.IgnoreCaseString, CS.StringType, true);
+            var Decimal = CreateAndAdd(SystemAtomType, TypeKind.Decimal, CS.DecimalType, true);
+            var Int64 = CreateAndAdd(Decimal, TypeKind.Int64, CS.LongType, true);
+            var Int32 = CreateAndAdd(Int64, TypeKind.Int32, CS.IntType, true);
+            var Int16 = CreateAndAdd(Int32, TypeKind.Int16, CS.ShortType, true);
+            CreateAndAdd(Int16, TypeKind.SByte, CS.SByteType, true);
+            var UInt64 = CreateAndAdd(Decimal, TypeKind.UInt64, CS.ULongType, true);
+            var UInt32 = CreateAndAdd(UInt64, TypeKind.UInt32, CS.UIntType, true);
+            var UInt16 = CreateAndAdd(UInt32, TypeKind.UInt16, CS.UShortType, true);
+            CreateAndAdd(UInt16, TypeKind.Byte, CS.ByteType, true);
+            var Double = CreateAndAdd(SystemAtomType, TypeKind.Double, CS.DoubleType, true);
+            CreateAndAdd(Double, TypeKind.Single, CS.FloatType, true);
+            CreateAndAdd(SystemAtomType, TypeKind.Boolean, CS.BoolType, true);
+            CreateAndAdd(SystemAtomType, TypeKind.Binary, CS.ByteArrayType, false);
+            CreateAndAdd(SystemAtomType, TypeKind.Guid, CS.GuidName, false);
+            CreateAndAdd(SystemAtomType, TypeKind.TimeSpan, CS.TimeSpanName, false);
+            CreateAndAdd(SystemAtomType, TypeKind.DateTimeOffset, CS.DateTimeOffsetName, false);
             SystemListType = new ListTypeSymbol(System, TypeKind.ListType.ToClassName(), true, false, TypeKind.ListType.ToFullName(),
                 SystemSimpleType, null, null, null);
             SystemComplexType = new ComplexTypeSymbol(System, TypeKind.ComplexType.ToClassName(), true, false,
@@ -115,8 +114,8 @@ namespace XData.Compiler {
             objList.Add(SystemListType);
             objList.Add(SystemComplexType);
         }
-        private static AtomTypeSymbol CreateAndAdd(AtomTypeSymbol baseType, TypeKind kind, TypeSyntax valueCSFullName) {
-            var symbol = new AtomTypeSymbol(System, kind.ToClassName(), false, false, kind.ToFullName(), kind, baseType, valueCSFullName);
+        private static AtomTypeSymbol CreateAndAdd(AtomTypeSymbol baseType, TypeKind kind, TypeSyntax valueCSFullName, bool canBeConst) {
+            var symbol = new AtomTypeSymbol(System, kind.ToClassName(), false, false, kind.ToFullName(), kind, baseType, valueCSFullName, canBeConst);
             System.GlobalObjectList.Add(symbol);
             return symbol;
         }
@@ -313,11 +312,13 @@ namespace XData.Compiler {
     }
     internal sealed class AtomTypeSymbol : SimpleTypeSymbol {
         public AtomTypeSymbol(NamespaceSymbol parent, string csName, bool isAbstract, bool isSealed,
-            FullName fullName, TypeKind kind, SimpleTypeSymbol baseType, TypeSyntax valueCSFullName)
+            FullName fullName, TypeKind kind, SimpleTypeSymbol baseType, TypeSyntax valueCSFullName, bool canBeConst)
             : base(parent, csName, isAbstract, isSealed, baseType.CSFullName, null, fullName, kind, baseType) {
             ValueCSFullName = valueCSFullName;
+            CanBeConst = canBeConst;
         }
         public readonly TypeSyntax ValueCSFullName;
+        public readonly bool CanBeConst;
         protected override void GenerateMembers(List<MemberDeclarationSyntax> list) {
             if (!IsAbstract) {
                 //>public static implicit operator CLASS(VALUE value){
@@ -331,7 +332,9 @@ namespace XData.Compiler {
                     foreach (var item in Facets.Enum.Value.ItemList) {
                         if (item.Name != null) {
                             //>public static readonly ValueCSFullName E_Name = ...;
-                            list.Add(CS.Field(CS.PublicStaticReadOnlyTokenList, ValueCSFullName, "E_" + item.Name, CSEX.AtomValue(item.Value)));
+                            //>public const ValueCSFullName E_Name = ...;
+                            list.Add(CS.Field(CanBeConst ? CS.PublicConstTokenList : CS.PublicStaticReadOnlyTokenList,
+                                ValueCSFullName, "E_" + item.Name, CSEX.AtomValue(item.Value)));
                         }
                     }
                 }
@@ -352,9 +355,28 @@ namespace XData.Compiler {
         }
         public readonly SimpleTypeSymbol ItemType;
         protected override void GenerateMembers(List<MemberDeclarationSyntax> list) {
+            //>public CSFullName AddEx(ITEM item){
+            //> base.Add(item);
+            //> return this;
+            //}
+            list.Add(CS.Method(CSItfNames == null ? CS.NewPublicTokenList : CS.PublicTokenList, CSFullName, "AddEx",
+                new[] { CS.Parameter(ItemType.CSFullName, "item") },
+                CS.ExprStm(CS.InvoExpr(CS.BaseMemberAccessExpr("Add"), CS.IdName("item"))),
+                CS.ReturnStm(SyntaxFactory.ThisExpression())
+                ));
+            //>public CSFullName AddRange(IEnumerable<ITEM> items){
+            //> base.AddRange(items);
+            //> return this;
+            //}
+            list.Add(CS.Method(CSItfNames == null ? CS.NewPublicTokenList : CS.PublicTokenList, CSFullName, "AddRange",
+                new[] { CS.Parameter(CS.IEnumerableOf(ItemType.CSFullName), "items") },
+                CS.ExprStm(CS.InvoExpr(CS.BaseMemberAccessExpr("AddRange"), CS.IdName("items"))),
+                CS.ReturnStm(SyntaxFactory.ThisExpression())
+                ));
             if (CSItfNames != null) {
                 CSEX.IListOverrideMembers(list, ItemType.CSFullName);
             }
+
             if (Facets != null) {
                 Facets.Generate();
             }
@@ -905,9 +927,6 @@ namespace XData.Compiler {
         //}
         protected override void GenerateMembers(List<MemberDeclarationSyntax> list) {
             Item.Generate();
-            if (CSItfNames != null) {
-                CSEX.IListOverrideMembers(list, Item.CSFullName);
-            }
             //>public ITEM CreateItem(){
             //  return base.CreateItem<ITEM>();
             //}
@@ -918,6 +937,34 @@ namespace XData.Compiler {
             //}
             list.Add(CS.Method(RestrictedChild == null ? CS.PublicTokenList : CS.NewPublicTokenList, Item.CSFullName, "CreateAndAddItem", null,
                 CS.ReturnStm(CS.InvoExpr(CS.BaseMemberAccessExpr(CS.GenericName("CreateAndAddItem", Item.CSFullName))))));
+            //>public CSFullName Add(Action<ITEM> itemSetter){
+            //  base.Add<ITEM>(itemSetter); 
+            //  return this;
+            //}
+            list.Add(CS.Method(CS.PublicTokenList, CSFullName, "Add",
+                new[] { CS.Parameter(CS.ActionOf(Item.CSFullName), "itemSetter") },
+                CS.ExprStm(CS.InvoExpr(CS.BaseMemberAccessExpr(CS.GenericName("Add", Item.CSFullName)), CS.IdName("itemSetter"))),
+                CS.ReturnStm(SyntaxFactory.ThisExpression())
+                ));
+            //>public CSFullName AddRange<TItemValue>(IEnumerable<TItemValue> itemValues, Action<ITEM, TItemValue> itemSetter){
+            //  base.AddRange<ITEM, TItemValue>(itemValues, itemSetter);
+            //  return this;
+            //}
+            list.Add(CS.Method(null, CS.PublicTokenList, CSFullName, CS.Id("AddRange"),
+                new[] { SyntaxFactory.TypeParameter("TItemValue") },
+                new[] { CS.Parameter(CS.IEnumerableOf(CS.IdName("TItemValue")), "itemValues"),
+                    CS.Parameter(CS.ActionOf(Item.CSFullName, CS.IdName("TItemValue")), "itemSetter")  },
+                null,
+                new StatementSyntax[] {
+                    CS.ExprStm(CS.InvoExpr(CS.BaseMemberAccessExpr(CS.GenericName("AddRange", Item.CSFullName, CS.IdName("TItemValue"))),
+                        CS.IdName("itemValues"), CS.IdName("itemSetter"))),
+                    CS.ReturnStm(SyntaxFactory.ThisExpression())
+                }));
+
+            if (CSItfNames != null) {
+                CSEX.IListOverrideMembers(list, Item.CSFullName);
+            }
+
             //>>new public static readonly ChildListInfo ThisInfo = ...;
             list.Add(CS.Field(RestrictedChild == null ? CS.PublicStaticReadOnlyTokenList : CS.NewPublicStaticReadOnlyTokenList,
                 CSEX.ChildListInfoName, "ThisInfo", CS.NewObjExpr(CSEX.ChildListInfoName, CS.TypeOfExpr(CSFullName), CS.Literal(DisplayName),
