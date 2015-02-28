@@ -137,9 +137,9 @@ value
 
 An attribute may have simple value or have no value. An element may have simple or complex value or have no value .
 
-XData is a static typing solution. Type information is defined in the XData schema. However, every value must be associated with a concrete type. For example, because `Product` is a abstract type, type indicators(e.g: `(a1:SportEquipment)`, `(a1:Shoe)`) are required to associate the value with the concrete types(e.g: `SportEquipment`, `Shoe`). In most cases, type indicators are not required.
+XData is an object-oriented static typing solution. Type information is defined in the XData schema. In the data, every value must be associated with a concrete type. For example, because `Product` is a abstract type, a type indicator(e.g: `(a1:SportEquipment)`, `(a1:Shoe)`) is required to associate a value with a concrete type(e.g: `SportEquipment`, `Shoe`). However, in most cases, type indicators are not required.
 
-Schema is the specification/contract of the data. Below is the snippet of the EBiz schema:
+The schema is the specification/contract of the data. Below is the schema snippet of EBiz:
 
 ```
 //EBiz.xds
@@ -313,7 +313,7 @@ ${
 
 Use `lists` to create a new list type(e.g: `PositiveInt32List`).
 
-Schema is the rules to the data. If a string value is associated with type `String10`, its character count must be between 1 to 10, otherwise the validation will fail.
+The schema is the rules to the data. If a string value is associated with type `String10`, its character count must be between 1 to 10, otherwise the validation will fail.
 
 Type `NormalAddress` is a complex type. Attributes are defined in `[ ]`. Attributes can be annotated as optional using the question mark(e.g: attribute `State`). Attributes must reference simple types.
 
@@ -558,7 +558,7 @@ public static class WebApiSimulation {
 
 So far, we can create, modify, validate(typically in debug version) and save objects.
 
-Schema is the specification/contract of your data. You should publish the schema within your SDK, so your clients can generate their code(C#, Java, C++, etc) from your schema.
+The schema is the specification/contract of your data. You should publish the schema within your SDK, so your clients can generate their code(C#, Java, C++, etc) from your schema.
 
 In `Client`, EBiz.xds is included, the code is generated in C# namespace `Client.Common`, `Client.EBiz` and `Client.WebApi`. Use the generated static method `TryLoadAndValidate` in every global element class to load and validate the data:
 
