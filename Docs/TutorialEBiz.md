@@ -25,7 +25,7 @@ public static class WebApiSimulation {
 
 `Client` is a console application, it will load contacts and products from Contacts.txt and Products.txt, and dump them to the console.
 
-Below is the content of Products.txt:
+Here is the content of Products.txt:
 
 ```
 a0:Products <a0 = @"http://example.com/webapi" a1 = @"http://example.com/ebiz"> = 
@@ -135,9 +135,9 @@ value
      |-complex children complex value // [ attributes ] { child-elements }
 ```
 
-An attribute may have no value or have simple value. An element may have no value or have simple or complex value.
+An attribute may have simple value or have no value. An element may have simple or complex value or have no value .
 
-XData is a static typing solution. Type information is defined in the XData schema. However, every value must be associated with a concrete type. For example, because `Product` is a abstract type, type indicator(e.g: `(a1:SportEquipment)`, `(a1:Shoe)`) is required to associate the value with a concrete type(e.g: `SportEquipment`, `Shoe`). In most cases, type indicators are not required.
+XData is a static typing solution. Type information is defined in the XData schema. However, every value must be associated with a concrete type. For example, because `Product` is a abstract type, type indicators(e.g: `(a1:SportEquipment)`, `(a1:Shoe)`) are required to associate the value with the concrete types(e.g: `SportEquipment`, `Shoe`). In most cases, type indicators are not required.
 
 Schema is the specification/contract of the data. Below is the snippet of the EBiz schema:
 
@@ -261,7 +261,7 @@ namespace "http://example.com/webapi"
 
 ![](EBizSchema.png)
 
-A namespace is identified by a URI. Namespace members are type(`type TypeName ...`) or global element(`element ElementName ...`). If namespace members want to reference other namespace's members, namespace import(e.g: `import "http://example.com/common" as com`) is required. Use qualified name(e.g: `com:PositiveInt32`) or unqualified name(e.g: `PositiveInt32`) to reference members.
+A namespace is identified by a URI. Namespace members are types(`type TypeName ...`) or global elements(`element ElementName ...`). If namespace members want to reference other namespace's members, the namespace import(e.g: `import "http://example.com/common" as com`) is required. Use qualified names(e.g: `com:PositiveInt32`) or unqualified names(e.g: `PositiveInt32`) to reference members.
 
 There is a system namespace "http://xdata-io.org", which contains predefined system types. System namespace is implicitly imported into every user namespace. The reserved alias `sys` is used to reference the system namespace(e.g: `sys:Int32`).
 
@@ -315,11 +315,19 @@ Use `lists` to create a new list type(e.g: `PositiveInt32List`).
 
 Schema is the rules to the data. If a string value is associated with type `String10`, its character count must be between 1 to 10, otherwise the validation will fail.
 
-Type `NormalAddress` is a complex type. Attributes are defined in `[ ]`. Attributes can be annotated as optional using the question mark(e.g: attribute `State`).
+Type `NormalAddress` is a complex type. Attributes are defined in `[ ]`. Attributes can be annotated as optional using the question mark(e.g: attribute `State`). Attributes must reference simple types.
 
 Type `Phone` is a simple child complex type. A simple child(`$ ...`) must reference a simple type.
 
-Type `Contact` is a complex children complex type. Complex children are defined in `#{ }`. Complex children can be local elements(e.g: `Phone`) and/or structures(e.g: `?{...}` is a choice structure). `*`(0..infinite) and `+`(1..infinite) are occurrence marker. A `Contact` must have at least one and at most five child element `Phone`, following is a choice between `NormalAddress` and `SpatialAddress`. Complex types can be extended by adding attributes and/or children. Below is valid data for contacts:
+Type `Contact` is a complex children complex type. Complex children are defined in `#{ }`. Complex children are local elements(e.g: `Phone`) or child structures(e.g: `?{...}` is a choice structure). Use occurrence(e.g: `1..5`, `?`, `*`, `+`) to specify repeat count of a child. The default value for the occurrence is `1..1`. If the max occurrence(the right side of `..`) is absent, it means infinite. In the example, a `Contact` must have at least one and at most five child element `Phone`, following is a choice between `NormalAddress` and `SpatialAddress`. Complex types can be extended by adding attributes and/or children. If a type is annotated as `abstract`(e.g: type `Contact`), a type indicator is required to indicate a concrete type in the data.
+
+Elements can reference simple or complex types.
+
+If an attribute/element is annotated as `nullable`(e.g: element `Contacts`), the attribute/element data may have no value.
+
+`membername` is used for code generation.
+
+Below is the valid data for `Contact`:
 
 ```
 Contact = (a1:Customer)
@@ -372,8 +380,6 @@ Contact = (a1:Supplier)
             ]
     }
 ```
-
-`membername` is used for code generation. If an attribute/element is annotated as `nullable`(e.g: element `Contacts`), the attribute/element data may have no value.
 
 The XData data object model(DOM) is a class library manipulating(create, modify, save, load, validate, etc) data. Currently there is only .NET implementation, but other implementations(Java, C++, etc) are definitely possible and welcomed.
 
@@ -449,7 +455,7 @@ Let's get our hands dirty.
 PM> Install-Package XDataDOM -Pre
 ```
 
-5) Open "Add New Item" dialog box -> Visual C# Items -> XData -> Create a new XData Schema file.
+5) Open the "Add New Item" dialog box -> Visual C# Items -> XData -> Create a new XData Schema file.
 
 6) Create a new XData Indicator file. The indicator file indicates the schema compiler to generate the code in which C# namespaces:
 
@@ -465,7 +471,7 @@ namespace "http://example.com/project2" = Example.Project2
 ```C#
 namespace Service.Common {
     partial class Money {
-        public Money() { } //Public parameterless constructor required for concrete classes
+        public Money() { } //Public parameterless constructors required for concrete classes
         public Money(string kind, decimal value) {
             AT_Kind = kind;
             Children = value;
@@ -519,7 +525,7 @@ namespace Service.EBiz {
 
 "A" means "Attribute", "AT" means "Attribute's Type", "C" means "Child", "CT" means "Child element's Type".
 
-Use `XObject.TryValidate()` to validate the object. Use `XGlobalElement.Save()` to save the global element object:
+Use `XObject.TryValidate()` to validate the object. Use `XGlobalElement.Save()` to save the object:
 
 ```C#
 public static class WebApiSimulation {
@@ -550,7 +556,7 @@ public static class WebApiSimulation {
 }
 ```
 
-So far, we can create, modify, validate(typically in debug version) and save the objects.
+So far, we can create, modify, validate(typically in debug version) and save objects.
 
 Schema is the specification/contract of your data. You should publish the schema within your SDK, so your clients can generate their code(C#, Java, C++, etc) from your schema.
 
