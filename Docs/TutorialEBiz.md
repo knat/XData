@@ -327,7 +327,7 @@ If an attribute/element is annotated as `nullable`(e.g: element `Contacts`), the
 
 `membername` is used for code generation.
 
-Below is a valid data for `Contact`:
+Below is valid data for `Contact`:
 
 ```
 Contact = (a1:Customer)
