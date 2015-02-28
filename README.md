@@ -1356,7 +1356,7 @@ Please review the above to comprehend the schema and the data.
 
 ### Data Object Model(DOM)
 
-Data object model is a class library used to manipulate(create, modify, save, load, validate, etc) data. Currently there is only .NET implementation, but other implementations(Java, C++, etc) are definitely possible and welcomed.
+Data object model is a class library manipulating(create, modify, save, load, validate, etc) data. Currently there is only .NET implementation, but other implementations(Java, C++, etc) are definitely possible and welcomed.
 
 Below is the hierarchy of the DOM classes, "<...>" are abstract classes, otherwise concrete classes. All the classes are defined in namespace `XData`:
 
@@ -1805,7 +1805,7 @@ Use it:
     }
 ```
 
-Put a breakpoint at line `ctx.Reset();`, when the program hits the breakpoint, open GlobalElement.txt, change "tank@example.com" to "tankexample.com" and save(you can invalid any thing you want), `TryLoadAndValidate` will fail:
+Put a breakpoint at line `ctx.Reset();`, after the program hits the breakpoint, open GlobalElement.txt, change "tank@example.com" to "tankexample.com" and save(you can invalid any thing you want), `TryLoadAndValidate` will fail:
 
 ```
 Error -979: Literal 'tankexample.com' not match with pattern '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}'.

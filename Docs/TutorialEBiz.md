@@ -135,9 +135,9 @@ value
      |-complex children complex value // [ attributes ] { child-elements }
 ```
 
-An attribute is a name-value pair, the value must be simple or have no value. An element is a name-value pair, the value can be simple or complex or have no value.
+An attribute may have no value or have simple value. An element may have no value or have simple or complex value.
 
-XData is a static typing solution. Type information is defined in the XData schema. However, every value must be associated with a concrete type. For example, because `Product` is a abstract type, type indicator(`(a1:SportEquipment)`, `(a1:Shoe)`) is required to associate the value with a concrete type(`SportEquipment`, `Shoe`). In most cases, type indicators are not required.
+XData is a static typing solution. Type information is defined in the XData schema. However, every value must be associated with a concrete type. For example, because `Product` is a abstract type, type indicator(e.g: `(a1:SportEquipment)`, `(a1:Shoe)`) is required to associate the value with a concrete type(e.g: `SportEquipment`, `Shoe`). In most cases, type indicators are not required.
 
 Schema is the specification/contract of the data. Below is the snippet of the EBiz schema:
 
@@ -261,7 +261,7 @@ namespace "http://example.com/webapi"
 
 ![](EBizSchema.png)
 
-A namespace is identified by a URI. Namespace members can be types(`type TypeName ...`) or global elements(`element ElementName ...`). If namespace members want to reference other namespace's members, namespace import(`import "http://example.com/common" as com`) is required. You can use qualified names(e.g: `com:PositiveInt32`) or unqualified names(e.g: `PositiveInt32`) to reference the members.
+A namespace is identified by a URI. Namespace members are type(`type TypeName ...`) or global element(`element ElementName ...`). If namespace members want to reference other namespace's members, namespace import(e.g: `import "http://example.com/common" as com`) is required. Use qualified name(e.g: `com:PositiveInt32`) or unqualified name(e.g: `PositiveInt32`) to reference members.
 
 There is a system namespace "http://xdata-io.org", which contains predefined system types. System namespace is implicitly imported into every user namespace. The reserved alias `sys` is used to reference the system namespace(e.g: `sys:Int32`).
 
@@ -315,11 +315,11 @@ Use `lists` to create a new list type(e.g: `PositiveInt32List`).
 
 Schema is the rules to the data. If a string value is associated with type `String10`, its character count must be between 1 to 10, otherwise the validation will fail.
 
-Type `NormalAddress` is a complex type. Attributes are defined in `[ ]`. Attributes can be annotated as optional using the question mark(e.g: attribute `State`). Attributes must reference simple types.
+Type `NormalAddress` is a complex type. Attributes are defined in `[ ]`. Attributes can be annotated as optional using the question mark(e.g: attribute `State`).
 
 Type `Phone` is a simple child complex type. A simple child(`$ ...`) must reference a simple type.
 
-Type `Contact` is a complex children complex type. Complex children are defined in `#{ }`. Complex children can be local element(e.g: `Phone`) and/or structures(e.g: `?{...}` is a choice structure). `*`(0..infinite) and `+`(1..infinite) are occurrence marker. A `Contact` must have at least one and at most five child element `Phone`, following is a choice between `NormalAddress` and `SpatialAddress`. Complex types can be extended by adding attributes and/or children. Below is valid data for contacts:
+Type `Contact` is a complex children complex type. Complex children are defined in `#{ }`. Complex children can be local elements(e.g: `Phone`) and/or structures(e.g: `?{...}` is a choice structure). `*`(0..infinite) and `+`(1..infinite) are occurrence marker. A `Contact` must have at least one and at most five child element `Phone`, following is a choice between `NormalAddress` and `SpatialAddress`. Complex types can be extended by adding attributes and/or children. Below is valid data for contacts:
 
 ```
 Contact = (a1:Customer)
@@ -373,9 +373,9 @@ Contact = (a1:Supplier)
     }
 ```
 
-`membername` is for code generation. If an attribute/element is annotated as `nullable`(e.g: element `Contacts`), the attribute/element data may have no value.
+`membername` is used for code generation. If an attribute/element is annotated as `nullable`(e.g: element `Contacts`), the attribute/element data may have no value.
 
-The XData data object model(DOM) is a class library used to manipulate(create, modify, save, load, validate, etc) data. Currently there is only .NET implementation, but other implementations(Java, C++, etc) are definitely possible and welcomed.
+The XData data object model(DOM) is a class library manipulating(create, modify, save, load, validate, etc) data. Currently there is only .NET implementation, but other implementations(Java, C++, etc) are definitely possible and welcomed.
 
 Below is the hierarchy of the DOM classes, "<...>" are abstract classes, otherwise concrete classes. All the classes are defined in namespace `XData`:
 
@@ -465,7 +465,7 @@ namespace "http://example.com/project2" = Example.Project2
 ```C#
 namespace Service.Common {
     partial class Money {
-        public Money() { }
+        public Money() { } //Public parameterless constructor required for concrete classes
         public Money(string kind, decimal value) {
             AT_Kind = kind;
             Children = value;
@@ -519,11 +519,11 @@ namespace Service.EBiz {
 
 "A" means "Attribute", "AT" means "Attribute's Type", "C" means "Child", "CT" means "Child element's Type".
 
-`XObject.TryValidate()` can be used to validate the objects. If the validation fails, this means the program has bugs. `XGlobalElement.Save()` can be used to save the data. We can create, modify, validate(typically in debug version) and save the data.
+Use `XObject.TryValidate()` to validate the objects. If the validation fails, this means the program has bugs. Use `XGlobalElement.Save()` to save the data. So far, we can create, modify, validate(typically in debug version) and save the data.
 
 Schema is the specification/contract of your data. You should publish the schema within your SDK, so your clients can generate their code(C#, Java, C++, etc) from your schema.
 
-In `Client`, EBiz.xds is included, and the code is generated in C# namespace `Client.Common`, `Client.EBiz` and `Client.WebApi`. The generated static method `TryLoadAndValidate` in every global element can be used to load and validate the data:
+In `Client`, EBiz.xds is included, the code is generated in C# namespace `Client.Common`, `Client.EBiz` and `Client.WebApi`. Use the generated static method `TryLoadAndValidate` in every global element to load and validate the data:
 
 ```C#
 static class Program {
@@ -558,12 +558,12 @@ static class Program {
     }
 ```
     
-Put a breakpoint at line `using (var reader = new StreamReader(contactsFilePath)) {`, when the program hits the breakpoint, open Contacts.txt, change "tank@example.com" to "tankexample.com"(you can invalid any thing you want) and save, `TryLoadAndValidate` will fail:
+Put a breakpoint at line `using (var reader = new StreamReader(contactsFilePath)) {`, after the program hits the breakpoint, open Contacts.txt, change "tank@example.com" to "tankexample.com"(you can invalid any thing you want) and save, `TryLoadAndValidate` will fail:
 
 ```
 Error -979: Literal 'tankexample.com' not match with pattern '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}'.
     Contacts.txt: (7,25)-(7,42)
 ```
 
-Please visit https://github.com/knat/XData for more information.
+We have finished the whole picture. No, it's just the beginning, please visit https://github.com/knat/XData for more information.
 
