@@ -519,7 +519,7 @@ namespace Service.EBiz {
 
 "A" means "Attribute", "AT" means "Attribute's Type", "C" means "Child", "CT" means "Child element's Type".
 
-Use `XObject.TryValidate()` to validate the objects. Use `XGlobalElement.Save()` to save the element data:
+Use `XObject.TryValidate()` to validate the object. Use `XGlobalElement.Save()` to save the global element object:
 
 ```C#
 public static class WebApiSimulation {
@@ -550,11 +550,11 @@ public static class WebApiSimulation {
 }
 ```
 
-So far, we can create, modify, validate(typically in debug version) and save the data.
+So far, we can create, modify, validate(typically in debug version) and save the objects.
 
 Schema is the specification/contract of your data. You should publish the schema within your SDK, so your clients can generate their code(C#, Java, C++, etc) from your schema.
 
-In `Client`, EBiz.xds is included, the code is generated in C# namespace `Client.Common`, `Client.EBiz` and `Client.WebApi`. Use the generated static method `TryLoadAndValidate` in every global element to load and validate the data:
+In `Client`, EBiz.xds is included, the code is generated in C# namespace `Client.Common`, `Client.EBiz` and `Client.WebApi`. Use the generated static method `TryLoadAndValidate` in every global element class to load and validate the data:
 
 ```C#
 static class Program {
@@ -589,7 +589,7 @@ static class Program {
     }
 ```
     
-Put a breakpoint at line `using (var reader = new StreamReader(contactsFilePath)) {`, after the program hits the breakpoint, open Contacts.txt, change "tank@example.com" to "tankexample.com"(you can invalid any thing you want) and save, `TryLoadAndValidate` will fail:
+Put a breakpoint at line `using (var reader = new StreamReader(contactsFilePath)) {`, after the program hits the breakpoint, open Contacts.txt, change "tank@example.com" to "tankexample.com"(you can invalid anything you want) and save, `TryLoadAndValidate` will fail:
 
 ```
 Error -979: Literal 'tankexample.com' not match with pattern '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}'.

@@ -1805,7 +1805,7 @@ Use it:
     }
 ```
 
-Put a breakpoint at line `ctx.Reset();`, after the program hits the breakpoint, open GlobalElement.txt, change "tank@example.com" to "tankexample.com" and save(you can invalid any thing you want), `TryLoadAndValidate` will fail:
+Put a breakpoint at line `ctx.Reset();`, after the program hits the breakpoint, open GlobalElement.txt, change "tank@example.com" to "tankexample.com" and save(you can invalid anything you want), `TryLoadAndValidate` will fail:
 
 ```
 Error -979: Literal 'tankexample.com' not match with pattern '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}'.
