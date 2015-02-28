@@ -1,5 +1,3 @@
 ﻿namespace "http://example.com/common" = Client.Common
 namespace "http://example.com/ebiz" = Client.EBiz
 namespace "http://example.com/webapi" = Client.WebApi
-
-

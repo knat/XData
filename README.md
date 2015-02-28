@@ -820,7 +820,7 @@ Use `type-restriction` to derive a new atom type from an existing atom type:
 * `length-range`: Specify character count range of `String` and `IgnoreCaseString`, byte count range of `Binary`, item count range of `ListType`. The left side of `..` is min length, the right side is max length.
 * `precision`: Specify total digit count of `Decimal`.
 * `scale`: Specify fraction digit count of `Decimal`.
-* `value-range`: For `String`, `IgnoreCaseString`, numeric types(from `Decimal` to `Single`), `TimeSpan` and `DateTimeOffset`. The type value must be between the value range. `[` and `]` means inclusion, `(` and `)` means exclusion.
+* `value-range`: For `String`, `IgnoreCaseString`, numeric types(from `Decimal` to `Single`), `TimeSpan` and `DateTimeOffset`. The type value must be between the value range. `[` or `]` means inclusion, `(` or `)` means exclusion.
 * `enum`: For `String` to `DateTimeOffset`. The type value must equal to one of the enum values.
 * `pattern`: For `String` to `DateTimeOffset`. The type value string must match the regular expression.
 
@@ -1618,7 +1618,7 @@ namespace "http://example.com/project2" = Example.Project2
 
 7) After (re)build the project, __XDataGenerated.cs will contain the generated code, open and view it.
 
-For atom types, a new class derives from the base class. If an enum item has the name, a E_ItemName static field is generated.
+For atom types, a new class derives from the base class. If an enum item has the name, a E_ItemName const field is generated.
 
 ```C#
 //Auto-generated, DO NOT EDIT.
@@ -1637,9 +1637,9 @@ namespace Example.Project1
     public partial class Color : global::XData.XString
     {
         public static implicit operator global::Example.Project1.Color(string value);
-        public static readonly string E_Red = "Red";
-        public static readonly string E_Green = "Green";
-        public static readonly string E_Blue = "Blue";
+        public const string E_Red = "Red";
+        public const string E_Green = "Green";
+        public const string E_Blue = "Blue";
         //...
     }
 ```

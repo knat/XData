@@ -50,7 +50,7 @@
       <Link>EBiz.xds</Link>
     </XDataSchema>
     <None Include="App.config" />
-    <XDataIndicator Include="File1.xdi" />
+    <XDataIndicator Include="Client.xdi" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Service\Service.csproj">

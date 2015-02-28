@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics;
 using System.IO;
@@ -35,7 +36,7 @@ namespace Service.EBiz {
     partial class Contact {
         protected Contact() { }
         protected Contact(int id, string name, string email, DateTimeOffset regDate,
-            Phone[] phones, NormalAddress normalAddress, SpatialAddress spatialAddress) {
+            IEnumerable<Phone> phones, NormalAddress normalAddress, SpatialAddress spatialAddress) {
             AT_Id = id;
             AT_Name = name;
             AT_Email = email;
@@ -52,7 +53,7 @@ namespace Service.EBiz {
     partial class Customer {
         public Customer() { }
         public Customer(int id, string name, string email, DateTimeOffset regDate,
-            Phone[] phones, NormalAddress normalAddress, SpatialAddress spatialAddress,
+            IEnumerable<Phone> phones, NormalAddress normalAddress, SpatialAddress spatialAddress,
             string reputation, params Order[] orders)
             : base(id, name, email, regDate, phones, normalAddress, spatialAddress) {
             AT_Reputation = reputation;
@@ -64,12 +65,12 @@ namespace Service.EBiz {
     partial class Supplier {
         public Supplier() { }
         public Supplier(int id, string name, string email, DateTimeOffset regDate,
-            Phone[] phones, NormalAddress normalAddress, SpatialAddress spatialAddress,
-            string bankAccount, int[] productIdList)
+            IEnumerable<Phone> phones, NormalAddress normalAddress, SpatialAddress spatialAddress,
+            string bankAccount, IEnumerable<int> productIds)
             : base(id, name, email, regDate, phones, normalAddress, spatialAddress) {
             AT_BankAccount = bankAccount;
-            if (productIdList != null) {
-                AT_ProductIdList = new PositiveInt32List().AddRange(productIdList.Select(i => (PositiveInt32)i));
+            if (productIds != null) {
+                AT_ProductIdList = new PositiveInt32List().AddRange(productIds.Select(i => (PositiveInt32)i));
             }
         }
     }
@@ -93,21 +94,21 @@ namespace Service.EBiz {
 }
 
 namespace Service.WebApi {
-    partial class ContactList {
-        public ContactList() { }
-        public ContactList(Contact[] Contacts) {
-            if (Contacts != null) {
-                var type = new ContactListType();
-                type.EnsureC_ContactList().AddRange(Contacts, (item, contact) => item.Type = contact);
+    partial class Contacts {
+        public Contacts() { }
+        public Contacts(IEnumerable<Contact> contacts) {
+            if (contacts != null) {
+                var type = new ContactsType();
+                type.EnsureC_ContactList().AddRange(contacts, (item, contact) => item.Type = contact);
                 Type = type;
             }
         }
     }
-    partial class ProductList {
-        public ProductList() { }
-        public ProductList(Product[] products) {
+    partial class Products {
+        public Products() { }
+        public Products(IEnumerable<Product> products) {
             if (products != null) {
-                var type = new ProductListType();
+                var type = new ProductsType();
                 type.EnsureC_ProductList().AddRange(products, (item, product) => item.Type = product);
                 Type = type;
             }
@@ -124,43 +125,44 @@ public static class WebApiSimulation {
             new NormalAddress { AT_Country="China", AT_State="Sichuan", AT_City="Suining", AT_Address="somewhere", AT_ZipCode="629000" }, null,
             Reputation.E_Bronze,
             new Order(1, DateTimeOffset.UtcNow - TimeSpan.FromHours(235), true,
-                new OrderDetail { AT_ProductId = 1, AT_Quantity = 1, CT_UnitPrice =new Money( MoneyKind.E_CNY, 3798.99M) },
-                new OrderDetail { AT_ProductId = 2, AT_Quantity = 1, CT_UnitPrice =new Money( MoneyKind.E_CNY, 5600M) },
-                new OrderDetail { AT_ProductId = 3, AT_Quantity = 2, CT_UnitPrice =new Money( MoneyKind.E_CNY, 199.99M) }
+                new OrderDetail { AT_ProductId = 1, AT_Quantity = 1, CT_UnitPrice =new Money(MoneyKind.E_CNY, 3798.99M) },
+                new OrderDetail { AT_ProductId = 2, AT_Quantity = 1, CT_UnitPrice =new Money(MoneyKind.E_CNY, 5600M) },
+                new OrderDetail { AT_ProductId = 3, AT_Quantity = 2, CT_UnitPrice =new Money(MoneyKind.E_CNY, 199.99M) }
                 ),
             new Order(2, DateTimeOffset.UtcNow - TimeSpan.FromHours(46), true,
-                new OrderDetail { AT_ProductId = 3, AT_Quantity = 1, CT_UnitPrice =new Money( MoneyKind.E_CNY, 200M) }
+                new OrderDetail { AT_ProductId = 3, AT_Quantity = 1, CT_UnitPrice =new Money(MoneyKind.E_CNY, 200M) }
                 )
             ),
         new Customer(2, "Mike", "mike@example.com", DateTimeOffset.UtcNow - TimeSpan.FromDays(410), 
             new Phone[] {
-                new Phone { AT_Kind= PhoneKind.E_Work, Children="33445522" },
+                new Phone { AT_Kind= PhoneKind.E_Work, Children="23456789" },
             },
             null, new SpatialAddress{AT_Longitude=102.345M, AT_Latitude = 33.543M},
             Reputation.E_Gold
             ),
         new Supplier(3, "Eric", "eric@example.com", DateTimeOffset.UtcNow - TimeSpan.FromDays(556), 
             new Phone[] {
-                new Phone { AT_Kind= PhoneKind.E_Work, Children="99886655" },
-                new Phone { AT_Kind= PhoneKind.E_Home, Children="54321097" },
+                new Phone { AT_Kind= PhoneKind.E_Work, Children="34567890" },
+                new Phone { AT_Kind= PhoneKind.E_Home, Children="45678901" },
             },
             null, new SpatialAddress{ AT_Longitude = -113.567M, AT_Latitude = 45.218M},
-            "Bank account 22334455", new int[]{1,2,3}
+            "22334455667788", new int[]{1,2,3}
             ),
     };
     private static readonly Product[] _products = new Product[]{
-        new SportEquipment { AT_Id = 1, AT_Name = "Mountain Bike", AT_StockQuantity= 18, 
+        new SportEquipment { AT_Id = 1, AT_Name = "Mountain bike", AT_StockQuantity= 10, 
             CT_Price=new Money(MoneyKind.E_CNY, 3998M),
-            CT_Image=new Image{AT_Mime = "image/jpeg", Children= new byte[] { 1, 2, 3, 4, 5 }}
+            CT_Image=new Image{AT_Mime = "image/jpeg", Children= new byte[] { 1, 2, 3, 4, 5 }},
+            AT_Applicability = "adults only!"
         },
-        new SportEquipment { AT_Id = 2, AT_Name = "Road Bike", AT_StockQuantity= 5, 
+        new SportEquipment { AT_Id = 2, AT_Name = "Road bike", AT_StockQuantity= 5, 
             CT_Price=new Money(MoneyKind.E_CNY, 5700M),
-            CT_Image=new Image{AT_Mime = "image/jpeg", Children= new byte[] { 2, 3, 4, 5 ,6}},
-            AT_Applicability = "adult only!"
+            CT_Image=new Image{AT_Mime = "image/jpeg", Children= new byte[] { 2, 3, 4, 5, 6}},
+            AT_Applicability = "adults only!"
         },
         new Shoe { AT_Id = 3, AT_Name = "Outdoor shoe", AT_StockQuantity= 99, 
             CT_Price=new Money(MoneyKind.E_CNY, 250M),
-            CT_Image=new Image{AT_Mime = "image/png", Children= new byte[] { 3, 4, 5 ,6 ,7}},
+            CT_Image=new Image{AT_Mime = "image/png", Children= new byte[] { 3, 4, 5, 6, 7}},
             AT_Gender = Gender.E_Man,
             CT_Size =new ShoeSize{AT_Unit = ShoeUnit.E_CM, Children = 26.5M}
         },
@@ -185,18 +187,16 @@ public static class WebApiSimulation {
         }
         Debug.Assert(false);
     }
-    public static string GetContactList() {
-        var contactList = new ContactList(_contacts);
-        Validate(contactList, new DiagContext());
-        Save(contactList, "ContactList.txt");
-        return "ContactList.txt";
+    public static string GetContacts() {
+        var contacts = new Contacts(_contacts);
+        Validate(contacts, new DiagContext());
+        Save(contacts, "Contacts.txt");
+        return "Contacts.txt";
     }
-    public static string GetProductList() {
-        var productList = new ProductList(_products);
-        Validate(productList, new DiagContext());
-        Save(productList, "ProductList.txt");
-        return "ProductList.txt";
+    public static string GetProducts() {
+        var products = new Products(_products);
+        Validate(products, new DiagContext());
+        Save(products, "Products.txt");
+        return "Products.txt";
     }
-
-
 }

@@ -2,7 +2,7 @@
 
 namespace "http://example.com/common"
 {
-    type String10 restricts String
+    type String10 restricts sys:String
     ${
         lengthrange 1..10
     }
@@ -28,6 +28,12 @@ namespace "http://example.com/common"
     }
 
     type PositiveInt32List lists PositiveInt32
+
+    type Email restricts String
+    ${
+        lengthrange ..40
+        pattern @"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}"
+    }
 
     type Phone
     [
@@ -62,12 +68,6 @@ namespace "http://example.com/common"
     ${
         precision 8
         scale 5
-    }
-
-    type Email restricts String
-    ${
-        lengthrange ..40
-        pattern @"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}"
     }
 
     type Money
@@ -141,7 +141,6 @@ namespace "http://example.com/common"
         precision 3
         scale 1
     }
-
 }
 
 namespace "http://example.com/ebiz"
@@ -150,8 +149,8 @@ namespace "http://example.com/ebiz"
 
     type Contact<abstract>
     [
-        Id as PositiveInt32
-        Name as String10
+        Id as com:PositiveInt32
+        Name as com:String10
         Email as Email
         RegDate as DateTimeOffset
     ]
@@ -210,7 +209,7 @@ namespace "http://example.com/ebiz"
 
     type SportEquipment extends Product
     [
-        Applicability<?> as String20
+        Applicability as String20
     ]
 
     type Shoe extends Product
@@ -220,24 +219,23 @@ namespace "http://example.com/ebiz"
     #{
         Size as ShoeSize
     }
-
 }
 
 namespace "http://example.com/webapi"
 {
     import "http://example.com/ebiz" as ebiz
 
-    type ContactListType
+    type ContactsType
     #{
-        Contact<+ membername ContactList> as Contact
+        Contact<+ membername ContactList> as ebiz:Contact
     }
 
-    element ContactList<nullable> as ContactListType
+    element Contacts<nullable> as ContactsType
 
-    type ProductListType
+    type ProductsType
     #{
-        Product<+ membername ProductList> as Product
+        Product<+ membername ProductList> as ebiz:Product
     }
 
-    element ProductList<nullable> as ProductListType
+    element Products<nullable> as ProductsType
 }

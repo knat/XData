@@ -44,7 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <XDataSchema Include="EBiz.xds" />
-    <XDataIndicator Include="File1.xdi" />
+    <XDataIndicator Include="Service.xdi" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -150,6 +150,34 @@ namespace Client.Common
         }
     }
 
+    public partial class Email : global::XData.XString
+    {
+        public static implicit operator global::Client.Common.Email(string value)
+        {
+            return new global::Client.Common.Email()
+            {
+            Value = value
+            }
+
+            ;
+        }
+
+        public static readonly global::XData.FacetSetInfo ThisFacetSetInfo = new global::XData.FacetSetInfo(null, 40UL, null, null, null, null, null, new global::XData.PatternInfo[]
+        {
+        new global::XData.PatternInfo("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,4}")}
+
+        );
+        new public static readonly global::XData.AtomTypeInfo ThisInfo = new global::XData.AtomTypeInfo(typeof (global::Client.Common.Email), false, new global::XData.FullName("http://example.com/common", "Email"), global::XData.XString.ThisInfo, global::Client.Common.Email.ThisFacetSetInfo, (global::XData.TypeKind)5);
+        public override global::XData.ObjectInfo ObjectInfo
+        {
+            get
+            {
+                global::XData.Extensions.PublicParameterlessConstructorRequired<global::Client.Common.Email>();
+                return ThisInfo;
+            }
+        }
+    }
+
     public partial class PhoneKind : global::XData.XString
     {
         public static implicit operator global::Client.Common.PhoneKind(string value)
@@ -1161,34 +1189,6 @@ namespace Client.Common
             get
             {
                 global::XData.Extensions.PublicParameterlessConstructorRequired<global::Client.Common.SpatialAddress>();
-                return ThisInfo;
-            }
-        }
-    }
-
-    public partial class Email : global::XData.XString
-    {
-        public static implicit operator global::Client.Common.Email(string value)
-        {
-            return new global::Client.Common.Email()
-            {
-            Value = value
-            }
-
-            ;
-        }
-
-        public static readonly global::XData.FacetSetInfo ThisFacetSetInfo = new global::XData.FacetSetInfo(null, 40UL, null, null, null, null, null, new global::XData.PatternInfo[]
-        {
-        new global::XData.PatternInfo("[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,4}")}
-
-        );
-        new public static readonly global::XData.AtomTypeInfo ThisInfo = new global::XData.AtomTypeInfo(typeof (global::Client.Common.Email), false, new global::XData.FullName("http://example.com/common", "Email"), global::XData.XString.ThisInfo, global::Client.Common.Email.ThisFacetSetInfo, (global::XData.TypeKind)5);
-        public override global::XData.ObjectInfo ObjectInfo
-        {
-            get
-            {
-                global::XData.Extensions.PublicParameterlessConstructorRequired<global::Client.Common.Email>();
                 return ThisInfo;
             }
         }
@@ -4865,7 +4865,7 @@ namespace Client.EBiz
                     }
                 }
 
-                public static readonly global::XData.AttributeInfo ThisInfo = new global::XData.AttributeInfo(typeof (global::Client.EBiz.SportEquipment.CLS_Attributes.CLS_Applicability), "{http://example.com/ebiz}SportEquipment.[].Applicability", "Applicability", true, false, global::Client.Common.String20.ThisInfo);
+                public static readonly global::XData.AttributeInfo ThisInfo = new global::XData.AttributeInfo(typeof (global::Client.EBiz.SportEquipment.CLS_Attributes.CLS_Applicability), "{http://example.com/ebiz}SportEquipment.[].Applicability", "Applicability", false, false, global::Client.Common.String20.ThisInfo);
                 public override global::XData.ObjectInfo ObjectInfo
                 {
                     get
@@ -5191,13 +5191,13 @@ namespace Client.EBiz
 
 namespace Client.WebApi
 {
-    public partial class ContactListType : global::XData.XComplexType
+    public partial class ContactsType : global::XData.XComplexType
     {
-        public global::Client.WebApi.ContactListType.CLS_Children.CLS_ContactList C_ContactList
+        public global::Client.WebApi.ContactsType.CLS_Children.CLS_ContactList C_ContactList
         {
             get
             {
-                return base.TryGetChild(0) as global::Client.WebApi.ContactListType.CLS_Children.CLS_ContactList;
+                return base.TryGetChild(0) as global::Client.WebApi.ContactsType.CLS_Children.CLS_ContactList;
             }
 
             set
@@ -5209,16 +5209,16 @@ namespace Client.WebApi
             }
         }
 
-        public global::Client.WebApi.ContactListType.CLS_Children.CLS_ContactList EnsureC_ContactList(bool @try = false)
+        public global::Client.WebApi.ContactsType.CLS_Children.CLS_ContactList EnsureC_ContactList(bool @try = false)
         {
-            return C_ContactList ?? (C_ContactList = base.CreateChild<global::Client.WebApi.ContactListType.CLS_Children.CLS_ContactList>(0, @try));
+            return C_ContactList ?? (C_ContactList = base.CreateChild<global::Client.WebApi.ContactsType.CLS_Children.CLS_ContactList>(0, @try));
         }
 
-        new public global::Client.WebApi.ContactListType.CLS_Children Children
+        new public global::Client.WebApi.ContactsType.CLS_Children Children
         {
             get
             {
-                return base.GenericChildren as global::Client.WebApi.ContactListType.CLS_Children;
+                return base.GenericChildren as global::Client.WebApi.ContactsType.CLS_Children;
             }
 
             set
@@ -5227,9 +5227,9 @@ namespace Client.WebApi
             }
         }
 
-        new public global::Client.WebApi.ContactListType.CLS_Children EnsureChildren(bool @try = false)
+        new public global::Client.WebApi.ContactsType.CLS_Children EnsureChildren(bool @try = false)
         {
-            return base.EnsureChildren<global::Client.WebApi.ContactListType.CLS_Children>(@try);
+            return base.EnsureChildren<global::Client.WebApi.ContactsType.CLS_Children>(@try);
         }
 
         public partial class CLS_Children : global::XData.XChildSequence
@@ -5249,22 +5249,22 @@ namespace Client.WebApi
                     }
                 }
 
-                public static readonly global::XData.ElementInfo ThisInfo = new global::XData.ElementInfo(typeof (global::Client.WebApi.ContactListType.CLS_Children.CLSITEM_ContactList), false, "{http://example.com/webapi}ContactListType.#{}.ContactList", (global::XData.ChildKind)2, false, 0, new global::XData.FullName(null, "Contact"), false, global::Client.EBiz.Contact.ThisInfo, null, null, null, global::XDataProgramInfo.Instance);
+                public static readonly global::XData.ElementInfo ThisInfo = new global::XData.ElementInfo(typeof (global::Client.WebApi.ContactsType.CLS_Children.CLSITEM_ContactList), false, "{http://example.com/webapi}ContactsType.#{}.ContactList", (global::XData.ChildKind)2, false, 0, new global::XData.FullName(null, "Contact"), false, global::Client.EBiz.Contact.ThisInfo, null, null, null, global::XDataProgramInfo.Instance);
                 public override global::XData.ObjectInfo ObjectInfo
                 {
                     get
                     {
-                        global::XData.Extensions.PublicParameterlessConstructorRequired<global::Client.WebApi.ContactListType.CLS_Children.CLSITEM_ContactList>();
+                        global::XData.Extensions.PublicParameterlessConstructorRequired<global::Client.WebApi.ContactsType.CLS_Children.CLSITEM_ContactList>();
                         return ThisInfo;
                     }
                 }
             }
 
-            public global::Client.WebApi.ContactListType.CLS_Children.CLS_ContactList C_ContactList
+            public global::Client.WebApi.ContactsType.CLS_Children.CLS_ContactList C_ContactList
             {
                 get
                 {
-                    return base.TryGetChild(0) as global::Client.WebApi.ContactListType.CLS_Children.CLS_ContactList;
+                    return base.TryGetChild(0) as global::Client.WebApi.ContactsType.CLS_Children.CLS_ContactList;
                 }
 
                 set
@@ -5276,49 +5276,49 @@ namespace Client.WebApi
                 }
             }
 
-            public global::Client.WebApi.ContactListType.CLS_Children.CLS_ContactList EnsureC_ContactList(bool @try = false)
+            public global::Client.WebApi.ContactsType.CLS_Children.CLS_ContactList EnsureC_ContactList(bool @try = false)
             {
-                return C_ContactList ?? (C_ContactList = base.CreateChild<global::Client.WebApi.ContactListType.CLS_Children.CLS_ContactList>(0, @try));
+                return C_ContactList ?? (C_ContactList = base.CreateChild<global::Client.WebApi.ContactsType.CLS_Children.CLS_ContactList>(0, @try));
             }
 
-            public partial class CLS_ContactList : global::XData.XChildList<global::Client.WebApi.ContactListType.CLS_Children.CLSITEM_ContactList>
+            public partial class CLS_ContactList : global::XData.XChildList<global::Client.WebApi.ContactsType.CLS_Children.CLSITEM_ContactList>
             {
-                public global::Client.WebApi.ContactListType.CLS_Children.CLSITEM_ContactList CreateItem()
+                public global::Client.WebApi.ContactsType.CLS_Children.CLSITEM_ContactList CreateItem()
                 {
-                    return base.CreateItem<global::Client.WebApi.ContactListType.CLS_Children.CLSITEM_ContactList>();
+                    return base.CreateItem<global::Client.WebApi.ContactsType.CLS_Children.CLSITEM_ContactList>();
                 }
 
-                public global::Client.WebApi.ContactListType.CLS_Children.CLSITEM_ContactList CreateAndAddItem()
+                public global::Client.WebApi.ContactsType.CLS_Children.CLSITEM_ContactList CreateAndAddItem()
                 {
-                    return base.CreateAndAddItem<global::Client.WebApi.ContactListType.CLS_Children.CLSITEM_ContactList>();
+                    return base.CreateAndAddItem<global::Client.WebApi.ContactsType.CLS_Children.CLSITEM_ContactList>();
                 }
 
-                public global::Client.WebApi.ContactListType.CLS_Children.CLS_ContactList Add(global::System.Action<global::Client.WebApi.ContactListType.CLS_Children.CLSITEM_ContactList> itemSetter)
+                public global::Client.WebApi.ContactsType.CLS_Children.CLS_ContactList Add(global::System.Action<global::Client.WebApi.ContactsType.CLS_Children.CLSITEM_ContactList> itemSetter)
                 {
-                    base.Add<global::Client.WebApi.ContactListType.CLS_Children.CLSITEM_ContactList>(itemSetter);
+                    base.Add<global::Client.WebApi.ContactsType.CLS_Children.CLSITEM_ContactList>(itemSetter);
                     return this;
                 }
 
-                public global::Client.WebApi.ContactListType.CLS_Children.CLS_ContactList AddRange<TItemValue>(global::System.Collections.Generic.IEnumerable<TItemValue> itemValues, global::System.Action<global::Client.WebApi.ContactListType.CLS_Children.CLSITEM_ContactList, TItemValue> itemSetter)
+                public global::Client.WebApi.ContactsType.CLS_Children.CLS_ContactList AddRange<TItemValue>(global::System.Collections.Generic.IEnumerable<TItemValue> itemValues, global::System.Action<global::Client.WebApi.ContactsType.CLS_Children.CLSITEM_ContactList, TItemValue> itemSetter)
                 {
-                    base.AddRange<global::Client.WebApi.ContactListType.CLS_Children.CLSITEM_ContactList, TItemValue>(itemValues, itemSetter);
+                    base.AddRange<global::Client.WebApi.ContactsType.CLS_Children.CLSITEM_ContactList, TItemValue>(itemValues, itemSetter);
                     return this;
                 }
 
-                public static readonly global::XData.ChildListInfo ThisInfo = new global::XData.ChildListInfo(typeof (global::Client.WebApi.ContactListType.CLS_Children.CLS_ContactList), "{http://example.com/webapi}ContactListType.#{}.ContactList", false, 0, 1UL, 18446744073709551615UL, global::Client.WebApi.ContactListType.CLS_Children.CLSITEM_ContactList.ThisInfo);
+                public static readonly global::XData.ChildListInfo ThisInfo = new global::XData.ChildListInfo(typeof (global::Client.WebApi.ContactsType.CLS_Children.CLS_ContactList), "{http://example.com/webapi}ContactsType.#{}.ContactList", false, 0, 1UL, 18446744073709551615UL, global::Client.WebApi.ContactsType.CLS_Children.CLSITEM_ContactList.ThisInfo);
                 public override global::XData.ObjectInfo ObjectInfo
                 {
                     get
                     {
-                        global::XData.Extensions.PublicParameterlessConstructorRequired<global::Client.WebApi.ContactListType.CLS_Children.CLS_ContactList>();
+                        global::XData.Extensions.PublicParameterlessConstructorRequired<global::Client.WebApi.ContactsType.CLS_Children.CLS_ContactList>();
                         return ThisInfo;
                     }
                 }
             }
 
-            public static readonly global::XData.ChildStructInfo ThisInfo = new global::XData.ChildStructInfo(typeof (global::Client.WebApi.ContactListType.CLS_Children), "{http://example.com/webapi}ContactListType.#{}", (global::XData.ChildKind)4, false, -1, new global::XData.ChildInfo[]
+            public static readonly global::XData.ChildStructInfo ThisInfo = new global::XData.ChildStructInfo(typeof (global::Client.WebApi.ContactsType.CLS_Children), "{http://example.com/webapi}ContactsType.#{}", (global::XData.ChildKind)4, false, -1, new global::XData.ChildInfo[]
             {
-            global::Client.WebApi.ContactListType.CLS_Children.CLS_ContactList.ThisInfo
+            global::Client.WebApi.ContactsType.CLS_Children.CLS_ContactList.ThisInfo
             }
 
             );
@@ -5326,30 +5326,30 @@ namespace Client.WebApi
             {
                 get
                 {
-                    global::XData.Extensions.PublicParameterlessConstructorRequired<global::Client.WebApi.ContactListType.CLS_Children>();
+                    global::XData.Extensions.PublicParameterlessConstructorRequired<global::Client.WebApi.ContactsType.CLS_Children>();
                     return ThisInfo;
                 }
             }
         }
 
-        new public static readonly global::XData.ComplexTypeInfo ThisInfo = new global::XData.ComplexTypeInfo(typeof (global::Client.WebApi.ContactListType), false, new global::XData.FullName("http://example.com/webapi", "ContactListType"), global::XData.XComplexType.ThisInfo, null, global::Client.WebApi.ContactListType.CLS_Children.ThisInfo);
+        new public static readonly global::XData.ComplexTypeInfo ThisInfo = new global::XData.ComplexTypeInfo(typeof (global::Client.WebApi.ContactsType), false, new global::XData.FullName("http://example.com/webapi", "ContactsType"), global::XData.XComplexType.ThisInfo, null, global::Client.WebApi.ContactsType.CLS_Children.ThisInfo);
         public override global::XData.ObjectInfo ObjectInfo
         {
             get
             {
-                global::XData.Extensions.PublicParameterlessConstructorRequired<global::Client.WebApi.ContactListType>();
+                global::XData.Extensions.PublicParameterlessConstructorRequired<global::Client.WebApi.ContactsType>();
                 return ThisInfo;
             }
         }
     }
 
-    public partial class ContactList : global::XData.XGlobalElement
+    public partial class Contacts : global::XData.XGlobalElement
     {
-        new public global::Client.WebApi.ContactListType Type
+        new public global::Client.WebApi.ContactsType Type
         {
             get
             {
-                return base.GenericType as global::Client.WebApi.ContactListType;
+                return base.GenericType as global::Client.WebApi.ContactsType;
             }
 
             set
@@ -5358,29 +5358,29 @@ namespace Client.WebApi
             }
         }
 
-        public static bool TryLoadAndValidate(string filePath, global::System.IO.TextReader reader, global::XData.DiagContext context, out global::Client.WebApi.ContactList result)
+        public static bool TryLoadAndValidate(string filePath, global::System.IO.TextReader reader, global::XData.DiagContext context, out global::Client.WebApi.Contacts result)
         {
-            return TryLoadAndValidate<global::Client.WebApi.ContactList>(filePath, reader, context, ThisInfo, out result);
+            return TryLoadAndValidate<global::Client.WebApi.Contacts>(filePath, reader, context, ThisInfo, out result);
         }
 
-        public static readonly global::XData.ElementInfo ThisInfo = new global::XData.ElementInfo(typeof (global::Client.WebApi.ContactList), false, "{http://example.com/webapi}ContactList", (global::XData.ChildKind)1, false, -1, new global::XData.FullName("http://example.com/webapi", "ContactList"), true, global::Client.WebApi.ContactListType.ThisInfo, null, null, null, global::XDataProgramInfo.Instance);
+        public static readonly global::XData.ElementInfo ThisInfo = new global::XData.ElementInfo(typeof (global::Client.WebApi.Contacts), false, "{http://example.com/webapi}Contacts", (global::XData.ChildKind)1, false, -1, new global::XData.FullName("http://example.com/webapi", "Contacts"), true, global::Client.WebApi.ContactsType.ThisInfo, null, null, null, global::XDataProgramInfo.Instance);
         public override global::XData.ObjectInfo ObjectInfo
         {
             get
             {
-                global::XData.Extensions.PublicParameterlessConstructorRequired<global::Client.WebApi.ContactList>();
+                global::XData.Extensions.PublicParameterlessConstructorRequired<global::Client.WebApi.Contacts>();
                 return ThisInfo;
             }
         }
     }
 
-    public partial class ProductListType : global::XData.XComplexType
+    public partial class ProductsType : global::XData.XComplexType
     {
-        public global::Client.WebApi.ProductListType.CLS_Children.CLS_ProductList C_ProductList
+        public global::Client.WebApi.ProductsType.CLS_Children.CLS_ProductList C_ProductList
         {
             get
             {
-                return base.TryGetChild(0) as global::Client.WebApi.ProductListType.CLS_Children.CLS_ProductList;
+                return base.TryGetChild(0) as global::Client.WebApi.ProductsType.CLS_Children.CLS_ProductList;
             }
 
             set
@@ -5392,16 +5392,16 @@ namespace Client.WebApi
             }
         }
 
-        public global::Client.WebApi.ProductListType.CLS_Children.CLS_ProductList EnsureC_ProductList(bool @try = false)
+        public global::Client.WebApi.ProductsType.CLS_Children.CLS_ProductList EnsureC_ProductList(bool @try = false)
         {
-            return C_ProductList ?? (C_ProductList = base.CreateChild<global::Client.WebApi.ProductListType.CLS_Children.CLS_ProductList>(0, @try));
+            return C_ProductList ?? (C_ProductList = base.CreateChild<global::Client.WebApi.ProductsType.CLS_Children.CLS_ProductList>(0, @try));
         }
 
-        new public global::Client.WebApi.ProductListType.CLS_Children Children
+        new public global::Client.WebApi.ProductsType.CLS_Children Children
         {
             get
             {
-                return base.GenericChildren as global::Client.WebApi.ProductListType.CLS_Children;
+                return base.GenericChildren as global::Client.WebApi.ProductsType.CLS_Children;
             }
 
             set
@@ -5410,9 +5410,9 @@ namespace Client.WebApi
             }
         }
 
-        new public global::Client.WebApi.ProductListType.CLS_Children EnsureChildren(bool @try = false)
+        new public global::Client.WebApi.ProductsType.CLS_Children EnsureChildren(bool @try = false)
         {
-            return base.EnsureChildren<global::Client.WebApi.ProductListType.CLS_Children>(@try);
+            return base.EnsureChildren<global::Client.WebApi.ProductsType.CLS_Children>(@try);
         }
 
         public partial class CLS_Children : global::XData.XChildSequence
@@ -5432,22 +5432,22 @@ namespace Client.WebApi
                     }
                 }
 
-                public static readonly global::XData.ElementInfo ThisInfo = new global::XData.ElementInfo(typeof (global::Client.WebApi.ProductListType.CLS_Children.CLSITEM_ProductList), false, "{http://example.com/webapi}ProductListType.#{}.ProductList", (global::XData.ChildKind)2, false, 0, new global::XData.FullName(null, "Product"), false, global::Client.EBiz.Product.ThisInfo, null, null, null, global::XDataProgramInfo.Instance);
+                public static readonly global::XData.ElementInfo ThisInfo = new global::XData.ElementInfo(typeof (global::Client.WebApi.ProductsType.CLS_Children.CLSITEM_ProductList), false, "{http://example.com/webapi}ProductsType.#{}.ProductList", (global::XData.ChildKind)2, false, 0, new global::XData.FullName(null, "Product"), false, global::Client.EBiz.Product.ThisInfo, null, null, null, global::XDataProgramInfo.Instance);
                 public override global::XData.ObjectInfo ObjectInfo
                 {
                     get
                     {
-                        global::XData.Extensions.PublicParameterlessConstructorRequired<global::Client.WebApi.ProductListType.CLS_Children.CLSITEM_ProductList>();
+                        global::XData.Extensions.PublicParameterlessConstructorRequired<global::Client.WebApi.ProductsType.CLS_Children.CLSITEM_ProductList>();
                         return ThisInfo;
                     }
                 }
             }
 
-            public global::Client.WebApi.ProductListType.CLS_Children.CLS_ProductList C_ProductList
+            public global::Client.WebApi.ProductsType.CLS_Children.CLS_ProductList C_ProductList
             {
                 get
                 {
-                    return base.TryGetChild(0) as global::Client.WebApi.ProductListType.CLS_Children.CLS_ProductList;
+                    return base.TryGetChild(0) as global::Client.WebApi.ProductsType.CLS_Children.CLS_ProductList;
                 }
 
                 set
@@ -5459,49 +5459,49 @@ namespace Client.WebApi
                 }
             }
 
-            public global::Client.WebApi.ProductListType.CLS_Children.CLS_ProductList EnsureC_ProductList(bool @try = false)
+            public global::Client.WebApi.ProductsType.CLS_Children.CLS_ProductList EnsureC_ProductList(bool @try = false)
             {
-                return C_ProductList ?? (C_ProductList = base.CreateChild<global::Client.WebApi.ProductListType.CLS_Children.CLS_ProductList>(0, @try));
+                return C_ProductList ?? (C_ProductList = base.CreateChild<global::Client.WebApi.ProductsType.CLS_Children.CLS_ProductList>(0, @try));
             }
 
-            public partial class CLS_ProductList : global::XData.XChildList<global::Client.WebApi.ProductListType.CLS_Children.CLSITEM_ProductList>
+            public partial class CLS_ProductList : global::XData.XChildList<global::Client.WebApi.ProductsType.CLS_Children.CLSITEM_ProductList>
             {
-                public global::Client.WebApi.ProductListType.CLS_Children.CLSITEM_ProductList CreateItem()
+                public global::Client.WebApi.ProductsType.CLS_Children.CLSITEM_ProductList CreateItem()
                 {
-                    return base.CreateItem<global::Client.WebApi.ProductListType.CLS_Children.CLSITEM_ProductList>();
+                    return base.CreateItem<global::Client.WebApi.ProductsType.CLS_Children.CLSITEM_ProductList>();
                 }
 
-                public global::Client.WebApi.ProductListType.CLS_Children.CLSITEM_ProductList CreateAndAddItem()
+                public global::Client.WebApi.ProductsType.CLS_Children.CLSITEM_ProductList CreateAndAddItem()
                 {
-                    return base.CreateAndAddItem<global::Client.WebApi.ProductListType.CLS_Children.CLSITEM_ProductList>();
+                    return base.CreateAndAddItem<global::Client.WebApi.ProductsType.CLS_Children.CLSITEM_ProductList>();
                 }
 
-                public global::Client.WebApi.ProductListType.CLS_Children.CLS_ProductList Add(global::System.Action<global::Client.WebApi.ProductListType.CLS_Children.CLSITEM_ProductList> itemSetter)
+                public global::Client.WebApi.ProductsType.CLS_Children.CLS_ProductList Add(global::System.Action<global::Client.WebApi.ProductsType.CLS_Children.CLSITEM_ProductList> itemSetter)
                 {
-                    base.Add<global::Client.WebApi.ProductListType.CLS_Children.CLSITEM_ProductList>(itemSetter);
+                    base.Add<global::Client.WebApi.ProductsType.CLS_Children.CLSITEM_ProductList>(itemSetter);
                     return this;
                 }
 
-                public global::Client.WebApi.ProductListType.CLS_Children.CLS_ProductList AddRange<TItemValue>(global::System.Collections.Generic.IEnumerable<TItemValue> itemValues, global::System.Action<global::Client.WebApi.ProductListType.CLS_Children.CLSITEM_ProductList, TItemValue> itemSetter)
+                public global::Client.WebApi.ProductsType.CLS_Children.CLS_ProductList AddRange<TItemValue>(global::System.Collections.Generic.IEnumerable<TItemValue> itemValues, global::System.Action<global::Client.WebApi.ProductsType.CLS_Children.CLSITEM_ProductList, TItemValue> itemSetter)
                 {
-                    base.AddRange<global::Client.WebApi.ProductListType.CLS_Children.CLSITEM_ProductList, TItemValue>(itemValues, itemSetter);
+                    base.AddRange<global::Client.WebApi.ProductsType.CLS_Children.CLSITEM_ProductList, TItemValue>(itemValues, itemSetter);
                     return this;
                 }
 
-                public static readonly global::XData.ChildListInfo ThisInfo = new global::XData.ChildListInfo(typeof (global::Client.WebApi.ProductListType.CLS_Children.CLS_ProductList), "{http://example.com/webapi}ProductListType.#{}.ProductList", false, 0, 1UL, 18446744073709551615UL, global::Client.WebApi.ProductListType.CLS_Children.CLSITEM_ProductList.ThisInfo);
+                public static readonly global::XData.ChildListInfo ThisInfo = new global::XData.ChildListInfo(typeof (global::Client.WebApi.ProductsType.CLS_Children.CLS_ProductList), "{http://example.com/webapi}ProductsType.#{}.ProductList", false, 0, 1UL, 18446744073709551615UL, global::Client.WebApi.ProductsType.CLS_Children.CLSITEM_ProductList.ThisInfo);
                 public override global::XData.ObjectInfo ObjectInfo
                 {
                     get
                     {
-                        global::XData.Extensions.PublicParameterlessConstructorRequired<global::Client.WebApi.ProductListType.CLS_Children.CLS_ProductList>();
+                        global::XData.Extensions.PublicParameterlessConstructorRequired<global::Client.WebApi.ProductsType.CLS_Children.CLS_ProductList>();
                         return ThisInfo;
                     }
                 }
             }
 
-            public static readonly global::XData.ChildStructInfo ThisInfo = new global::XData.ChildStructInfo(typeof (global::Client.WebApi.ProductListType.CLS_Children), "{http://example.com/webapi}ProductListType.#{}", (global::XData.ChildKind)4, false, -1, new global::XData.ChildInfo[]
+            public static readonly global::XData.ChildStructInfo ThisInfo = new global::XData.ChildStructInfo(typeof (global::Client.WebApi.ProductsType.CLS_Children), "{http://example.com/webapi}ProductsType.#{}", (global::XData.ChildKind)4, false, -1, new global::XData.ChildInfo[]
             {
-            global::Client.WebApi.ProductListType.CLS_Children.CLS_ProductList.ThisInfo
+            global::Client.WebApi.ProductsType.CLS_Children.CLS_ProductList.ThisInfo
             }
 
             );
@@ -5509,30 +5509,30 @@ namespace Client.WebApi
             {
                 get
                 {
-                    global::XData.Extensions.PublicParameterlessConstructorRequired<global::Client.WebApi.ProductListType.CLS_Children>();
+                    global::XData.Extensions.PublicParameterlessConstructorRequired<global::Client.WebApi.ProductsType.CLS_Children>();
                     return ThisInfo;
                 }
             }
         }
 
-        new public static readonly global::XData.ComplexTypeInfo ThisInfo = new global::XData.ComplexTypeInfo(typeof (global::Client.WebApi.ProductListType), false, new global::XData.FullName("http://example.com/webapi", "ProductListType"), global::XData.XComplexType.ThisInfo, null, global::Client.WebApi.ProductListType.CLS_Children.ThisInfo);
+        new public static readonly global::XData.ComplexTypeInfo ThisInfo = new global::XData.ComplexTypeInfo(typeof (global::Client.WebApi.ProductsType), false, new global::XData.FullName("http://example.com/webapi", "ProductsType"), global::XData.XComplexType.ThisInfo, null, global::Client.WebApi.ProductsType.CLS_Children.ThisInfo);
         public override global::XData.ObjectInfo ObjectInfo
         {
             get
             {
-                global::XData.Extensions.PublicParameterlessConstructorRequired<global::Client.WebApi.ProductListType>();
+                global::XData.Extensions.PublicParameterlessConstructorRequired<global::Client.WebApi.ProductsType>();
                 return ThisInfo;
             }
         }
     }
 
-    public partial class ProductList : global::XData.XGlobalElement
+    public partial class Products : global::XData.XGlobalElement
     {
-        new public global::Client.WebApi.ProductListType Type
+        new public global::Client.WebApi.ProductsType Type
         {
             get
             {
-                return base.GenericType as global::Client.WebApi.ProductListType;
+                return base.GenericType as global::Client.WebApi.ProductsType;
             }
 
             set
@@ -5541,17 +5541,17 @@ namespace Client.WebApi
             }
         }
 
-        public static bool TryLoadAndValidate(string filePath, global::System.IO.TextReader reader, global::XData.DiagContext context, out global::Client.WebApi.ProductList result)
+        public static bool TryLoadAndValidate(string filePath, global::System.IO.TextReader reader, global::XData.DiagContext context, out global::Client.WebApi.Products result)
         {
-            return TryLoadAndValidate<global::Client.WebApi.ProductList>(filePath, reader, context, ThisInfo, out result);
+            return TryLoadAndValidate<global::Client.WebApi.Products>(filePath, reader, context, ThisInfo, out result);
         }
 
-        public static readonly global::XData.ElementInfo ThisInfo = new global::XData.ElementInfo(typeof (global::Client.WebApi.ProductList), false, "{http://example.com/webapi}ProductList", (global::XData.ChildKind)1, false, -1, new global::XData.FullName("http://example.com/webapi", "ProductList"), true, global::Client.WebApi.ProductListType.ThisInfo, null, null, null, global::XDataProgramInfo.Instance);
+        public static readonly global::XData.ElementInfo ThisInfo = new global::XData.ElementInfo(typeof (global::Client.WebApi.Products), false, "{http://example.com/webapi}Products", (global::XData.ChildKind)1, false, -1, new global::XData.FullName("http://example.com/webapi", "Products"), true, global::Client.WebApi.ProductsType.ThisInfo, null, null, null, global::XDataProgramInfo.Instance);
         public override global::XData.ObjectInfo ObjectInfo
         {
             get
             {
-                global::XData.Extensions.PublicParameterlessConstructorRequired<global::Client.WebApi.ProductList>();
+                global::XData.Extensions.PublicParameterlessConstructorRequired<global::Client.WebApi.Products>();
                 return ThisInfo;
             }
         }
@@ -5571,7 +5571,7 @@ internal sealed class XDataProgramInfo : global::XData.ProgramInfo
         {
         new global::XData.NamespaceInfo("http://example.com/common", new global::XData.IGlobalObjectInfo[]
         {
-        global::Client.Common.String10.ThisInfo, global::Client.Common.String20.ThisInfo, global::Client.Common.String40.ThisInfo, global::Client.Common.NonNegativeInt32.ThisInfo, global::Client.Common.PositiveInt32.ThisInfo, global::Client.Common.PositiveInt32List.ThisInfo, global::Client.Common.PhoneKind.ThisInfo, global::Client.Common.Phone.ThisInfo, global::Client.Common.NormalAddress.ThisInfo, global::Client.Common.SpatialNumber.ThisInfo, global::Client.Common.SpatialAddress.ThisInfo, global::Client.Common.Email.ThisInfo, global::Client.Common.MoneyKind.ThisInfo, global::Client.Common.MoneyValue.ThisInfo, global::Client.Common.Money.ThisInfo, global::Client.Common.ImageValue.ThisInfo, global::Client.Common.Image.ThisInfo, global::Client.Common.Reputation.ThisInfo, global::Client.Common.Gender.ThisInfo, global::Client.Common.ShoeUnit.ThisInfo, global::Client.Common.ShoeSizeValue.ThisInfo, global::Client.Common.ShoeSize.ThisInfo
+        global::Client.Common.String10.ThisInfo, global::Client.Common.String20.ThisInfo, global::Client.Common.String40.ThisInfo, global::Client.Common.NonNegativeInt32.ThisInfo, global::Client.Common.PositiveInt32.ThisInfo, global::Client.Common.PositiveInt32List.ThisInfo, global::Client.Common.Email.ThisInfo, global::Client.Common.PhoneKind.ThisInfo, global::Client.Common.Phone.ThisInfo, global::Client.Common.NormalAddress.ThisInfo, global::Client.Common.SpatialNumber.ThisInfo, global::Client.Common.SpatialAddress.ThisInfo, global::Client.Common.MoneyKind.ThisInfo, global::Client.Common.MoneyValue.ThisInfo, global::Client.Common.Money.ThisInfo, global::Client.Common.ImageValue.ThisInfo, global::Client.Common.Image.ThisInfo, global::Client.Common.Reputation.ThisInfo, global::Client.Common.Gender.ThisInfo, global::Client.Common.ShoeUnit.ThisInfo, global::Client.Common.ShoeSizeValue.ThisInfo, global::Client.Common.ShoeSize.ThisInfo
         }
 
         ), new global::XData.NamespaceInfo("http://example.com/ebiz", new global::XData.IGlobalObjectInfo[]
@@ -5581,7 +5581,7 @@ internal sealed class XDataProgramInfo : global::XData.ProgramInfo
 
         ), new global::XData.NamespaceInfo("http://example.com/webapi", new global::XData.IGlobalObjectInfo[]
         {
-        global::Client.WebApi.ContactListType.ThisInfo, global::Client.WebApi.ContactList.ThisInfo, global::Client.WebApi.ProductListType.ThisInfo, global::Client.WebApi.ProductList.ThisInfo
+        global::Client.WebApi.ContactsType.ThisInfo, global::Client.WebApi.Contacts.ThisInfo, global::Client.WebApi.ProductsType.ThisInfo, global::Client.WebApi.Products.ThisInfo
         }
 
         )}

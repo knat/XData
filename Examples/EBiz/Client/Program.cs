@@ -10,12 +10,6 @@ namespace Client.Common {
             return string.Format("{0} {1}", Children, AT_Kind);
         }
     }
-    partial class ShoeSize {
-        public override string ToString() {
-            return string.Format("{0} {1}", Children, AT_Unit);
-        }
-    }
-
 }
 
 namespace Client.EBiz {
@@ -73,40 +67,45 @@ namespace Client.EBiz {
         public override void Dump() {
             Console.WriteLine("==SportEquipment==");
             base.Dump();
+            Console.WriteLine("\tApplicability = {0}", AT_Applicability);
         }
     }
     partial class Shoe {
         public override void Dump() {
             Console.WriteLine("==Shoe==");
             base.Dump();
-            Console.WriteLine("\tGender = {0}, Size = {1}", AT_Gender, CT_Size);
+            Console.WriteLine("\tGender = {0}, Size = {1} {2}", AT_Gender, CT_Size.Children, CT_Size.AT_Unit);
         }
     }
 }
 static class Program {
     static void Main() {
-        var contactListfilePath = WebApiSimulation.GetContactList();
-        ContactList contactList;
-        using (var reader = new StreamReader(contactListfilePath)) {
+        var contactsFilePath = WebApiSimulation.GetContacts();
+        Contacts contacts;
+        using (var reader = new StreamReader(contactsFilePath)) {
             var ctx = new DiagContext();
-            if (!ContactList.TryLoadAndValidate(contactListfilePath, reader, ctx, out contactList)) {
+            if (!Contacts.TryLoadAndValidate(contactsFilePath, reader, ctx, out contacts)) {
                 DumpAndAssert(ctx);
             }
         }
-        foreach (var contactMember in contactList.Type.C_ContactList) {
-            contactMember.Type.Dump();
+        if (contacts.Type != null) {
+            foreach (var contactMember in contacts.Type.C_ContactList) {
+                contactMember.Type.Dump();
+            }
         }
         //
-        var productListfilePath = WebApiSimulation.GetProductList();
-        ProductList productList;
-        using (var reader = new StreamReader(productListfilePath)) {
+        var productsFilePath = WebApiSimulation.GetProducts();
+        Products products;
+        using (var reader = new StreamReader(productsFilePath)) {
             var ctx = new DiagContext();
-            if (!ProductList.TryLoadAndValidate(productListfilePath, reader, ctx, out productList)) {
+            if (!Products.TryLoadAndValidate(productsFilePath, reader, ctx, out products)) {
                 DumpAndAssert(ctx);
             }
         }
-        foreach (var productMember in productList.Type.C_ProductList) {
-            productMember.Type.Dump();
+        if (products.Type != null) {
+            foreach (var productMember in products.Type.C_ProductList) {
+                productMember.Type.Dump();
+            }
         }
     }
     private static void DumpAndAssert(DiagContext ctx) {
