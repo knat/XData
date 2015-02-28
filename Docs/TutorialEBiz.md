@@ -578,21 +578,9 @@ static class Program {
                 contactMember.Type.Dump();
             }
         }
-        //
-        var productsFilePath = WebApiSimulation.GetProducts();
-        Products products;
-        using (var reader = new StreamReader(productsFilePath)) {
-            var ctx = new DiagContext();
-            if (!Products.TryLoadAndValidate(productsFilePath, reader, ctx, out products)) {
-                DumpAndAssert(ctx);
-            }
-        }
-        if (products.Type != null) {
-            foreach (var productMember in products.Type.C_ProductList) {
-                productMember.Type.Dump();
-            }
-        }
+        //...
     }
+}
 ```
     
 Put a breakpoint at line `using (var reader = new StreamReader(contactsFilePath)) {`, after the program hits the breakpoint, open Contacts.txt, change "tank@example.com" to "tankexample.com"(you can invalid anything you want) and save, `TryLoadAndValidate` will fail:
