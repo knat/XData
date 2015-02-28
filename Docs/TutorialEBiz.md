@@ -1,12 +1,12 @@
 ## Tutorial: EBusiness Web Application Simulation
 
-We're gonging to implement an EBusiness(EBiz) web application simulation using XData. The finished code can be found [here](https://github.com/knat/XData/tree/master/Examples/EBiz).
+We're going to implement an EBusiness(EBiz) web application simulation using XData. The finished code can be found [here](https://github.com/knat/XData/tree/master/Examples/EBiz).
 
 There are eight main types in EBiz:
 
 ![](EBizUML.png)
 
-`Contact` and `Product` are abstract, others are concrete. A `Customer` may contain zero or more `Order`s, an `Order` must contain one or more `OrderDetail`s.
+`Contact` and `Product` are abstract, other types are concrete. A `Customer` may contain zero or more `Order`s, an `Order` must contain one or more `OrderDetail`s.
 
 There are two C# projects in EBiz: `Service` and `Client`. `Service` is a class library, it provides class `WebApiSimulation` to `Client`:
 
@@ -427,7 +427,7 @@ You cannot directly use the DOM library, because most classes are abstract.
 
 The schema compiler has two duties: first it checks the schema is correct in syntax and in semantics; second it generates the concrete code(currently C# code) from the schema, which is based on the abstract DOM library.
 
-Let's get our hands dirty to finish the EBiz web application simulation.
+Let's get our hands dirty.
 
 1) [Visual Studio 2013](http://www.visualstudio.com/downloads/download-visual-studio-vs) is required.
 
@@ -458,12 +458,112 @@ namespace "http://example.com/project1" = Example.Project1 //C# namespace
 namespace "http://example.com/project2" = Example.Project2
 ```
 
-7) After (re)build the project, __XDataGenerated.cs will contain the generated code.
+![](EBizSolution.png)
 
+`Service` defines the schema EBiz.xds, The XData indicator file Service.xdi indicates the schema compiler to generate the code in C# namespace `Service.Common`, `Service.EBiz` and `Service.WebApi`. After (re)build the project, __XDataGenerated.cs will contain the generated code, open and view it :) Don't be scared, using the generated code is easy. Because every generated class is partial, we can add our code to the classes:
 
+```C#
+namespace Service.Common {
+    partial class Money {
+        public Money() { }
+        public Money(string kind, decimal value) {
+            AT_Kind = kind;
+            Children = value;
+        }
+        public decimal GetValueAsUSD() {
+            decimal value = Children;
+            switch (AT_Kind.Value) {
+                case MoneyKind.E_USD:
+                    return value;
+                case MoneyKind.E_EUR:
+                    return decimal.Round(value * 1.12M, 2);
+                case MoneyKind.E_CNY:
+                    return decimal.Round(value * 0.16M, 2);
+                default: throw new ArgumentException();
+            }
+        }
+    }
+}
+namespace Service.EBiz {
+    partial class Contact {
+        protected Contact() { }
+        protected Contact(int id, string name, string email, DateTimeOffset regDate,
+            IEnumerable<Phone> phones, NormalAddress normalAddress, SpatialAddress spatialAddress) {
+            AT_Id = id;
+            AT_Name = name;
+            AT_Email = email;
+            AT_RegDate = regDate;
+            EnsureC_PhoneList().AddRange(phones, (item, phone) => item.Type = phone);
+            if (normalAddress != null) {
+                EnsureC_Address().CT_NormalAddress = normalAddress;
+            }
+            else {
+                EnsureC_Address().CT_SpatialAddress = spatialAddress;
+            }
+        }
+    }
+    partial class Customer {
+        public Customer() { }
+        public Customer(int id, string name, string email, DateTimeOffset regDate,
+            IEnumerable<Phone> phones, NormalAddress normalAddress, SpatialAddress spatialAddress,
+            string reputation, params Order[] orders)
+            : base(id, name, email, regDate, phones, normalAddress, spatialAddress) {
+            AT_Reputation = reputation;
+            if (orders != null) {
+                EnsureC_OrderList().AddRange(orders, (item, order) => item.Type = order);
+            }
+        }
+    }
+}
+```
 
+"A" means "Attribute", "AT" means "Attribute's Type", "C" means "Child", "CT" means "Child element's Type".
 
+`XObject.TryValidate()` can be used to validate the objects. If the validation fails, this means the program has bugs. `XGlobalElement.Save()` can be used to save the data. We can create, modify, validate(typically in debug version) and save the data.
 
+Schema is the specification/contract of your data. You should publish the schema within your SDK, so your clients can generate their code(C#, Java, C++, etc) from your schema.
 
+In `Client`, EBiz.xds is included, and the code is generated in C# namespace `Client.Common`, `Client.EBiz` and `Client.WebApi`. The generated static method `TryLoadAndValidate` in every global element can be used to load and validate the data:
 
+```C#
+static class Program {
+    static void Main() {
+        var contactsFilePath = WebApiSimulation.GetContacts();
+        Contacts contacts;
+        using (var reader = new StreamReader(contactsFilePath)) {
+            var ctx = new DiagContext();
+            if (!Contacts.TryLoadAndValidate(contactsFilePath, reader, ctx, out contacts)) {
+                DumpAndAssert(ctx);
+            }
+        }
+        if (contacts.Type != null) {
+            foreach (var contactMember in contacts.Type.C_ContactList) {
+                contactMember.Type.Dump();
+            }
+        }
+        //
+        var productsFilePath = WebApiSimulation.GetProducts();
+        Products products;
+        using (var reader = new StreamReader(productsFilePath)) {
+            var ctx = new DiagContext();
+            if (!Products.TryLoadAndValidate(productsFilePath, reader, ctx, out products)) {
+                DumpAndAssert(ctx);
+            }
+        }
+        if (products.Type != null) {
+            foreach (var productMember in products.Type.C_ProductList) {
+                productMember.Type.Dump();
+            }
+        }
+    }
+```
+    
+Put a breakpoint at line `using (var reader = new StreamReader(contactsFilePath)) {`, when the program hits the breakpoint, open Contacts.txt, change "tank@example.com" to "tankexample.com"(you can invalid any thing you want) and save, `TryLoadAndValidate` will fail:
+
+```
+Error -979: Literal 'tankexample.com' not match with pattern '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}'.
+    Contacts.txt: (7,25)-(7,42)
+```
+
+Please visit https://github.com/knat/XData for more information.
 

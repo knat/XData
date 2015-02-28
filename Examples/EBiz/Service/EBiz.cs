@@ -31,8 +31,6 @@ namespace Service.Common {
 }
 
 namespace Service.EBiz {
-    using Service.Common;
-
     partial class Contact {
         protected Contact() { }
         protected Contact(int id, string name, string email, DateTimeOffset regDate,
