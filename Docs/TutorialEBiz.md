@@ -319,7 +319,7 @@ Type `NormalAddress` is a complex type. Attributes are defined in `[ ]`. Attribu
 
 Type `Phone` is a simple child complex type. A simple child(`$ ...`) must reference a simple type.
 
-Type `Contact` is a complex children complex type. Complex children are defined in `#{ }`. Complex children are local elements(e.g: `Phone`) or child structures(e.g: `?{...}` is a choice structure). Use occurrence(e.g: `1..5`, `?`, `*`, `+`) to specify repeat count of a child. The default value for the occurrence is `1..1`. If the max occurrence(the right side of `..`) is absent, it means infinite. In the example, a `Contact` must have at least one and at most five child element `Phone`, following is a choice between `NormalAddress` and `SpatialAddress`. Complex types can be extended by adding attributes and/or children. If a type is annotated as `abstract`(e.g: type `Contact`), a type indicator is required to indicate a concrete type in the data.
+Type `Contact` is a complex children complex type. Complex children are defined in `#{ }`. Complex children are local elements(e.g: `Phone`) or child structures(e.g: `?{...}` is a choice structure). Use occurrence(e.g: `1..5`, `?`, `*`, `+`) to specify the repeat count of a child. The default value for the occurrence is `1..1`. If the max occurrence(the right side of `..`) is absent, it means infinite. In the example, a `Contact` must have at least one and at most five child element `Phone`, following is a choice between `NormalAddress` and `SpatialAddress`. Complex types can be extended by adding attributes and/or children. If a type is annotated as `abstract`(e.g: type `Contact`), a type indicator is required to indicate a concrete type in the data.
 
 Elements can reference simple or complex types.
 
@@ -327,7 +327,7 @@ If an attribute/element is annotated as `nullable`(e.g: element `Contacts`), the
 
 `membername` is used for code generation.
 
-Below is the valid data for `Contact`:
+Below is a valid data for `Contact`:
 
 ```
 Contact = (a1:Customer)
@@ -466,7 +466,7 @@ namespace "http://example.com/project2" = Example.Project2
 
 ![](EBizSolution.png)
 
-`Service` defines the schema EBiz.xds, the code is generated in C# namespace `Service.Common`, `Service.EBiz` and `Service.WebApi`. After (re)build the project, __XDataGenerated.cs will contain the generated code, open and view it :) Don't be scared, using the generated code is easy. Because every generated class is partial, we can add our code to the classes:
+`Service` defines the schema EBiz.xds, the code is generated in C# namespace `Service.Common`, `Service.EBiz` and `Service.WebApi`. After (re)build the project, `__XDataGenerated.cs` will contain the generated code, open and view it :) Don't be scared, using the generated code is easy. Because every generated class is partial, we can add our code to the classes:
 
 ```C#
 namespace Service.Common {
