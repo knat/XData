@@ -451,7 +451,7 @@ PM> Install-Package XDataDOM -Pre
 
 5) Open "Add New Item" dialog box -> Visual C# Items -> XData -> Create a new XData Schema file.
 
-6) Create a new XData Indicator file. The indicator file indicates the code should be generated in which C# namespaces:
+6) Create a new XData Indicator file. The indicator file indicates the schema compiler to generate the code in which C# namespaces:
 
 ```
 namespace "http://example.com/project1" = Example.Project1 //C# namespace
@@ -460,7 +460,7 @@ namespace "http://example.com/project2" = Example.Project2
 
 ![](EBizSolution.png)
 
-`Service` defines the schema EBiz.xds, The XData indicator file Service.xdi indicates the schema compiler to generate the code in C# namespace `Service.Common`, `Service.EBiz` and `Service.WebApi`. After (re)build the project, __XDataGenerated.cs will contain the generated code, open and view it :) Don't be scared, using the generated code is easy. Because every generated class is partial, we can add our code to the classes:
+`Service` defines the schema EBiz.xds, the code is generated in C# namespace `Service.Common`, `Service.EBiz` and `Service.WebApi`. After (re)build the project, __XDataGenerated.cs will contain the generated code, open and view it :) Don't be scared, using the generated code is easy. Because every generated class is partial, we can add our code to the classes:
 
 ```C#
 namespace Service.Common {
@@ -519,7 +519,38 @@ namespace Service.EBiz {
 
 "A" means "Attribute", "AT" means "Attribute's Type", "C" means "Child", "CT" means "Child element's Type".
 
-Use `XObject.TryValidate()` to validate the objects. If the validation fails, this means the program has bugs. Use `XGlobalElement.Save()` to save the data. So far, we can create, modify, validate(typically in debug version) and save the data.
+Use `XObject.TryValidate()` to validate the objects. Use `XGlobalElement.Save()` to save the element data:
+
+```C#
+public static class WebApiSimulation {
+    [Conditional("DEBUG")]
+    private static void Validate(XObject obj, DiagContext ctx) {
+        if (!obj.TryValidate(ctx)) {
+            //if validation fails, this means the program has bugs
+            DumpAndAssert(ctx);
+        }
+    }
+    private static void Save(XGlobalElement element, string path) {
+        using (var writer = new StreamWriter(path)) {
+            element.Save(writer, "    ", "\r\n");
+        }
+    }
+    private static void DumpAndAssert(DiagContext ctx) {
+        foreach (var diag in ctx) {
+            Console.WriteLine(diag.ToString());
+        }
+        Debug.Assert(false);
+    }
+    public static string GetContacts() {
+        var contacts = new Contacts(_contacts);
+        Validate(contacts, new DiagContext());
+        Save(contacts, "Contacts.txt");
+        return "Contacts.txt";
+    }
+}
+```
+
+So far, we can create, modify, validate(typically in debug version) and save the data.
 
 Schema is the specification/contract of your data. You should publish the schema within your SDK, so your clients can generate their code(C#, Java, C++, etc) from your schema.
 
