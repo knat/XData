@@ -319,7 +319,7 @@ Type `NormalAddress` is a complex type. Attributes are defined in `[ ]`. Attribu
 
 Type `Phone` is a simple child complex type. A simple child(`$ ...`) must reference a simple type.
 
-Type `Contact` is a complex children complex type. Complex children are defined in `#{ }`. Complex children are local elements(e.g: `Phone`) or child structures(e.g: `?{...}` is a choice structure). Use occurrence(e.g: `1..5`, `?`, `*`, `+`) to specify the repeat count of a child. The default value for the occurrence is `1..1`. If the max occurrence(the right side of `..`) is absent, it means infinite. In the example, a `Contact` must have at least one and at most five child element `Phone`, following is a choice between `NormalAddress` and `SpatialAddress`. Complex types can be extended by adding attributes and/or children. If a type is annotated as `abstract`(e.g: type `Contact`), a type indicator is required to indicate a concrete type in the data.
+Type `Contact` is a complex children complex type. Complex children are defined in `#{ }`. Complex children are local elements(e.g: element `Phone`) or child structures(e.g: `?{...}` is a choice structure). Use occurrence(e.g: `1..5`, `?`, `*`, `+`) to specify the repeat count of a child. The default value is `1..1`. If the max occurrence(the right side of `..`) is absent, it means infinite. In the example, a `Contact` must have at least one and at most five child element `Phone`, following is a choice between `NormalAddress` and `SpatialAddress`. Complex types can be extended by adding attributes and/or children. If a type is annotated as `abstract`(e.g: type `Contact`), a type indicator is required to indicate the concrete type in the data.
 
 Elements can reference simple or complex types.
 
