@@ -439,7 +439,7 @@ Let's get our hands dirty.
 
 2) Download and install the latest [XData VSIX package](https://github.com/knat/XData/releases).
 
-3) Open EBiz.sln, done. Below are steps if you want to create other projects. Unload and edit the .csproj file, insert the following code at the end of the file:
+3) Open [EBiz.sln](https://github.com/knat/XData/tree/master/Examples/EBiz), done. Below are steps if you want to create other projects. Unload and edit the .csproj file, insert the following code at the end of the file:
 
 ```xml
 <!--Begin XData-->
